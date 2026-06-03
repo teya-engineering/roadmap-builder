@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test --test-reporter=spec web/domain/*.test.js",
+    "test": "node --test --test-reporter=spec web/domain/*.test.js web/views/builder/*.test.js server.test.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

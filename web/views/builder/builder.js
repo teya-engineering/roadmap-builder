@@ -54,6 +54,7 @@ import {
 } from './ktlo-validation.js';
 import * as roadmapState from './state.js';
 import * as save from './save.js';
+import * as slackNotify from './slack-notify.js';
 import { enableTitleEditing } from './inline-edit.js';
 import { confettiBurst } from './confetti.js';
 
@@ -138,6 +139,11 @@ export function init(_root) {
                 ? window.prepareRoadmapForSave()
                 : null),
         });
+
+        // Slack save-notifier: diffs each save against a baseline and posts a
+        // summary to the /api/roadmap-saved proxy. Listens for roadmap:saved,
+        // so it must init after save.init wires that event.
+        slackNotify.init();
 
         // Dirty tracking: any user input/change inside the SPA mount marks
         // the form as having unsaved changes. We rely on Event.isTrusted to
@@ -3285,6 +3291,9 @@ export function init(_root) {
                                         // Refresh date pickers to sync with loaded data
                                         refreshAllDatePickers();
                                         generatePreview();
+                                        // Roadmap fully loaded and state synced. Signal the
+                                        // Slack notifier to (re)set its diff baseline here.
+                                        document.dispatchEvent(new CustomEvent('roadmap:loaded'));
                                         // Update document title with loaded team name
                                         updateDocumentTitle();
                                         // Programmatic loads dispatch input events on
@@ -3329,6 +3338,9 @@ export function init(_root) {
                     // Refresh date pickers to sync with loaded data
                     refreshAllDatePickers();
                     generatePreview();
+                    // Roadmap fully loaded and state synced. Signal the
+                    // Slack notifier to (re)set its diff baseline here.
+                    document.dispatchEvent(new CustomEvent('roadmap:loaded'));
                     // Update document title with loaded team name
                     updateDocumentTitle();
                     save.markClean();
