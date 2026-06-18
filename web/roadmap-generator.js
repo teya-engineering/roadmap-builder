@@ -924,15 +924,37 @@ export class RoadmapGenerator {
 
         if (rc.changes && rc.changes.length > 0) {
             rc.changes.forEach(change => {
-                const isEarly = this.isEarlyDelivery(change.prevEndDate, change.newEndDate);
-                const arrow = isEarly ? '&lt;-' : '-&gt;';
+                const startMoved = change.prevStartDate && change.newStartDate
+                    && change.prevStartDate !== change.newStartDate;
+                const endMoved = change.prevEndDate && change.newEndDate
+                    && change.prevEndDate !== change.newEndDate;
+
+                const movement = (prev, next) => {
+                    const early = this.isEarlyDelivery(prev, next);
+                    const arrow = early ? '&lt;-' : '-&gt;';
+                    return `${this.formatDateEuropean(prev)} ${arrow} ${this.formatDateEuropean(next)}`;
+                };
+
+                // Icon trend follows the end date when it moved, otherwise the start date.
+                const isEarly = endMoved
+                    ? this.isEarlyDelivery(change.prevEndDate, change.newEndDate)
+                    : this.isEarlyDelivery(change.prevStartDate, change.newStartDate);
+
+                const subtitleParts = [];
+                if (startMoved) subtitleParts.push(`Start ${movement(change.prevStartDate, change.newStartDate)}`);
+                if (endMoved) subtitleParts.push(`${startMoved ? 'End ' : ''}${movement(change.prevEndDate, change.newEndDate)}`);
+                // Fall back to the end date so an entry always shows something.
+                if (subtitleParts.length === 0) {
+                    subtitleParts.push(movement(change.prevEndDate, change.newEndDate));
+                }
+
                 events.push({
                     type: 'change',
                     date: change.date,
                     glyph: '🕐',
                     color: isEarly ? '#28a745' : '#dc3545',
                     label: this.formatDateEuropean(change.date),
-                    subtitle: `${this.formatDateEuropean(change.prevEndDate)} ${arrow} ${this.formatDateEuropean(change.newEndDate)}`,
+                    subtitle: subtitleParts.join(' &middot; '),
                     notes: change.description,
                 });
             });
@@ -1289,10 +1311,27 @@ export class RoadmapGenerator {
 
         if (changes && changes.length > 0) {
             changes.forEach(change => {
-                const isEarly = this.isEarlyDelivery(change.prevEndDate, change.newEndDate);
-                const prevDateEU = this.formatDateEuropean(change.prevEndDate);
-                const newDateEU = this.formatDateEuropean(change.newEndDate);
-                const dateDisplay = isEarly ? `${newDateEU} <- ${prevDateEU}` : `${prevDateEU} -> ${newDateEU}`;
+                const startMoved = change.prevStartDate && change.newStartDate
+                    && change.prevStartDate !== change.newStartDate;
+                const endMoved = change.prevEndDate && change.newEndDate
+                    && change.prevEndDate !== change.newEndDate;
+
+                const movement = (prev, next) => {
+                    const early = this.isEarlyDelivery(prev, next);
+                    const prevEU = this.formatDateEuropean(prev);
+                    const nextEU = this.formatDateEuropean(next);
+                    return early ? `${nextEU} <- ${prevEU}` : `${prevEU} -> ${nextEU}`;
+                };
+
+                const isEarly = endMoved
+                    ? this.isEarlyDelivery(change.prevEndDate, change.newEndDate)
+                    : this.isEarlyDelivery(change.prevStartDate, change.newStartDate);
+
+                const displayParts = [];
+                if (startMoved) displayParts.push(`Start ${movement(change.prevStartDate, change.newStartDate)}`);
+                if (endMoved) displayParts.push(`${startMoved ? 'End ' : ''}${movement(change.prevEndDate, change.newEndDate)}`);
+                if (displayParts.length === 0) displayParts.push(movement(change.prevEndDate, change.newEndDate));
+                const dateDisplay = displayParts.join(' · ');
                 const formattedDescription = this.formatText(change.description);
                 allItems.push({
                     date: change.date,

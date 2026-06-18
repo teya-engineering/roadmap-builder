@@ -1024,6 +1024,21 @@ export function init(_root) {
                     changeDiv.style.borderRadius = '4px';
                     changeDiv.style.backgroundColor = '#f9f9f9';
                     
+                    const startMoved = change.prevStartDate && change.newStartDate
+                        && change.prevStartDate !== change.newStartDate;
+                    const startRows = startMoved ? `
+                        <div class="inline-group">
+                            <div class="form-group">
+                                <label>Previous Start Date:</label>
+                                <div class="readonly-field">${change.prevStartDate}</div>
+                            </div>
+                            <div class="form-group">
+                                <label>New Start Date:</label>
+                                <div class="readonly-field">${change.newStartDate}</div>
+                            </div>
+                        </div>
+                    ` : '';
+
                     changeDiv.innerHTML = `
                         <h5 style="margin: 0 0 10px 0;">Timeline #${index + 1}</h5>
                         <div class="inline-group">
@@ -1040,6 +1055,7 @@ export function init(_root) {
                                 <div class="readonly-field">${change.newEndDate || 'Not specified'}</div>
                             </div>
                         </div>
+                        ${startRows}
                         <div class="form-group">
                             <label>Change Notes:</label>
                             <div class="readonly-field">${change.description || change.changeNotes || 'None'}</div>

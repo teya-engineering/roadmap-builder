@@ -1097,7 +1097,7 @@ export function init(_root) {
             });
             
             // Timeline change fields
-            document.querySelectorAll('[id^="change-date-"], [id^="change-desc-"], [id^="change-prev-"], [id^="change-new-"]').forEach(element => {
+            document.querySelectorAll('[id^="change-date-"], [id^="change-desc-"], [id^="change-prevstart-"], [id^="change-newstart-"], [id^="change-prev-"], [id^="change-new-"]').forEach(element => {
                 element.addEventListener('input', debouncedGeneratePreview);
                 element.addEventListener('change', debouncedGeneratePreview);
             });
@@ -2468,13 +2468,17 @@ export function init(_root) {
                         // Use the full ID minus the "change-" prefix: "1-4-change-1750523789967"
                         const changeId = changeEl.id.replace('change-', ''); // Get: "1-4-change-1750523789967"
                         const date = document.getElementById(`change-date-${changeId}`)?.value;
+                        const prevStart = document.getElementById(`change-prevstart-${changeId}`)?.value;
+                        const newStart = document.getElementById(`change-newstart-${changeId}`)?.value;
                         const prevEnd = document.getElementById(`change-prev-${changeId}`)?.value;
                         const newEnd = document.getElementById(`change-new-${changeId}`)?.value;
                         const desc = document.getElementById(`change-desc-${changeId}`)?.value;
-                        
+
                         if (date && prevEnd && newEnd) {
                             story.roadmapChanges.changes.push({
                                 date: ensureDateHasYear(date),
+                                prevStartDate: prevStart ? ensureDateHasYear(prevStart) : '',
+                                newStartDate: newStart ? ensureDateHasYear(newStart) : '',
                                 prevEndDate: ensureDateHasYear(prevEnd),
                                 newEndDate: ensureDateHasYear(newEnd),
                                 description: desc || 'Story timeline change'
@@ -2482,24 +2486,41 @@ export function init(_root) {
                         }
                     });
 
-                    // Update story's actual end date to reflect the most recent timeline change
+                    // Update story's actual start/end dates to reflect the most recent timeline change
                     if (story.roadmapChanges.changes.length > 0) {
                         // Sort timeline changes by date (most recent first)
                         const sortedChanges = [...story.roadmapChanges.changes].sort((a, b) => {
                             return DateUtility.compareDates(b.date, a.date); // Reverse order for most recent first
                         });
-                        
-                        // Get the newEndDate from the most recent change
+
                         const mostRecentChange = sortedChanges[0];
+
+                        // Update start date if the most recent change records one
+                        if (mostRecentChange && mostRecentChange.newStartDate) {
+                            const newStartDate = mostRecentChange.newStartDate;
+                            if (newStartDate.includes('-') || newStartDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                                story.startDate = newStartDate;
+                                delete story.startMonth;
+                                const startEl = document.getElementById(`story-start-${storyId}`);
+                                if (startEl) startEl.value = newStartDate;
+                            } else {
+                                story.startMonth = newStartDate.toUpperCase();
+                                delete story.startDate;
+                                const startEl = document.getElementById(`story-start-${storyId}`);
+                                if (startEl) startEl.value = newStartDate.toUpperCase();
+                            }
+                        }
+
+                        // Get the newEndDate from the most recent change
                         if (mostRecentChange && mostRecentChange.newEndDate) {
                             const newEndDate = mostRecentChange.newEndDate;
-                            
+
                             // Determine if this is a date or month format and update accordingly
                             if (newEndDate.includes('-') || newEndDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
                                 // It's a date format - update endDate and clear endMonth (already has year from ensureDateHasYear above)
                                 story.endDate = newEndDate;
                                 delete story.endMonth;
-                                
+
                                 // Update the form field so user sees the change
                                 const endEl = document.getElementById(`story-end-${storyId}`);
                                 if (endEl) endEl.value = newEndDate;
@@ -2507,7 +2528,7 @@ export function init(_root) {
                                 // It's a month format - update endMonth and clear endDate
                                 story.endMonth = newEndDate.toUpperCase();
                                 delete story.endDate;
-                                
+
                                 // Update the form field so user sees the change
                                 const endEl = document.getElementById(`story-end-${storyId}`);
                                 if (endEl) endEl.value = newEndDate.toUpperCase();
@@ -3021,6 +3042,8 @@ export function init(_root) {
                             if (story.roadmapChanges && story.roadmapChanges.changes) {
                                 story.roadmapChanges.changes.forEach(change => {
                                     if (change.date) change.date = fixDate(change.date);
+                                    if (change.prevStartDate) change.prevStartDate = fixDate(change.prevStartDate);
+                                    if (change.newStartDate) change.newStartDate = fixDate(change.newStartDate);
                                     if (change.prevEndDate) change.prevEndDate = fixDate(change.prevEndDate);
                                     if (change.newEndDate) change.newEndDate = fixDate(change.newEndDate);
                                 });
@@ -3662,11 +3685,15 @@ export function init(_root) {
                                         const fullChangeId = latestContainer.id.replace('change-', '');
                                         
                                         const dateEl = document.getElementById(`change-date-${fullChangeId}`);
+                                        const prevStartEl = document.getElementById(`change-prevstart-${fullChangeId}`);
+                                        const newStartEl = document.getElementById(`change-newstart-${fullChangeId}`);
                                         const prevEl = document.getElementById(`change-prev-${fullChangeId}`);
                                         const newEl = document.getElementById(`change-new-${fullChangeId}`);
                                         const descEl = document.getElementById(`change-desc-${fullChangeId}`);
-                                        
+
                                         if (dateEl) dateEl.value = change.date || '';
+                                        if (prevStartEl) prevStartEl.value = change.prevStartDate || '';
+                                        if (newStartEl) newStartEl.value = change.newStartDate || '';
                                         if (prevEl) prevEl.value = change.prevEndDate || '';
                                         if (newEl) newEl.value = change.newEndDate || '';
                                         if (descEl) descEl.value = change.description || '';
@@ -4219,6 +4246,8 @@ export function init(_root) {
                     const changeId = addEditChange();
                     document.getElementById(`${changeId}-date`).value = change.date || '';
                     document.getElementById(`${changeId}-desc`).value = change.description || '';
+                    document.getElementById(`${changeId}-prevstart`).value = change.prevStartDate || '';
+                    document.getElementById(`${changeId}-newstart`).value = change.newStartDate || '';
                     document.getElementById(`${changeId}-prev`).value = change.prevEndDate || '';
                     document.getElementById(`${changeId}-new`).value = change.newEndDate || '';
                 });
@@ -4816,13 +4845,17 @@ export function init(_root) {
                     changeContainers.forEach(changeEl => {
                         const changeId = changeEl.id.replace('change-', '');
                         const dateEl = document.getElementById(`change-date-${changeId}`);
+                        const prevStartEl = document.getElementById(`change-prevstart-${changeId}`);
+                        const newStartEl = document.getElementById(`change-newstart-${changeId}`);
                         const prevEl = document.getElementById(`change-prev-${changeId}`);
                         const newEl = document.getElementById(`change-new-${changeId}`);
                         const descEl = document.getElementById(`change-desc-${changeId}`);
-                        
+
                         if (dateEl && prevEl && newEl) {
                             timelineChanges.push({
                                 date: dateEl.value || '',
+                                prevStartDate: prevStartEl ? prevStartEl.value || '' : '',
+                                newStartDate: newStartEl ? newStartEl.value || '' : '',
                                 prevEndDate: prevEl.value || '',
                                 newEndDate: newEl.value || '',
                                 description: descEl ? descEl.value || '' : ''
@@ -5231,13 +5264,17 @@ export function init(_root) {
                             const editChangeId = editChangeEl.id;
                             const dateValue = document.getElementById(`${editChangeId}-date`).value;
                             const descValue = document.getElementById(`${editChangeId}-desc`).value;
+                            const prevStartValue = document.getElementById(`${editChangeId}-prevstart`).value;
+                            const newStartValue = document.getElementById(`${editChangeId}-newstart`).value;
                             const prevValue = document.getElementById(`${editChangeId}-prev`).value;
                             const newValue = document.getElementById(`${editChangeId}-new`).value;
-                            
-                            if (dateValue || descValue || prevValue || newValue) {
+
+                            if (dateValue || descValue || prevStartValue || newStartValue || prevValue || newValue) {
                                 modalTimelineChanges.push({
                                     date: dateValue,
                                     description: descValue,
+                                    prevStartDate: prevStartValue,
+                                    newStartDate: newStartValue,
                                     prevEndDate: prevValue,
                                     newEndDate: newValue
                                 });
@@ -5258,29 +5295,48 @@ export function init(_root) {
                                 const fullChangeId = latestContainer.id.replace('change-', '');
                                 const dateEl = document.getElementById(`change-date-${fullChangeId}`);
                                 const descEl = document.getElementById(`change-desc-${fullChangeId}`);
+                                const prevStartEl = document.getElementById(`change-prevstart-${fullChangeId}`);
+                                const newStartEl = document.getElementById(`change-newstart-${fullChangeId}`);
                                 const prevEl = document.getElementById(`change-prev-${fullChangeId}`);
                                 const newEl = document.getElementById(`change-new-${fullChangeId}`);
-                                
+
                                 if (dateEl) dateEl.value = change.date;
                                 if (descEl) descEl.value = change.description;
+                                if (prevStartEl) prevStartEl.value = change.prevStartDate || '';
+                                if (newStartEl) newStartEl.value = change.newStartDate || '';
                                 if (prevEl) prevEl.value = change.prevEndDate;
                                 if (newEl) newEl.value = change.newEndDate;
                             }
                         });
                         
-                        // Update story's actual end date to reflect the most recent timeline change from modal
+                        // Update story's actual start/end dates to reflect the most recent timeline change from modal
                         if (modalTimelineChanges.length > 0) {
-                            // Get the newEndDate from the most recent change (modalTimelineChanges is already sorted)
+                            // modalTimelineChanges is already sorted, so the last entry is the most recent
                             const mostRecentChange = modalTimelineChanges[modalTimelineChanges.length - 1];
+
+                            if (mostRecentChange && mostRecentChange.newStartDate) {
+                                const newStartDate = mostRecentChange.newStartDate;
+
+                                const startEl = document.getElementById(`story-start-${storyId}`);
+                                if (startEl) {
+                                    startEl.value = newStartDate;
+                                }
+
+                                const editStartEl = document.getElementById('editStart');
+                                if (editStartEl) {
+                                    editStartEl.value = newStartDate;
+                                }
+                            }
+
                             if (mostRecentChange && mostRecentChange.newEndDate) {
                                 const newEndDate = mostRecentChange.newEndDate;
-                                
+
                                 // Update the main form's end date field
                                 const endEl = document.getElementById(`story-end-${storyId}`);
                                 if (endEl) {
                                     endEl.value = newEndDate;
                                 }
-                                
+
                                 // Also update the edit modal's end date field for consistency
                                 const editEndEl = document.getElementById('editEnd');
                                 if (editEndEl) {

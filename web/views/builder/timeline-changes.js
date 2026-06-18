@@ -61,6 +61,8 @@ export function createTimelineChangeHandlers({
 
         const currentEndDateEl = document.getElementById(`story-end-${storyId}`);
         const currentEndDate = currentEndDateEl ? currentEndDateEl.value : '';
+        const currentStartDateEl = document.getElementById(`story-start-${storyId}`);
+        const currentStartDate = currentStartDateEl ? currentStartDateEl.value : '';
 
         const entryNumber = existingChanges(container, storyId).length + 1;
         changeCounter++;
@@ -84,6 +86,16 @@ export function createTimelineChangeHandlers({
                 </div>
                 <div class="inline-group">
                     <div class="form-group">
+                        <label>Previous Start Date:</label>
+                        <input type="text" id="change-prevstart-${changeId}" placeholder="01/03 or 01-03" style="margin-bottom: 1px;" value="${currentStartDate}">
+                    </div>
+                    <div class="form-group">
+                        <label>New Start Date:</label>
+                        <input type="text" id="change-newstart-${changeId}" placeholder="15/03 or 15-03" style="margin-bottom: 1px;" value="${currentStartDate}">
+                    </div>
+                </div>
+                <div class="inline-group">
+                    <div class="form-group">
                         <label>Previous End Date:</label>
                         <input type="text" id="change-prev-${changeId}" placeholder="31/03 or 31-03" style="margin-bottom: 1px;" value="${currentEndDate}">
                     </div>
@@ -99,6 +111,8 @@ export function createTimelineChangeHandlers({
         const fieldIds = [
             `change-date-${changeId}`,
             `change-desc-${changeId}`,
+            `change-prevstart-${changeId}`,
+            `change-newstart-${changeId}`,
             `change-prev-${changeId}`,
             `change-new-${changeId}`,
         ];
@@ -106,7 +120,7 @@ export function createTimelineChangeHandlers({
             const element = document.getElementById(fieldId);
             if (!element) continue;
             addListenersToElement(element);
-            if (fieldId.includes('-date-') || fieldId.includes('-prev-') || fieldId.includes('-new-')) {
+            if (fieldId.includes('-date-') || fieldId.includes('-prevstart-') || fieldId.includes('-newstart-') || fieldId.includes('-prev-') || fieldId.includes('-new-')) {
                 // Date pickers on timeline rows accept full dates only,
                 // not month-level entries (allowMonthOnly = false).
                 initializeDatePicker(element, false);
@@ -239,10 +253,14 @@ export function createTimelineChangeHandlers({
 
                         const fullChangeId = latest.id.replace('change-', '');
                         const dateEl = document.getElementById(`change-date-${fullChangeId}`);
+                        const prevStartEl = document.getElementById(`change-prevstart-${fullChangeId}`);
+                        const newStartEl = document.getElementById(`change-newstart-${fullChangeId}`);
                         const prevEl = document.getElementById(`change-prev-${fullChangeId}`);
                         const newEl = document.getElementById(`change-new-${fullChangeId}`);
                         const descEl = document.getElementById(`change-desc-${fullChangeId}`);
                         if (dateEl) dateEl.value = change.date;
+                        if (prevStartEl) prevStartEl.value = change.prevStartDate || '';
+                        if (newStartEl) newStartEl.value = change.newStartDate || '';
                         if (prevEl) prevEl.value = change.prevEndDate;
                         if (newEl) newEl.value = change.newEndDate;
                         if (descEl) descEl.value = change.description;
@@ -276,7 +294,7 @@ export function createTimelineChangeHandlers({
 // fill in saved values immediately after creation.
 // ===========================================================================
 
-const EDIT_DATE_FIELD_SUFFIXES = ['-date', '-prev', '-new'];
+const EDIT_DATE_FIELD_SUFFIXES = ['-date', '-prevstart', '-newstart', '-prev', '-new'];
 
 /**
  * Sort an array of timeline change objects by their date field. Empty dates
@@ -348,6 +366,8 @@ export function createEditTimelineChangeHandlers({ reinitializeDatePicker, getTo
 
         const currentEndDateEl = document.getElementById('editEnd');
         const currentEndDate = currentEndDateEl ? currentEndDateEl.value : '';
+        const currentStartDateEl = document.getElementById('editStart');
+        const currentStartDate = currentStartDateEl ? currentStartDateEl.value : '';
 
         editChangeCounter++;
         const changeId = `edit-change-${editChangeCounter}`;
@@ -367,6 +387,16 @@ export function createEditTimelineChangeHandlers({ reinitializeDatePicker, getTo
                     <div class="form-group">
                         <label>Description:</label>
                         <input type="text" id="${changeId}-desc" placeholder="Reason for change">
+                    </div>
+                </div>
+                <div class="inline-group">
+                    <div class="form-group">
+                        <label>Previous Start Date:</label>
+                        <input type="text" id="${changeId}-prevstart" placeholder="01/03" style="margin-bottom: 1px;" value="${currentStartDate}">
+                    </div>
+                    <div class="form-group">
+                        <label>New Start Date:</label>
+                        <input type="text" id="${changeId}-newstart" placeholder="15/03" style="margin-bottom: 1px;" value="${currentStartDate}">
                     </div>
                 </div>
                 <div class="inline-group">
