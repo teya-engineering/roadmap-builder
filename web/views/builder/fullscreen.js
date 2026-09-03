@@ -1,11 +1,147 @@
 import { RoadmapGenerator } from '../../roadmap-generator.js';
 
-// Fullscreen helpers for the preview pane.
-//
-// showFullscreen / hideFullscreen drive the in-page #fullscreen-overlay
-// (an iframe rendered without edit affordances). toggleFullscreen drives
-// the browser's native fullscreen API on the .preview-panel container.
-// The two paths are independent - users may use either.
+// Chrome sends browser zoom input to the page while an element is fullscreen,
+// so the preview owns zoom until it leaves fullscreen.
+const ZOOM_LEVELS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
+const DEFAULT_ZOOM_INDEX = ZOOM_LEVELS.indexOf(1);
+const WHEEL_ZOOM_THRESHOLD = 50;
+
+let zoomIndex = DEFAULT_ZOOM_INDEX;
+let wheelDelta = 0;
+let fullscreenZoomInitialized = false;
+
+/** @returns {HTMLElement | null} */
+function getPreviewPanel() {
+    return /** @type {HTMLElement | null} */ (document.querySelector('.preview-panel'));
+}
+
+function getFullscreenElement() {
+    const legacyDocument = /** @type {Document & {
+     *   webkitFullscreenElement?: Element,
+     *   mozFullScreenElement?: Element,
+     *   msFullscreenElement?: Element
+     * }} */ (document);
+    return (
+        legacyDocument.fullscreenElement ||
+        legacyDocument.webkitFullscreenElement ||
+        legacyDocument.mozFullScreenElement ||
+        legacyDocument.msFullscreenElement
+    );
+}
+
+function isPreviewFullscreen(panel = getPreviewPanel()) {
+    return Boolean(panel && getFullscreenElement() === panel);
+}
+
+function applyZoom() {
+    const panel = getPreviewPanel();
+    if (!panel) return;
+
+    const zoom = ZOOM_LEVELS[zoomIndex];
+    panel.style.setProperty('--fullscreen-roadmap-zoom', String(zoom));
+
+    const resetButton = document.getElementById('fullscreen-zoom-reset');
+    if (resetButton) resetButton.textContent = `${Math.round(zoom * 100)}%`;
+
+    const zoomOutButton = /** @type {HTMLButtonElement | null} */ (
+        document.getElementById('fullscreen-zoom-out')
+    );
+    if (zoomOutButton) zoomOutButton.disabled = zoomIndex === 0;
+
+    const zoomInButton = /** @type {HTMLButtonElement | null} */ (
+        document.getElementById('fullscreen-zoom-in')
+    );
+    if (zoomInButton) zoomInButton.disabled = zoomIndex === ZOOM_LEVELS.length - 1;
+}
+
+export function zoomIn() {
+    zoomIndex = Math.min(zoomIndex + 1, ZOOM_LEVELS.length - 1);
+    applyZoom();
+}
+
+export function zoomOut() {
+    zoomIndex = Math.max(zoomIndex - 1, 0);
+    applyZoom();
+}
+
+export function resetFullscreenZoom() {
+    zoomIndex = DEFAULT_ZOOM_INDEX;
+    wheelDelta = 0;
+    applyZoom();
+}
+
+export function handleFullscreenZoomShortcut(event) {
+    if (!isPreviewFullscreen() || !(event.metaKey || event.ctrlKey) || event.altKey) {
+        return false;
+    }
+
+    if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        zoomIn();
+        return true;
+    }
+
+    if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        zoomOut();
+        return true;
+    }
+
+    if (event.key === '0') {
+        event.preventDefault();
+        resetFullscreenZoom();
+        return true;
+    }
+
+    return false;
+}
+
+export function handleFullscreenZoomWheel(event) {
+    if (!isPreviewFullscreen() || !(event.metaKey || event.ctrlKey) || event.deltaY === 0) {
+        return false;
+    }
+
+    event.preventDefault();
+
+    if (wheelDelta !== 0 && Math.sign(wheelDelta) !== Math.sign(event.deltaY)) {
+        wheelDelta = 0;
+    }
+    wheelDelta += event.deltaY;
+
+    if (Math.abs(wheelDelta) < WHEEL_ZOOM_THRESHOLD) return true;
+
+    if (wheelDelta < 0) zoomIn();
+    else zoomOut();
+    wheelDelta = 0;
+    return true;
+}
+
+function handleFullscreenChange() {
+    const panel = getPreviewPanel();
+    const button = /** @type {HTMLButtonElement | null | undefined} */ (
+        panel?.querySelector('.fullscreen-button')
+    );
+    const fullscreen = isPreviewFullscreen(panel);
+
+    if (button) {
+        const label = fullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
+        button.title = label;
+        button.setAttribute('aria-label', label);
+    }
+
+    if (!fullscreen) resetFullscreenZoom();
+}
+
+export function initFullscreenZoom() {
+    if (fullscreenZoomInitialized) return;
+    fullscreenZoomInitialized = true;
+
+    document.addEventListener('keydown', handleFullscreenZoomShortcut);
+    document.addEventListener('wheel', handleFullscreenZoomWheel, { passive: false });
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    applyZoom();
+}
 
 /**
  * Render the current team data into the fullscreen overlay iframe and show
@@ -39,10 +175,10 @@ export function hideFullscreen() {
  * and Edge. We keep all four to match the original behavior.
  */
 export function toggleFullscreen() {
-    const panel = document.querySelector('.preview-panel');
+    const panel = getPreviewPanel();
     if (!panel) return;
 
-    if (!document.fullscreenElement) {
+    if (!getFullscreenElement()) {
         const enter =
             panel.requestFullscreen ||
             panel.mozRequestFullScreen ||

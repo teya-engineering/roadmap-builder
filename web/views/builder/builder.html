@@ -223,7 +223,12 @@
         </div>
             <!-- Preview Panel -->
             <div class="preview-panel">
-                <button class="fullscreen-button" onclick="event.stopPropagation(); toggleFullscreen()" title="Enter Fullscreen">
+                <div class="fullscreen-zoom-controls" role="group" aria-label="Roadmap zoom">
+                    <button type="button" id="fullscreen-zoom-out" onclick="zoomOut()" title="Zoom out (Cmd/Ctrl -)" aria-label="Zoom out">-</button>
+                    <button type="button" id="fullscreen-zoom-reset" onclick="resetFullscreenZoom()" title="Reset zoom (Cmd/Ctrl 0)" aria-label="Reset zoom">100%</button>
+                    <button type="button" id="fullscreen-zoom-in" onclick="zoomIn()" title="Zoom in (Cmd/Ctrl +)" aria-label="Zoom in">+</button>
+                </div>
+                <button class="fullscreen-button" onclick="event.stopPropagation(); toggleFullscreen()" title="Enter fullscreen" aria-label="Enter fullscreen">
                     <span class="fullscreen-icon">⛶</span>
                 </button>
                 <div id="roadmap-mount" class="roadmap-root"></div>

@@ -53,6 +53,7 @@ export function init(_root) {
         exportJPG, exportPDF,
         toggleCollapse, collapseAllSections,
     });
+    fullscreen.initFullscreenZoom();
 
     // hideFullscreen is also called from the Escape keydown handler in body
     // code, so we destructure it as a local.
@@ -263,7 +264,7 @@ export function init(_root) {
         const mount = document.getElementById('roadmap-mount');
         if (!mount) return;
         const generator = new RoadmapGenerator(teamData.roadmapYear);
-        mount.innerHTML = generator.generateRoadmapBody(teamData, true);
+        mount.innerHTML = `<div class="roadmap-zoom-target">${generator.generateRoadmapBody(teamData, true)}</div>`;
     }
 
     const __viewReady = [];
