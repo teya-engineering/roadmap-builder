@@ -1,3 +1,5 @@
+import { DateUtility } from '../../utilities/date-utility.js';
+
 // Timeline change tracking. Two parallel implementations:
 //   - createTimelineChangeHandlers: story-form rows, with per-story DOM ids
 //     (changes-container-${storyId}, change-${changeId}-* fields).
@@ -274,7 +276,7 @@ export function createTimelineChangeHandlers({
 
             // No story matched any pending change.
             if (pendingOperations === 0) cleanupAndDone();
-        } catch (_) {
+        } catch {
             if (callback) callback();
         }
     }
@@ -308,8 +310,8 @@ export function sortTimelineChangesByDate(timelineChanges) {
         if (!a.date && !b.date) return 0;
         if (!a.date) return 1;
         if (!b.date) return -1;
-        const dateA = window.DateUtility.parseEuropeanDateForTimeline(a.date);
-        const dateB = window.DateUtility.parseEuropeanDateForTimeline(b.date);
+        const dateA = DateUtility.parseEuropeanDateForTimeline(a.date);
+        const dateB = DateUtility.parseEuropeanDateForTimeline(b.date);
         return dateA - dateB;
     });
 }

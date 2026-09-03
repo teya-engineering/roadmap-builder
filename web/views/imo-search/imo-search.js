@@ -1,7 +1,11 @@
-// Auto-extracted from views/imo-search.html during Phase 2 of the v2 migration.
-// Phase 3 will slice this into smaller modules. For now it preserves the
-// original logic intact, including its dependence on window globals set by
-// the utilities (DateUtility, RoadmapGenerator, etc.).
+import { RoadmapGenerator } from '../../roadmap-generator.js';
+import { IMOUtility } from '../../utilities/imo-utility.js';
+import { IMOViewGenerator } from '../../utilities/imo-view-generator.js';
+import { renderCountryFlagsHTML } from '../../utilities/countries.js';
+import { directoryStore } from '../../app/directory-store.js';
+
+// Inline event attributes in the search view resolve their handlers against
+// window, so init exposes those handlers after the view mounts.
 
 /**
  * Mount this view. Called by the SPA router on every navigation here.
@@ -10,19 +14,9 @@
  *                              legacy code reaches DOM via document.* directly)
  */
 export function init(_root) {
-    // Phase 1 regressed the legacy body's reliance on `<script>`-tag globals.
-    // The utility classes/functions used to live in the global scope; their
-    // files are now ES modules. Each one is still aliased to window by a
-    // Phase 1 shim, so we point the legacy names at window.* here and the
-    // call sites below keep working unchanged. Phase 3 follow-up: rewrite
-    // the call sites with direct imports and delete this block.
-    const IMOUtility = window.IMOUtility;
-    const IMOViewGenerator = window.IMOViewGenerator;
-    const RoadmapGenerator = window.RoadmapGenerator;
-    const renderCountryFlagsHTML = window.renderCountryFlagsHTML;
-
     const __viewReady = [];
     const __origAdd = document.addEventListener.bind(document);
+    let cleanupDirectorySubscription = () => {};
     document.addEventListener = function (type, listener, opts) {
         if (type === 'DOMContentLoaded') { __viewReady.push(listener); return; }
         return __origAdd(type, listener, opts);
@@ -33,7 +27,6 @@ export function init(_root) {
         // Global variables
         let selectedDirectory = null;
         let currentResults = [];
-        let lastSearchStories = [];
         let lastRoadmapFiles = [];
         
         // Get roadmap year from URL parameter (passed from Roadmap Builder)
@@ -199,9 +192,6 @@ export function init(_root) {
         }
         
         function renderSearchStatsHtml(s) {
-            const pct = (num, den) => (den ? ((num / den) * 100).toFixed(1) : 0);
-            const activeStories = s.totalStories - s.cancelled;
-            
             return (
                 '<div style="padding: 20px;">' +
                     '<h3 style="margin: 0 0 20px 0; color: #333; text-align: center;">📊 Search Results Overview</h3>' +
@@ -303,7 +293,6 @@ export function init(_root) {
             }
 
             const stats = window.__searchStats || { delayBreakdown: {}, delayStories: {}, totalStories: 0, cancelled: 0 };
-            const activeStories = (stats.totalStories || 0) - (stats.cancelled || 0);
 
             // Create breakdown container
             const breakdown = document.createElement('div');
@@ -372,7 +361,7 @@ export function init(_root) {
         }
         
         function renderSearchAcceleratedBreakdown(stats, totalStories) {
-            const acceleratedStories = stats.acceleratedStories || { done: [], notDone: [] };
+            let acceleratedStories = stats.acceleratedStories || { done: [], notDone: [] };
             
             // Handle backward compatibility: if acceleratedStories is an array (old format), convert it
             if (Array.isArray(acceleratedStories)) {
@@ -426,8 +415,6 @@ export function init(_root) {
                 const value = counts[delayCount] || 0;
                 const pct = totalStories ? ((value / totalStories) * 100).toFixed(1) : 0;
                 const delayGroup = (stats.delayStories && stats.delayStories[delayCount]) || { done: [], notDone: [] };
-                const doneCount = delayGroup.done ? delayGroup.done.length : 0;
-                const notDoneCount = delayGroup.notDone ? delayGroup.notDone.length : 0;
                 const rowId = `search-delay-row-${delayCount}`;
                 const detailsId = `search-delay-details-${delayCount}`;
                 
@@ -1127,7 +1114,7 @@ export function init(_root) {
             // Find all story items in the rendered roadmap
             const storyItems = document.querySelectorAll('.story-item, .ktlo-story');
 
-            storyItems.forEach((storyElement, index) => {
+            storyItems.forEach((storyElement) => {
                 // Extract story identification from data attributes
                 const epicName = storyElement.dataset.epicName;
                 const storyTitle = storyElement.dataset.storyTitle;
@@ -1192,7 +1179,7 @@ export function init(_root) {
         // Directory selection lives in the top nav (shared with Builder).
         // Kept as a shim so any legacy callers still work.
         async function selectDirectory() {
-            if (window.AppDir) await window.AppDir.select();
+            await directoryStore.select();
         }
 
         async function warmDirectoryCache({ refresh = false } = {}) {
@@ -1272,15 +1259,13 @@ export function init(_root) {
                 }
 
                 // Extract and search stories
-                const allStories = IMOUtility.aggregateStoriesAcrossTeams(roadmapFiles);
+                const allStories = IMOUtility.aggregateStoriesAcrossTeams(roadmapFiles, builderRoadmapYear);
 
                 // Narrow by IMO if provided, otherwise start with all stories
                 let matchingStories = searchQuery
                     ? IMOUtility.filterStoriesByIMO(allStories, searchQuery)
                     : allStories.slice();
 
-                // Store base search results before filtering for potential re-filtering
-                lastSearchStories = matchingStories.slice();
                 lastRoadmapFiles = roadmapFiles;
 
                 matchingStories = applyAdditionalFilters(matchingStories, roadmapFiles, { skipIMO: true });
@@ -1419,8 +1404,8 @@ export function init(_root) {
                     }
                     
                     // Fallback: use primary date (start date or end date)
-                    let aPrimaryDate = aStartDate || aEndDate;
-                    let bPrimaryDate = bStartDate || bEndDate;
+                    const aPrimaryDate = aStartDate || aEndDate;
+                    const bPrimaryDate = bStartDate || bEndDate;
                     
                     // Handle null dates (put them at the end)
                     if (!aPrimaryDate && !bPrimaryDate) return 0;
@@ -1533,7 +1518,7 @@ export function init(_root) {
                 if (btn) {
                     btn.addEventListener('click', openSearchStatsModal);
                 }
-            } catch (e) {
+            } catch {
                 // Silent fail - stats button is optional
             }
         }
@@ -1756,7 +1741,6 @@ export function init(_root) {
          */
         function clearAllResults() {
             currentResults = [];
-            lastSearchStories = [];
             lastRoadmapFiles = [];
             showBlankState();
             
@@ -1863,7 +1847,7 @@ export function init(_root) {
                     result = IMOUtility.filterStoriesByIMO(result, imoQuery);
                 }
 
-                // Priority filter — only include stories that also have an IMO,
+                // Priority filter - only include stories that also have an IMO,
                 // mirroring the roadmap which hides the priority tag when IMO is empty.
                 const priorityQuery = document.getElementById('prioritySelect')?.value;
                 if (!opts.skipPriority && priorityQuery) {
@@ -1935,9 +1919,7 @@ export function init(_root) {
                         });
                     }
                 }
-            } catch (e) {
-
-            }
+            } catch {}
 
             // Product Roadmap filter
             const productRoadmapOnly = document.getElementById('filterProductRoadmapOnly')?.checked;
@@ -1945,7 +1927,7 @@ export function init(_root) {
                 result = result.filter(story => story.includeInProductRoadmap === true);
             }
 
-            // Advanced expression filter — runs last so it applies on top of all other filters
+            // Advanced expression filter - runs last so it applies on top of all other filters
             if (!opts.skipStatus) {
                 const advancedExpression = document.getElementById('advancedFilterExpression')?.value.trim();
                 if (advancedExpression) {
@@ -2337,8 +2319,7 @@ export function init(_root) {
                 // full dataset, not just the previous search's narrow result set.
                 // applyAdditionalFilters still respects any search inputs that are
                 // currently filled (IMO, priority, title, dates, etc.).
-                const allStories = IMOUtility.aggregateStoriesAcrossTeams(lastRoadmapFiles);
-                lastSearchStories = allStories.slice();
+                const allStories = IMOUtility.aggregateStoriesAcrossTeams(lastRoadmapFiles, builderRoadmapYear);
                 const filteredStories = applyAdditionalFilters(allStories, lastRoadmapFiles, {});
 
                 // Get the current search parameters to determine which range to use
@@ -2393,7 +2374,7 @@ export function init(_root) {
             updateSearchButtonStates();
         }
         
-        function handleDateRangeChange(event) {
+        function handleDateRangeChange() {
             updateSearchButtonStates();
         }
 
@@ -2500,8 +2481,7 @@ export function init(_root) {
                     return;
                 }
 
-                const allStories = IMOUtility.aggregateStoriesAcrossTeams(roadmapFiles);
-                lastSearchStories = allStories.slice();
+                const allStories = IMOUtility.aggregateStoriesAcrossTeams(roadmapFiles, builderRoadmapYear);
                 lastRoadmapFiles = roadmapFiles;
 
                 const matchingStories = applyAdditionalFilters(allStories, roadmapFiles, {});
@@ -2595,11 +2575,9 @@ export function init(_root) {
                     return;
                 }
                 
-                const allStories = IMOUtility.aggregateStoriesAcrossTeams(roadmapFiles);
+                const allStories = IMOUtility.aggregateStoriesAcrossTeams(roadmapFiles, builderRoadmapYear);
                 let matchingStories = IMOUtility.searchStoriesByDateRange(allStories, startDate, endDate, searchMode);
                 
-                // Store base search results before filtering for potential re-filtering
-                lastSearchStories = matchingStories.slice();
                 lastRoadmapFiles = roadmapFiles;
                 
                 matchingStories = applyAdditionalFilters(matchingStories, roadmapFiles, { skipDate: true });
@@ -2659,12 +2637,10 @@ export function init(_root) {
                 }
                 
                 // Extract and search stories by title
-                const allStories = IMOUtility.aggregateStoriesAcrossTeams(roadmapFiles);
+                const allStories = IMOUtility.aggregateStoriesAcrossTeams(roadmapFiles, builderRoadmapYear);
                 
                 let matchingStories = IMOUtility.searchStoriesByTitle(allStories, searchQuery);
                 
-                // Store base search results before filtering for potential re-filtering
-                lastSearchStories = matchingStories.slice();
                 lastRoadmapFiles = roadmapFiles;
                 
                 matchingStories = applyAdditionalFilters(matchingStories, roadmapFiles, { skipTitle: true });
@@ -2719,10 +2695,8 @@ export function init(_root) {
                 }
 
                 // Get all stories from the matching roadmaps
-                const allStories = IMOUtility.aggregateStoriesAcrossTeams(matchingRoadmaps);
+                const allStories = IMOUtility.aggregateStoriesAcrossTeams(matchingRoadmaps, builderRoadmapYear);
                 
-                // Store base search results before filtering for potential re-filtering
-                lastSearchStories = allStories.slice();
                 lastRoadmapFiles = roadmapFiles;
                 
                 // Apply additional filters if other search fields are filled
@@ -2801,8 +2775,6 @@ export function init(_root) {
                     return;
                 }
 
-                // Store base search results
-                lastSearchStories = matchingStories.slice();
                 lastRoadmapFiles = roadmapFiles;
 
                 // Apply additional filters if other search fields are filled
@@ -2947,8 +2919,6 @@ export function init(_root) {
                     return;
                 }
 
-                // Store base search results
-                lastSearchStories = matchingStories.slice();
                 lastRoadmapFiles = roadmapFiles;
 
                 // Apply additional filters if other search fields are filled
@@ -2998,12 +2968,6 @@ export function init(_root) {
                 }
             }
 
-            // Check if modal exists and is properly structured
-            const modal = document.getElementById('storyDetailsModal');
-            if (!modal) {
-
-            }
-
             // Add input listeners for real-time button state updates
             document.getElementById('searchInput').addEventListener('input', updateSearchButtonStates);
             document.getElementById('titleSearchInput').addEventListener('input', updateSearchButtonStates);
@@ -3036,15 +3000,14 @@ export function init(_root) {
             updateSearchButtonStates();
 
             // Subscribe to the shared directory store. Picker/permission flow
-            // is driven by the top nav — we just react to the current handle.
+            // is driven by the top nav - we just react to the current handle.
             //
             // The router never unsubscribes us when the user navigates away,
             // so this callback can fire while imo-search's DOM is unmounted
             // (e.g., user is on /builder and picks a folder via the nav).
             // The presence of the directoryStatus element is our liveness
             // signal: if it's gone, our view is unmounted and we bail.
-            if (window.AppDir) {
-                window.AppDir.subscribe(async (snap) => {
+            cleanupDirectorySubscription = directoryStore.subscribe(async (snap) => {
                     const dirStatus = document.getElementById('directoryStatus');
                     if (!dirStatus) return; // imo-search view is not mounted; ignore.
 
@@ -3079,15 +3042,12 @@ export function init(_root) {
                         await warmDirectoryCache({ refresh: true });
                         updateSearchButtonStates();
                     }
-                });
-            }
+            });
         });
     
         // === END legacy script body ===
 
-        // Expose function declarations to window so inline onclick="foo()"
-        // handlers in the view markup keep resolving. Phase 3 will migrate
-        // these to delegated addEventListener wiring and remove these.
+        // Inline event attributes resolve their handlers against window.
         if (typeof openSearchStatsModal === 'function') window.openSearchStatsModal = openSearchStatsModal;
 if (typeof closeSearchStatsModal === 'function') window.closeSearchStatsModal = closeSearchStatsModal;
 if (typeof computeSearchStats === 'function') window.computeSearchStats = computeSearchStats;
@@ -3162,4 +3122,5 @@ if (typeof performCountryFlagSearch === 'function') window.performCountryFlagSea
     for (const fn of __viewReady) {
         try { fn.call(document, new Event('DOMContentLoaded')); } catch (e) { console.error(e); }
     }
+    return cleanupDirectorySubscription;
 }

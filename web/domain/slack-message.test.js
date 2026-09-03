@@ -24,7 +24,7 @@ test('date move renders short dates with an arrow + bold header + footer', () =>
         authors: ['John Citizen', 'Jane Doe'],
         savedAt: SAVED,
     });
-    assert.match(msg, /^\*Roadmap Update — Product Team\*/);
+    assert.match(msg, /^\*Roadmap Update - Product Team\*/);
     assert.match(msg, /:calendar: {2}Important Project Name/);
     assert.match(msg, /End date moved {2}15 May {2}→ {2}30 May/);
     assert.match(

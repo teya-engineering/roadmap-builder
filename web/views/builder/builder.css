@@ -13,7 +13,7 @@
            Fixed-column grid keeps items in place across resize; Global is on
            its own row with a divider to signal the "applies to all" meaning.
            Fieldset has an implicit `min-inline-size: min-content` in Chrome/Safari
-           that makes it grow past the parent and overflow the modal — force it
+           that makes it grow past the parent and overflow the modal - force it
            to honour the parent width. */
         .country-flags-fieldset {
             border: 0;
@@ -92,7 +92,7 @@
         }
 
         /* Undo the global full-width input style for the checkbox inside the
-           flag option — we want a native-sized checkbox here. */
+           flag option - we want a native-sized checkbox here. */
         .country-flag-option > input[type="checkbox"] {
             width: auto;
             height: auto;

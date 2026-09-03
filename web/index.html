@@ -31,23 +31,12 @@
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/roadmap-styles.css">
 
-    <!-- Shared utilities, loaded as ES modules. Each module sets the legacy
-         window.* alias for inline view scripts; Phase 2 will switch those
-         scripts to real imports and we'll drop the alias. -->
-    <script type="module" src="/utilities/date-utility.js"></script>
-    <script type="module" src="/utilities/ui-utility.js"></script>
-    <script type="module" src="/utilities/config-utility.js"></script>
-    <script type="module" src="/utilities/imo-utility.js"></script>
-    <script type="module" src="/utilities/imo-view-generator.js"></script>
-    <script type="module" src="/utilities/countries.js"></script>
-    <script type="module" src="/roadmap-generator.js"></script>
-
     <!-- Export libs used by the builder -->
     <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
     <style>
-        /* SPA shell nav — fully self-contained. Hard-coded colors + !important
+        /* SPA shell nav - fully self-contained. Hard-coded colors + !important
            so view-level <style> blocks can't shift its appearance on navigation.
            Fixed positioning keeps it locked in place; main content is offset
            to match. Two-row layout: brand on top, tabs + folder below. */
@@ -266,11 +255,7 @@
     <nav class="app-nav" id="appNav" aria-label="Primary"></nav>
     <main class="app-main" id="app"></main>
 
-    <script src="/app/directory-store.js"></script>
-    <script src="/app/nav.js"></script>
-    <!-- router.js runs as a module so it executes AFTER the utility modules
-         loaded in <head>. View inline scripts depend on window.DateUtility
-         et al, which utilities set as a Phase 1 side effect. -->
+    <script type="module" src="/app/nav.js"></script>
     <script type="module" src="/app/router.js"></script>
 </body>
 </html>

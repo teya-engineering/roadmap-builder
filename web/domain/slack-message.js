@@ -75,7 +75,7 @@ function detailLine(change) {
 export function formatSlackMessage({ teamName, changes, authors = [], savedAt } = {}) {
     if (!Array.isArray(changes) || changes.length === 0) return '';
 
-    const lines = [`*Roadmap Update — ${teamName || 'Untitled'}*`];
+    const lines = [`*Roadmap Update - ${teamName || 'Untitled'}*`];
 
     for (const change of changes) {
         const emoji = EMOJI[change.type] || ':information_source:';

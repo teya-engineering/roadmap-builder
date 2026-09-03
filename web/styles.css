@@ -1,5 +1,5 @@
 /* =========================================================================
-   Roadmap Builder — Modernized UI
+   Roadmap Builder - Modernized UI
    Design tokens + component styles. All existing class selectors preserved.
    ========================================================================= */
 
@@ -23,7 +23,7 @@
   --color-neutral-800: #1e293b;
   --color-neutral-900: #0f172a;
 
-  /* Primary — refined blue (calmer than #007cba, closer to Linear/Stripe) */
+  /* Primary - refined blue (calmer than #007cba, closer to Linear/Stripe) */
   --color-primary-50:  #eff6ff;
   --color-primary-100: #dbeafe;
   --color-primary-200: #bfdbfe;

@@ -1,26 +1,26 @@
 {
-  "name": "roadmap-builder",
-  "version": "2.0.0",
-  "private": true,
-  "description": "Browser-based Gantt-style roadmap builder. Vanilla JS, no framework, no bundler.",
-  "type": "module",
-  "scripts": {
-    "start": "node server.mjs",
-    "test": "node --test --test-reporter=spec web/domain/*.test.js web/views/builder/*.test.js server.test.mjs",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
-  },
-  "devDependencies": {
-    "eslint": "^9.18.0",
-    "@eslint/js": "^9.18.0",
-    "globals": "^15.14.0",
-    "prettier": "^3.4.2",
-    "typescript": "^5.7.3"
-  },
-  "engines": {
-    "node": ">=20"
-  }
+    "name": "roadmap-builder",
+    "version": "2.0.0",
+    "private": true,
+    "description": "Browser-based Gantt-style roadmap builder. Vanilla JS, no framework, no bundler.",
+    "type": "module",
+    "scripts": {
+        "start": "node server.mjs",
+        "test": "node --test --test-reporter=spec web/domain/*.test.js web/utilities/*.test.js web/views/builder/*.test.js server.test.mjs",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "typecheck": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "eslint": "^9.18.0",
+        "@eslint/js": "^9.18.0",
+        "globals": "^15.14.0",
+        "prettier": "^3.4.2",
+        "typescript": "^5.7.3"
+    },
+    "engines": {
+        "node": ">=20"
+    }
 }

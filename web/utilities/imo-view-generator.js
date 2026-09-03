@@ -1,17 +1,16 @@
-/**
- * IMO View Generator - Results Display for Cross-Team IMO/Timeline Search
- * Handles rendering search results using existing utilities for consistency
- */
+import { RoadmapGenerator } from '../roadmap-generator.js';
+import { IMOUtility } from './imo-utility.js';
+import { UIUtility } from './ui-utility.js';
+
 export class IMOViewGenerator {
     
     /**
      * Generate complete search results HTML
      * @param {Array} stories - Filtered stories from IMOUtility.searchStories()
      * @param {string} searchQuery - Original search query
-     * @param {string} searchType - 'imo' or 'timeline'
      * @returns {string} - Complete HTML for search results
      */
-    static generateSearchResults(stories, searchQuery, searchType = 'unknown') {
+    static generateSearchResults(stories, searchQuery) {
         if (!Array.isArray(stories) || stories.length === 0) {
             return this.generateNoResultsMessage(searchQuery);
         }
@@ -210,20 +209,8 @@ export class IMOViewGenerator {
             displayBullets.push(`+ ${moreCount} more...`);
         }
         
-        // Get UIUtility (assuming it's available globally like in roadmap-generator)
-        if (typeof window !== 'undefined' && window.UIUtility) {
-            // Use RoadmapGenerator's formatText method via temporary instance
         const tempGenerator = new RoadmapGenerator(2025);
-        return window.UIUtility.generateBulletsHTML(displayBullets, (text) => tempGenerator.formatText(text));
-        }
-        
-        // Fallback if UIUtility not available - use same logic but preserve HTML
-        const tempGenerator = new RoadmapGenerator(2025);
-        const bulletItems = displayBullets
-            .map(bullet => `<li>${tempGenerator.formatText(bullet.trim())}</li>`)
-            .join('');
-        
-        return `<ul class="task-bullets">${bulletItems}</ul>`;
+        return UIUtility.generateBulletsHTML(displayBullets, (text) => tempGenerator.formatText(text));
     }
 
     /**
@@ -531,7 +518,7 @@ export class IMOViewGenerator {
         const crossTeamData = this.transformStoriesToRoadmapData(stories, searchQuery);
         
         // Generate the roadmap content for iframe
-        const roadmapContent = this.generateRoadmapContentForIframe(crossTeamData, searchQuery);
+        const roadmapContent = this.generateRoadmapContentForIframe(crossTeamData);
         
         return `
             <!DOCTYPE html>
@@ -626,10 +613,9 @@ export class IMOViewGenerator {
     /**
      * Generate roadmap content for iframe (cleaner isolation)
      * @param {Object} crossTeamData - Transformed team data for roadmap
-     * @param {string} searchQuery - Original search query
      * @returns {string} - Clean roadmap HTML for iframe
      */
-    static generateRoadmapContentForIframe(crossTeamData, searchQuery) {
+    static generateRoadmapContentForIframe(crossTeamData) {
         // Use RoadmapGenerator to create clean roadmap content
         const generator = new RoadmapGenerator(crossTeamData.roadmapYear);
         const roadmapHtml = generator.generateRoadmap(crossTeamData, false, false); // full HTML for iframe with editing disabled
@@ -950,7 +936,7 @@ export class IMOViewGenerator {
             if (parsed && parsed.getDate() === 1) {
                 // Only convert to month name if the original was JUST a month (not a specific date)
                 // Check if original dateStr looks like a specific date (contains day/month/year pattern)
-                const isSpecificDate = /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(dateStr.trim());
+                const isSpecificDate = /^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(dateStr.trim());
                 
                 if (!isSpecificDate) {
                     // Original was just a month name - convert to month name for consistent positioning
@@ -961,7 +947,7 @@ export class IMOViewGenerator {
                 }
                 // If it was a specific date, preserve it as a date
             }
-        } catch (e) {
+        } catch {
             // If parsing fails, use original date
         }
         
@@ -1069,15 +1055,9 @@ export class IMOViewGenerator {
             };
         });
         
-        // Use URL param from builder if available, otherwise current year
-        const roadmapYear = (typeof builderRoadmapYear !== 'undefined' && builderRoadmapYear) 
-            ? builderRoadmapYear 
-            : new Date().getFullYear();
-        
-        // Calculate correct counts and team names
-        const totalStories = epics.reduce((sum, epic) => sum + epic.stories.length, 0);
-        const teamCount = epics.length;
-        const teamNames = epics.map(epic => epic.name).join(', ');
+        const roadmapYear =
+            Number(validStories.find((story) => story.roadmapYear)?.roadmapYear) ||
+            new Date().getFullYear();
         
         // Create team data structure compatible with RoadmapGenerator
         return {
@@ -1094,10 +1074,4 @@ export class IMOViewGenerator {
             searchRange: searchRange
         };
     }
-}
-
-// Phase 2 will remove this. Inline scripts in views still resolve `IMOViewGenerator`
-// against window; we keep that working until those scripts move to imports.
-if (typeof window !== 'undefined') {
-    window.IMOViewGenerator = IMOViewGenerator;
 }

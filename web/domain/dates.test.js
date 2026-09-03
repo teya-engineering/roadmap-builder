@@ -49,6 +49,13 @@ test('europeanToIso uses roadmapYear when year is missing', () => {
     assert.equal(europeanToIso('15/06', 2027), '2027-06-15');
 });
 
+test('European date parsing validates calendar dates', () => {
+    assert.equal(europeanToIso('29/02/24'), '2024-02-29');
+    assert.equal(europeanToIso('29/02/25'), '29/02/25');
+    assert.equal(europeanToIso('31/04/25'), '31/04/25');
+    assert.equal(Number.isNaN(parseEuropean('31/04/25').getTime()), true);
+});
+
 test('parseEuropean returns Date(0) for empty input', () => {
     assert.equal(parseEuropean('').getTime(), 0);
     assert.equal(parseEuropean(null).getTime(), 0);
@@ -95,6 +102,7 @@ test('monthIndex handles short, long, and casing', () => {
     assert.equal(monthIndex('January'), 0);
     assert.equal(monthIndex('DEC'), 11);
     assert.equal(monthIndex('December'), 11);
+    assert.equal(monthIndex('  June  '), 5);
 });
 
 test('monthIndex returns -1 for unknown input', () => {

@@ -95,7 +95,7 @@
         }
 
         /* Undo the global `input, textarea, select { width: 100%; padding: 8px;
-           border: 1px solid #ddd }` styles.css rule for our checkbox — it was
+           border: 1px solid #ddd }` styles.css rule for our checkbox - it was
            making the checkbox fill the whole cell. Also zero out the default
            flag-icon right-margin so only the 3px flex gap separates them. */
         .country-flag-option > input[type="checkbox"] {
@@ -900,7 +900,7 @@
             border-bottom-color: #f59e0b;
         }
         .modal-header.edit-mode-header h3::after {
-            content: ' — Editing';
+            content: ' - Editing';
             font-size: 13px;
             font-weight: 400;
             color: #b45309;

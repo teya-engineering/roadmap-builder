@@ -1,14 +1,16 @@
-// File browser side panel + drag-drop file loading + AppDir subscription.
+// File browser side panel, drag-drop loading, and directory subscription.
 //
 // Responsibilities:
 //   - Expand/collapse the .file-browser-panel side panel.
-//   - List .json roadmap files from the AppDir-selected folder, with team
+//   - List .json roadmap files from the selected folder, with team
 //     name and size metadata.
 //   - Open a file from the list (loadTeamData + refresh + preview).
 //   - Accept a roadmap file via drag-drop onto the builder panel itself.
 //
 // State: selectedDirectoryHandle is owned by this module and synced from
-// the AppDir store via the subscription set up in init().
+// the shared directory store via the subscription set up in init().
+
+import { directoryStore } from '../../app/directory-store.js';
 
 /**
  * @param {object} deps
@@ -61,7 +63,7 @@ export function createFileBrowser({
     // Folder picker is owned by the top nav; this is a back-compat shim
     // for any legacy caller that still invokes selectDirectory() directly.
     async function selectDirectory() {
-        if (window.AppDir) await window.AppDir.select();
+        await directoryStore.select();
     }
 
     async function loadDirectoryFiles() {
@@ -73,7 +75,8 @@ export function createFileBrowser({
         if (reminder) reminder.remove();
 
         if (!selectedDirectoryHandle) {
-            fileList.innerHTML = '<div class="no-directory-message">Pick a folder from the top bar to browse your roadmap files</div>';
+            fileList.innerHTML =
+                '<div class="no-directory-message">Pick a folder from the top bar to browse your roadmap files</div>';
             return;
         }
 
@@ -93,7 +96,14 @@ export function createFileBrowser({
                             teamName = 'Invalid JSON';
                         }
                     }
-                    roadmapFiles.push({ name, handle, teamName, size: file.size, lastModified: file.lastModified, fileType: 'json' });
+                    roadmapFiles.push({
+                        name,
+                        handle,
+                        teamName,
+                        size: file.size,
+                        lastModified: file.lastModified,
+                        fileType: 'json',
+                    });
                 } catch (error) {
                     console.warn(`Could not read roadmap file ${name}:`, error);
                 }
@@ -102,7 +112,8 @@ export function createFileBrowser({
             roadmapFiles.sort((a, b) => a.name.localeCompare(b.name));
 
             if (roadmapFiles.length === 0) {
-                fileList.innerHTML = '<div class="no-directory-message">No roadmap (.json) files found in this folder</div>';
+                fileList.innerHTML =
+                    '<div class="no-directory-message">No roadmap (.json) files found in this folder</div>';
                 return;
             }
 
@@ -122,7 +133,10 @@ export function createFileBrowser({
             }
         } catch (error) {
             console.error('Error loading directory files:', error);
-            fileList.innerHTML = '<div class="no-directory-message">Error loading files: ' + error.message + '</div>';
+            fileList.innerHTML =
+                '<div class="no-directory-message">Error loading files: ' +
+                error.message +
+                '</div>';
         }
     }
 
@@ -226,22 +240,20 @@ export function createFileBrowser({
     }
 
     /**
-     * Subscribe to the shared AppDir store. The router doesn't unsubscribe
-     * us when the user navigates away, so this callback can fire while the
-     * builder is unmounted - we use the presence of #fileList as our liveness
-     * signal and bail otherwise.
+     * Subscribe to the shared directory store. The router uses the returned
+     * function to unsubscribe when this view is replaced.
      */
-    function subscribeToAppDir() {
-        if (!window.AppDir) return;
+    function subscribeToDirectoryStore() {
         let lastHandle = null;
-        window.AppDir.subscribe(async (snap) => {
+        return directoryStore.subscribe(async (snap) => {
             const fileList = document.getElementById('fileList');
             if (!fileList) return; // builder view is not mounted
 
             if (!snap.handle) {
                 selectedDirectoryHandle = null;
                 lastHandle = null;
-                fileList.innerHTML = '<div class="no-directory-message">Pick a folder or file from the top bar to get started</div>';
+                fileList.innerHTML =
+                    '<div class="no-directory-message">Pick a folder or file from the top bar to get started</div>';
                 return;
             }
             if (snap.permission !== 'granted') {
@@ -275,6 +287,6 @@ export function createFileBrowser({
         openRoadmapFile,
         handleFileDrop,
         initializeDragAndDrop,
-        subscribeToAppDir,
+        subscribeToDirectoryStore,
     };
 }

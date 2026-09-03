@@ -96,11 +96,3 @@ export function renderCountryFlagsHTML(opts) {
         <div class="country-flags-list">${others.map(renderOption).join('')}</div>
     </fieldset>`;
 }
-
-// Phase 2 will remove these. Kept so inline scripts in views/*.html keep
-// resolving these names against window while we migrate the views.
-if (typeof window !== 'undefined') {
-    window.COUNTRIES = COUNTRIES;
-    window.GLOBAL_COUNTRY_CODE = GLOBAL_COUNTRY_CODE;
-    window.renderCountryFlagsHTML = renderCountryFlagsHTML;
-}

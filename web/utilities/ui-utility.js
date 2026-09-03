@@ -167,9 +167,3 @@ export class UIUtility {
         return month ? month.toUpperCase() : '';
     }
 }
-
-// Phase 2 will remove this. Inline scripts in views still resolve `UIUtility`
-// against window; we keep that working until those scripts move to imports.
-if (typeof window !== 'undefined') {
-    window.UIUtility = UIUtility;
-}

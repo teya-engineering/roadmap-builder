@@ -64,7 +64,7 @@ function makeTeam(over = {}) {
 }
 
 // Move story s1's end date. The real app re-collects the form and calls
-// setState (kind 'replace') on every edit, so simulate edits that way — this
+// setState (kind 'replace') on every edit, so simulate edits that way - this
 // also guards the regression where 'replace' was wrongly treated as a baseline
 // reset, making every diff empty.
 function moveEndDate(to) {
@@ -96,7 +96,7 @@ test('manual save posts a summary of the diff', () => {
     assert.equal(url, '/api/roadmap-saved');
     assert.equal(opts.method, 'POST');
     const text = JSON.parse(opts.body).text;
-    assert.match(text, /Roadmap Update — Product Team/);
+    assert.match(text, /Roadmap Update - Product Team/);
     assert.match(text, /End date moved {2}15 May {2}→ {2}30 May/);
     assert.match(text, /John Citizen {2}· {2}Jane Doe/);
 });

@@ -65,7 +65,7 @@ test('webhook unset -> 204 no-op, nothing forwarded', async () => {
 test('webhook set -> 204 and forwards { text } verbatim', async () => {
     process.env.SLACK_WEBHOOK_URL = mockUrl;
     const text =
-        '*Roadmap Update — Cloud Engineering*\n:calendar:  X\nEnd date moved  15 May  →  30 May';
+        '*Roadmap Update - Cloud Engineering*\n:calendar:  X\nEnd date moved  15 May  →  30 May';
     const res = await notify({ text });
     assert.equal(res.status, 204);
     assert.equal(received.length, 1);
@@ -110,4 +110,30 @@ test('static file serving is unaffected', async () => {
     const res = await fetch(`${appUrl}/`);
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
+});
+
+test('static routes support HEAD without a response body', async () => {
+    const res = await fetch(`${appUrl}/builder`, { method: 'HEAD' });
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    assert.equal(await res.text(), '');
+});
+
+test('static routes reject unsupported methods', async () => {
+    const res = await fetch(`${appUrl}/`, { method: 'POST' });
+    assert.equal(res.status, 405);
+    assert.equal(res.headers.get('allow'), 'GET, HEAD');
+});
+
+test('legacy routes preserve the query string when redirecting', async () => {
+    const res = await fetch(`${appUrl}/roadmap-builder.html?year=2028`, {
+        redirect: 'manual',
+    });
+    assert.equal(res.status, 301);
+    assert.equal(res.headers.get('location'), '/builder?year=2028');
+});
+
+test('missing static files return 404', async () => {
+    const res = await fetch(`${appUrl}/missing.js`);
+    assert.equal(res.status, 404);
 });

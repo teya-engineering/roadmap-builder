@@ -1,3 +1,5 @@
+import { RoadmapGenerator } from '../../roadmap-generator.js';
+
 // PDF/JPG/HTML export from the Builder.
 //   - exportJPG / exportPDF capture the live preview iframe via html-to-image
 //     + jsPDF (both loaded from CDN as window globals in index.html).
@@ -126,7 +128,7 @@ export async function exportJPG() {
 export function createExportHTML({ collectFormData }) {
     return async function exportHTML() {
         const teamData = collectFormData();
-        const generator = new window.RoadmapGenerator(teamData.roadmapYear);
+        const generator = new RoadmapGenerator(teamData.roadmapYear);
         // generateRoadmap(teamData, embedded=false, enableEditing=false): standalone export with edit affordances stripped.
         const html = generator.generateRoadmap(teamData, false, false);
         const blob = new Blob([html], { type: 'text/html' });

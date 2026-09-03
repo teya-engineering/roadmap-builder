@@ -1,9 +1,58 @@
+import { europeanToIso, ISO_DATE_REGEX } from '../domain/dates.js';
+
+const MONTH_INDEX = Object.freeze({
+    jan: 0,
+    january: 0,
+    feb: 1,
+    february: 1,
+    mar: 2,
+    march: 2,
+    apr: 3,
+    april: 3,
+    may: 4,
+    jun: 5,
+    june: 5,
+    jul: 6,
+    july: 6,
+    aug: 7,
+    august: 7,
+    sep: 8,
+    sept: 8,
+    september: 8,
+    oct: 9,
+    october: 9,
+    nov: 10,
+    november: 10,
+    dec: 11,
+    december: 11,
+});
+
+function normalizeYear(value, fallback = new Date().getFullYear()) {
+    const year = Number(value ?? fallback);
+    if (!Number.isInteger(year)) return null;
+    return year < 100 ? year + 2000 : year;
+}
+
+function createLocalDate(year, month, day) {
+    if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+        return null;
+    }
+
+    const date = new Date(year, month, day);
+    return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day
+        ? date
+        : null;
+}
+
+function storyKey(story) {
+    return JSON.stringify([story.teamName, story.title]);
+}
+
 /**
  * IMO Utility - Cross-Team IMO and Timeline Search Functionality
  * Handles directory scanning, story extraction, and filtering across multiple roadmap files
  */
 export class IMOUtility {
-
     static scanCache = new WeakMap();
 
     /**
@@ -30,21 +79,28 @@ export class IMOUtility {
             throw new Error('Failed to scan roadmap directory: ' + error.message);
         }
 
-        const results = await Promise.all(jsonHandles.map(async ([name, handle]) => {
-            try {
-                const file = await handle.getFile();
-                const content = await file.text();
-                const roadmapData = JSON.parse(content);
-                const teamData = roadmapData.teamData || roadmapData;
-                if (teamData && teamData.teamName) {
-                    return { fileName: name, fileContent: content, teamData, fileHandle: handle };
+        const results = await Promise.all(
+            jsonHandles.map(async ([name, handle]) => {
+                try {
+                    const file = await handle.getFile();
+                    const content = await file.text();
+                    const roadmapData = JSON.parse(content);
+                    const teamData = roadmapData.teamData || roadmapData;
+                    if (teamData && teamData.teamName) {
+                        return {
+                            fileName: name,
+                            fileContent: content,
+                            teamData,
+                            fileHandle: handle,
+                        };
+                    }
+                    return null;
+                } catch (error) {
+                    console.warn(`Skipping invalid JSON file: ${name}`, error);
+                    return null;
                 }
-                return null;
-            } catch (error) {
-                console.warn(`Skipping invalid JSON file: ${name}`, error);
-                return null;
-            }
-        }));
+            })
+        );
 
         const roadmapFiles = results
             .filter(Boolean)
@@ -59,7 +115,7 @@ export class IMOUtility {
             this.scanCache.delete(directoryHandle);
         }
     }
-    
+
     /**
      * Extract all stories from a single roadmap's team data
      * @param {Object} teamData - Team data object from roadmap JSON
@@ -71,20 +127,24 @@ export class IMOUtility {
 
         // Stories flagged with hideFromSearch are excluded from cross-team search.
         // Missing/false values keep the legacy behaviour, so older roadmaps stay visible.
-        const isVisible = story =>
-            story && typeof story === 'object' && story.title && story.title.trim() && story.hideFromSearch !== true;
+        const isVisible = (story) =>
+            story &&
+            typeof story === 'object' &&
+            story.title &&
+            story.title.trim() &&
+            story.hideFromSearch !== true;
 
         // Extract stories from epics
         if (teamData.epics && Array.isArray(teamData.epics)) {
-            teamData.epics.forEach(epic => {
+            teamData.epics.forEach((epic) => {
                 if (epic.stories && Array.isArray(epic.stories)) {
-                    epic.stories.forEach(story => {
+                    epic.stories.forEach((story) => {
                         if (isVisible(story)) {
                             stories.push({
                                 ...story,
                                 teamName: teamName,
                                 epicName: epic.name || 'Unknown Epic',
-                                sourceType: 'epic'
+                                sourceType: 'epic',
                             });
                         }
                     });
@@ -93,14 +153,18 @@ export class IMOUtility {
         }
 
         // Extract BTL stories
-        if (teamData.btlStories && teamData.btlStories.stories && Array.isArray(teamData.btlStories.stories)) {
-            teamData.btlStories.stories.forEach(story => {
+        if (
+            teamData.btlStories &&
+            teamData.btlStories.stories &&
+            Array.isArray(teamData.btlStories.stories)
+        ) {
+            teamData.btlStories.stories.forEach((story) => {
                 if (isVisible(story)) {
                     stories.push({
                         ...story,
                         teamName: teamName,
                         epicName: 'BTL', // BTL stories don't have epics
-                        sourceType: 'btl'
+                        sourceType: 'btl',
                     });
                 }
             });
@@ -108,10 +172,10 @@ export class IMOUtility {
 
         return stories;
     }
-    
+
     /**
      * Filter stories by IMO/Project ID
-     * - If search term is purely numeric: exact match only
+     * - If search term is purely numeric: match it anywhere in the IMO value
      * - If search term contains non-numeric characters: partial string match
      * @param {Array} stories - Array of story objects
      * @param {string} imoSearch - IMO/Project ID to search for or "all" for any IMO
@@ -119,22 +183,22 @@ export class IMOUtility {
      */
     static filterStoriesByIMO(stories, imoSearch) {
         if (!imoSearch || !Array.isArray(stories)) return [];
-        
+
         // Special case: "all" means find all stories with any IMO tag
         if (imoSearch === 'all') {
             return this.filterStoriesWithAnyIMO(stories);
         }
-        
+
         const searchTerm = imoSearch.toString().trim().toLowerCase();
-        
+
         // Check if search term is purely numeric (digits only)
         const isNumericOnly = /^\d+$/.test(searchTerm);
-        
-        return stories.filter(story => {
+
+        return stories.filter((story) => {
             if (!story.imo) return false;
-            
+
             const storyIMO = story.imo.toString().trim().toLowerCase();
-            
+
             if (isNumericOnly) {
                 // Substring match so "0043" matches "IMP 0043", "IMO-0043", etc.
                 return storyIMO.includes(searchTerm);
@@ -144,7 +208,7 @@ export class IMOUtility {
             }
         });
     }
-    
+
     /**
      * Filter stories that have any IMO tag
      * @param {Array} stories - Array of story objects
@@ -152,12 +216,12 @@ export class IMOUtility {
      */
     static filterStoriesWithAnyIMO(stories) {
         if (!Array.isArray(stories)) return [];
-        
-        return stories.filter(story => {
+
+        return stories.filter((story) => {
             return story.imo && story.imo.toString().trim() !== '';
         });
     }
-    
+
     /**
      * Filter stories by timeline (quarter, month, or date)
      * @param {Array} stories - Array of story objects
@@ -166,31 +230,28 @@ export class IMOUtility {
      */
     static filterStoriesByTimeline(stories, timeline) {
         if (!timeline || !Array.isArray(stories)) return [];
-        
+
         const searchTerm = timeline.toString().trim().toLowerCase();
-        
-        return stories.filter(story => {
+
+        return stories.filter((story) => {
             // Check end date/month
             if (story.endDate || story.endMonth) {
                 const endValue = (story.endDate || story.endMonth || '').toString().toLowerCase();
-                
+
                 // Quarter matching (Q1, Q2, Q3, Q4)
                 if (searchTerm.startsWith('q') && searchTerm.length === 2) {
                     const quarter = this.getQuarterFromDate(endValue);
                     if (quarter === searchTerm) return true;
                 }
-                
-                // Month matching (partial or full)
-                if (endValue.includes(searchTerm)) return true;
-                
-                // Year matching
+
+                // Month or year matching (partial or full)
                 if (endValue.includes(searchTerm)) return true;
             }
-            
+
             return false;
         });
     }
-    
+
     /**
      * Determine which quarter a date/month falls into
      * @param {string} dateStr - Date or month string
@@ -198,53 +259,83 @@ export class IMOUtility {
      */
     static getQuarterFromDate(dateStr) {
         if (!dateStr) return '';
-        
+
         const str = dateStr.toLowerCase();
-        
+
         // Q1: Jan, Feb, Mar
-        if (str.includes('jan') || str.includes('feb') || str.includes('mar') || 
-            str.includes('january') || str.includes('february') || str.includes('march')) {
+        if (
+            str.includes('jan') ||
+            str.includes('feb') ||
+            str.includes('mar') ||
+            str.includes('january') ||
+            str.includes('february') ||
+            str.includes('march')
+        ) {
             return 'q1';
         }
-        
+
         // Q2: Apr, May, Jun
-        if (str.includes('apr') || str.includes('may') || str.includes('jun') || 
-            str.includes('april') || str.includes('june')) {
+        if (
+            str.includes('apr') ||
+            str.includes('may') ||
+            str.includes('jun') ||
+            str.includes('april') ||
+            str.includes('june')
+        ) {
             return 'q2';
         }
-        
+
         // Q3: Jul, Aug, Sep
-        if (str.includes('jul') || str.includes('aug') || str.includes('sep') || str.includes('sept') ||
-            str.includes('july') || str.includes('august') || str.includes('september')) {
+        if (
+            str.includes('jul') ||
+            str.includes('aug') ||
+            str.includes('sep') ||
+            str.includes('sept') ||
+            str.includes('july') ||
+            str.includes('august') ||
+            str.includes('september')
+        ) {
             return 'q3';
         }
-        
+
         // Q4: Oct, Nov, Dec
-        if (str.includes('oct') || str.includes('nov') || str.includes('dec') || 
-            str.includes('october') || str.includes('november') || str.includes('december')) {
+        if (
+            str.includes('oct') ||
+            str.includes('nov') ||
+            str.includes('dec') ||
+            str.includes('october') ||
+            str.includes('november') ||
+            str.includes('december')
+        ) {
             return 'q4';
         }
-        
+
         return '';
     }
-    
+
     /**
      * Aggregate stories from multiple roadmap files
      * @param {Array} roadmapFiles - Array from scanRoadmapDirectory()
      * @returns {Array} - Combined array of all stories with team context
      */
-    static aggregateStoriesAcrossTeams(roadmapFiles) {
+    static aggregateStoriesAcrossTeams(
+        roadmapFiles,
+        defaultRoadmapYear = new Date().getFullYear()
+    ) {
         const allStories = [];
         const storyMap = new Map(); // Track stories by title+team to handle duplicates
-        
-        roadmapFiles.forEach(roadmapFile => {
-            // Use URL param from builder if available, otherwise current year
-            const roadmapYear = (typeof builderRoadmapYear !== 'undefined' && builderRoadmapYear) 
-                ? builderRoadmapYear 
-                : new Date().getFullYear();
-            
-            const stories = this.extractStoriesFromRoadmap(roadmapFile.teamData, roadmapFile.teamData.teamName);
-            stories.forEach(story => {
+
+        roadmapFiles.forEach((roadmapFile) => {
+            const roadmapYear =
+                Number(roadmapFile.teamData.roadmapYear) ||
+                Number(defaultRoadmapYear) ||
+                new Date().getFullYear();
+
+            const stories = this.extractStoriesFromRoadmap(
+                roadmapFile.teamData,
+                roadmapFile.teamData.teamName
+            );
+            stories.forEach((story) => {
                 story.sourceFile = roadmapFile.fileName;
                 story.fileHandle = roadmapFile.fileHandle;
                 story.roadmapYear = roadmapYear; // Add roadmap year to each story
@@ -252,43 +343,41 @@ export class IMOUtility {
                 story._directorVP = roadmapFile.teamData.directorVP || '';
                 story._em = roadmapFile.teamData.em || '';
                 story._pm = roadmapFile.teamData.pm || '';
-                
+
                 // Create unique key for duplicate detection
-                const storyKey = `${story.teamName}-${story.title}`;
-                
+                const key = storyKey(story);
+
                 // Check if we already have this story
-                const existingStory = storyMap.get(storyKey);
+                const existingStory = storyMap.get(key);
                 if (existingStory) {
                     // Prioritize stories with specific endDate over generic endMonth
                     const currentHasEndDate = story.endDate && story.endDate.trim();
-                    const existingHasEndDate = existingStory.endDate && existingStory.endDate.trim();
-                    
+                    const existingHasEndDate =
+                        existingStory.endDate && existingStory.endDate.trim();
+
                     if (currentHasEndDate && !existingHasEndDate) {
                         // Current story has specific date, existing doesn't - use current
-                        storyMap.set(storyKey, story);
+                        storyMap.set(key, story);
                     } else if (!currentHasEndDate && existingHasEndDate) {
                         // Existing story has specific date, current doesn't - keep existing
                         // No action needed, keep existing
                     } else {
-                        // Both have same type of date info - prefer newer file (with year in filename)
-                        const currentHasYear = roadmapFile.fileName.includes('.2025.');
-                        const existingHasYear = existingStory.sourceFile.includes('.2025.');
-                        
-                        if (currentHasYear && !existingHasYear) {
-                            storyMap.set(storyKey, story);
+                        // Both have the same date precision, so keep the latest roadmap.
+                        if (story.roadmapYear > existingStory.roadmapYear) {
+                            storyMap.set(key, story);
                         }
                         // Otherwise keep existing
                     }
                 } else {
                     // New story, add it
-                    storyMap.set(storyKey, story);
+                    storyMap.set(key, story);
                 }
             });
         });
-        
+
         // Convert map back to array
         allStories.push(...storyMap.values());
-        
+
         return allStories;
     }
 
@@ -302,24 +391,19 @@ export class IMOUtility {
         if (!Array.isArray(roadmapFiles) || !query) return [];
         const q = query.toString().trim().toLowerCase();
         if (!q) return [];
-        
-        
-        return roadmapFiles.filter(f => {
-            const td = f.teamData || {};
-            const dvp = td.directorVP ? String(td.directorVP).toLowerCase() : '';
-            const em = td.em ? String(td.em).toLowerCase() : '';
-            const pm = td.pm ? String(td.pm).toLowerCase() : '';
-            
-            const matches = dvp.includes(q) || em.includes(q) || pm.includes(q);
-            
-            if (matches) {
-                // Match found for leadership search
-            }
-            
-            return matches;
+
+        return roadmapFiles.filter((roadmapFile) => {
+            const teamData = roadmapFile.teamData || {};
+            const director = String(teamData.directorVP || '').toLowerCase();
+            const engineeringManager = String(teamData.em || '').toLowerCase();
+            const productManager = String(teamData.pm || '').toLowerCase();
+
+            return (
+                director.includes(q) || engineeringManager.includes(q) || productManager.includes(q)
+            );
         });
     }
-    
+
     /**
      * Parse search query and determine search type
      * @param {string} query - Search query (e.g., "IMO", "IMO 0043", "IMO Moto", "0043", "Q3", "April")
@@ -329,13 +413,14 @@ export class IMOUtility {
         if (!query || typeof query !== 'string') {
             return { type: null, value: '' };
         }
-        
+
         const cleanQuery = query.trim();
 
-        // Month names that belong to timeline search — not treated as IMO prefixes
-        const MONTH_NAMES = /^(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)$/i;
+        // Month names that belong to timeline search - not treated as IMO prefixes
+        const MONTH_NAMES =
+            /^(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)$/i;
 
-        // "!XYZ" / "!IMO1" — stories whose IMO field does NOT start with XYZ
+        // "!XYZ" / "!IMO1" - stories whose IMO field does NOT start with XYZ
         const negatedPrefixMatch = cleanQuery.match(/^!([a-zA-Z][a-zA-Z0-9]{1,7})$/);
         if (negatedPrefixMatch && !MONTH_NAMES.test(negatedPrefixMatch[1])) {
             return { type: 'imo', value: negatedPrefixMatch[1].toLowerCase(), negated: true };
@@ -347,16 +432,20 @@ export class IMOUtility {
             return { type: 'imo', value: imoWithPrefixMatch[1].trim() };
         }
 
-        // Bare alphanumeric code starting with a letter (e.g. "IMO", "IMP", "IMO1", "RR") — stories whose IMO field starts with it
-        if (/^[a-zA-Z][a-zA-Z0-9]{1,7}$/.test(cleanQuery) && !MONTH_NAMES.test(cleanQuery) && !/^q[1-4]$/i.test(cleanQuery)) {
+        // Bare alphanumeric code starting with a letter (e.g. "IMO", "IMP", "IMO1", "RR") - stories whose IMO field starts with it
+        if (
+            /^[a-zA-Z][a-zA-Z0-9]{1,7}$/.test(cleanQuery) &&
+            !MONTH_NAMES.test(cleanQuery) &&
+            !/^q[1-4]$/i.test(cleanQuery)
+        ) {
             return { type: 'imo', value: cleanQuery.toLowerCase() };
         }
-        
+
         // Standalone numeric value - treat as IMO search (e.g., "0043")
         if (/^\d+$/.test(cleanQuery)) {
             return { type: 'imo', value: cleanQuery };
         }
-        
+
         // EndDate filter: "EndDate=15/Mar/25" or "EndDate=15/03"
         const endDateMatch = cleanQuery.match(/^enddate=(.+)$/i);
         if (endDateMatch) {
@@ -367,11 +456,11 @@ export class IMOUtility {
         if (/^q[1-4]$/i.test(cleanQuery)) {
             return { type: 'timeline', value: cleanQuery.toLowerCase() };
         }
-        
+
         // Default to timeline search for anything else (months, dates)
         return { type: 'timeline', value: cleanQuery };
     }
-    
+
     /**
      * Search stories based on parsed query
      * @param {Array} allStories - Array of all stories from aggregateStoriesAcrossTeams()
@@ -381,20 +470,26 @@ export class IMOUtility {
     static searchStories(allStories, searchQuery) {
         // Support "&&" to combine filters: stories must match ALL terms
         if (searchQuery && searchQuery.includes('&&')) {
-            const parts = searchQuery.split('&&').map(p => p.trim()).filter(Boolean);
+            const parts = searchQuery
+                .split('&&')
+                .map((p) => p.trim())
+                .filter(Boolean);
             let result = allStories;
             for (const part of parts) {
-                const matched = new Set(this.searchStories(allStories, part).map(s => `${s.teamName}-${s.title}`));
-                result = result.filter(s => matched.has(`${s.teamName}-${s.title}`));
+                const matched = new Set(this.searchStories(allStories, part).map(storyKey));
+                result = result.filter((story) => matched.has(storyKey(story)));
             }
             return result;
         }
 
         // Support "||" to combine filters: positive terms union, negated terms intersect
         if (searchQuery && searchQuery.includes('||')) {
-            const parts = searchQuery.split('||').map(p => p.trim()).filter(Boolean);
-            const negatedParts = parts.filter(p => p.startsWith('!'));
-            const positiveParts = parts.filter(p => !p.startsWith('!'));
+            const parts = searchQuery
+                .split('||')
+                .map((p) => p.trim())
+                .filter(Boolean);
+            const negatedParts = parts.filter((p) => p.startsWith('!'));
+            const positiveParts = parts.filter((p) => !p.startsWith('!'));
 
             let result = [];
 
@@ -403,8 +498,11 @@ export class IMOUtility {
                 const seen = new Set();
                 for (const part of positiveParts) {
                     for (const story of this.searchStories(allStories, part)) {
-                        const key = `${story.teamName}-${story.title}`;
-                        if (!seen.has(key)) { seen.add(key); result.push(story); }
+                        const key = storyKey(story);
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            result.push(story);
+                        }
                     }
                 }
             }
@@ -414,9 +512,9 @@ export class IMOUtility {
                 let pool = positiveParts.length > 0 ? result : allStories;
                 for (const part of negatedParts) {
                     const excluded = new Set(
-                        this.searchStories(allStories, part.slice(1)).map(s => `${s.teamName}-${s.title}`)
+                        this.searchStories(allStories, part.slice(1)).map(storyKey)
                     );
-                    pool = pool.filter(s => !excluded.has(`${s.teamName}-${s.title}`));
+                    pool = pool.filter((story) => !excluded.has(storyKey(story)));
                 }
                 result = pool;
             }
@@ -431,8 +529,8 @@ export class IMOUtility {
         if (type === 'imo') {
             const matches = this.filterStoriesByIMO(allStories, value);
             if (negated) {
-                const matchedKeys = new Set(matches.map(s => `${s.teamName}-${s.title}`));
-                return allStories.filter(s => !matchedKeys.has(`${s.teamName}-${s.title}`));
+                const matchedKeys = new Set(matches.map(storyKey));
+                return allStories.filter((story) => !matchedKeys.has(storyKey(story)));
             }
             return matches;
         } else if (type === 'enddate') {
@@ -452,106 +550,69 @@ export class IMOUtility {
      */
     static filterStoriesByEndDate(stories, dateStr) {
         if (!dateStr || !Array.isArray(stories)) return [];
-        const defaultYear = (typeof builderRoadmapYear !== 'undefined' && builderRoadmapYear)
-            ? builderRoadmapYear
-            : new Date().getFullYear();
+        const defaultYear =
+            Number(stories.find((story) => story.roadmapYear)?.roadmapYear) ||
+            new Date().getFullYear();
         const targetISO = this.convertStoryDateToISO(dateStr, defaultYear);
         if (!targetISO) return [];
-        return stories.filter(story => {
-            const storyISO = this.convertStoryDateToISO(story.endDate || story.endMonth || '', story.roadmapYear || defaultYear);
+        return stories.filter((story) => {
+            const storyISO = this.convertStoryDateToISO(
+                story.endDate || story.endMonth || '',
+                story.roadmapYear || defaultYear
+            );
             return storyISO === targetISO;
         });
     }
-    
+
     /**
      * Parse a story date string that may contain month names
      * @param {string} dateStr - Date string (e.g., "15/03/25", "15/AUG/25", "AUG 2025", "AUG")
      * @param {number} defaultYear - Default year to use if not specified
      * @returns {Date|null} - Parsed date or null if invalid
      */
-    static parseStoryDate(dateStr, defaultYear) {
-        if (!dateStr) return null;
-        
-        const str = dateStr.toLowerCase().trim();
-        
-        // Month name mappings
-        const monthMap = {
-            'jan': 0, 'january': 0,
-            'feb': 1, 'february': 1,
-            'mar': 2, 'march': 2,
-            'apr': 3, 'april': 3,
-            'may': 4,
-            'jun': 5, 'june': 5,
-            'jul': 6, 'july': 6,
-            'aug': 7, 'august': 7,
-            'sep': 8, 'sept': 8, 'september': 8,
-            'oct': 9, 'october': 9,
-            'nov': 10, 'november': 10,
-            'dec': 11, 'december': 11
-        };
-        
-        // Handle numeric dates like "15/03/25"
-        if (str.includes('/') && /\d+\/\d+/.test(str)) {
-            const parts = str.split('/');
-            if (parts.length >= 2) {
-                const day = parseInt(parts[0]);
-                const monthPart = parts[1];
-                
-                // Check if month is numeric or name
-                let month;
-                if (/^\d+$/.test(monthPart)) {
-                    month = parseInt(monthPart) - 1; // Month is 0-indexed
-                } else {
-                    month = monthMap[monthPart];
-                    if (month === undefined) return null;
-                }
-                
-                let year = parts.length > 2 ? parseInt(parts[2]) : defaultYear;
-                
-                // Handle 2-digit years - always assume 2000s for roadmaps
-                if (year < 100) {
-                    year = 2000 + year;
-                }
-                
-                if (!isNaN(day) && month !== undefined && !isNaN(year)) {
-                    return new Date(year, month, day);
-                }
-            }
+    static parseStoryDate(dateStr, defaultYear = new Date().getFullYear()) {
+        if (typeof dateStr !== 'string' || !dateStr.trim()) return null;
+
+        const value = dateStr.trim().toLowerCase();
+        const fallbackYear = normalizeYear(defaultYear);
+        if (fallbackYear === null) return null;
+
+        if (ISO_DATE_REGEX.test(value)) {
+            const [year, month, day] = value.split('-').map(Number);
+            return createLocalDate(year, month - 1, day);
         }
-        
-        // Handle "AUG 2025", "SEPT 15", "15 AUG", etc.
-        const words = str.split(/[\s\/\-]+/);
-        let day = null, month = null, year = null;
-        
-        for (const word of words) {
-            const trimmed = word.trim();
-            
-            // Check if it's a month name
-            if (monthMap[trimmed] !== undefined) {
-                month = monthMap[trimmed];
-            }
-            // Check if it's a number
-            else if (/^\d+$/.test(trimmed)) {
-                const num = parseInt(trimmed);
-                if (num > 31) {
-                    // Likely a year - always assume 2000s for roadmaps
-                    year = num < 100 ? 2000 + num : num;
-                } else {
-                    // Likely a day
-                    day = num;
-                }
-            }
+
+        const numericIso = europeanToIso(value, fallbackYear);
+        if (numericIso !== value && ISO_DATE_REGEX.test(numericIso)) {
+            const [year, month, day] = numericIso.split('-').map(Number);
+            return createLocalDate(year, month - 1, day);
         }
-        
-        // Use defaults if not found
-        if (month !== null) {
-            if (year === null) year = defaultYear;
-            if (day === null) day = 1; // Default to first of month
-            
-            return new Date(year, month, day);
+
+        const dayFirst = value.match(/^(\d{1,2})[\s/-]+([a-z]+)(?:[\s/-]+(\d{2,4}))?$/);
+        if (dayFirst) {
+            const month = MONTH_INDEX[dayFirst[2]];
+            const year = normalizeYear(dayFirst[3], fallbackYear);
+            return month === undefined ? null : createLocalDate(year, month, Number(dayFirst[1]));
         }
-        
-        return null;
+
+        const monthFirst = value.match(/^([a-z]+)(?:[\s/-]+(\d{1,4}))?(?:[\s/-]+(\d{2,4}))?$/);
+        if (!monthFirst) return null;
+
+        const month = MONTH_INDEX[monthFirst[1]];
+        if (month === undefined) return null;
+
+        const firstNumber = monthFirst[2] ? Number(monthFirst[2]) : null;
+        const hasExplicitYear = monthFirst[3] !== undefined;
+        const firstNumberIsYear = !hasExplicitYear && firstNumber !== null && firstNumber > 31;
+        const day = firstNumber === null || firstNumberIsYear ? 1 : firstNumber;
+        const yearValue = hasExplicitYear
+            ? monthFirst[3]
+            : firstNumberIsYear
+              ? firstNumber
+              : fallbackYear;
+        const year = normalizeYear(yearValue, fallbackYear);
+
+        return createLocalDate(year, month, day);
     }
 
     /**
@@ -562,11 +623,11 @@ export class IMOUtility {
      */
     static searchStoriesByTitle(allStories, searchText) {
         if (!searchText || !Array.isArray(allStories)) return [];
-        
+
         const searchTerm = searchText.toString().trim().toLowerCase();
         if (!searchTerm) return [];
-        
-        return allStories.filter(story => {
+
+        return allStories.filter((story) => {
             if (story.title && typeof story.title === 'string') {
                 return story.title.toLowerCase().includes(searchTerm);
             }
@@ -584,17 +645,23 @@ export class IMOUtility {
      */
     static searchStoriesByDateRange(allStories, startDate, endDate, searchMode = 'exact') {
         if (!startDate && !endDate) return [];
-        
-        return allStories.filter(story => {
+
+        return allStories.filter((story) => {
             // Convert story dates to YYYY-MM-DD format for simple string comparison
-            const storyStartDateStr = this.convertStoryDateToISO(story.startDate || story.startMonth || '', story.roadmapYear);
-            const storyEndDateStr = this.convertStoryDateToISO(story.endDate || story.endMonth || '', story.roadmapYear);
-            
+            const storyStartDateStr = this.convertStoryDateToISO(
+                story.startDate || story.startMonth || '',
+                story.roadmapYear
+            );
+            const storyEndDateStr = this.convertStoryDateToISO(
+                story.endDate || story.endMonth || '',
+                story.roadmapYear
+            );
+
             // Validate: Skip stories where end date is before start date (invalid data)
             if (storyStartDateStr && storyEndDateStr && storyEndDateStr < storyStartDateStr) {
                 return false;
             }
-            
+
             if (searchMode === 'exact') {
                 // EXACT MATCH MODE
                 if (startDate && endDate) {
@@ -611,15 +678,23 @@ export class IMOUtility {
                 // EXACT +/- 7 DAYS MODE
                 if (startDate && endDate) {
                     // Story must start within startDate to startDate+7 days AND end within endDate +/- 7 days
-                    const startMatches = storyStartDateStr && this.isStartDateWithin7DaysForward(storyStartDateStr, startDate);
-                    const endMatches = storyEndDateStr && this.isWithinDateRange(storyEndDateStr, endDate, 7, 7); // +/- 7 days
+                    const startMatches =
+                        storyStartDateStr &&
+                        this.isStartDateWithin7DaysForward(storyStartDateStr, startDate);
+                    const endMatches =
+                        storyEndDateStr && this.isWithinDateRange(storyEndDateStr, endDate, 7, 7); // +/- 7 days
                     return startMatches && endMatches;
                 } else if (startDate) {
                     // Story must start within startDate to startDate+7 days (FORWARD ONLY)
-                    return storyStartDateStr && this.isStartDateWithin7DaysForward(storyStartDateStr, startDate);
+                    return (
+                        storyStartDateStr &&
+                        this.isStartDateWithin7DaysForward(storyStartDateStr, startDate)
+                    );
                 } else if (endDate) {
                     // Story must end within endDate +/- 7 days
-                    return storyEndDateStr && this.isWithinDateRange(storyEndDateStr, endDate, 7, 7);
+                    return (
+                        storyEndDateStr && this.isWithinDateRange(storyEndDateStr, endDate, 7, 7)
+                    );
                 }
             } else {
                 // RANGE SEARCH MODE (also used for current-year)
@@ -642,7 +717,7 @@ export class IMOUtility {
                     return storyEndDateStr && storyEndDateStr <= endDate;
                 }
             }
-            
+
             return false;
         });
     }
@@ -654,81 +729,14 @@ export class IMOUtility {
      * @returns {string|null} - ISO date string or null if parsing fails
      */
     static convertStoryDateToISO(dateStr, defaultYear) {
-        if (!dateStr) return null;
-        
-        const str = dateStr.toLowerCase().trim();
-        const currentYear = defaultYear || new Date().getFullYear();
-        
-        // Already in ISO format
-        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-            return str;
-        }
-        
-        // Handle DD/MM/YY or DD/MM/YYYY format (with "/" or "-" separator)
-        if (/\d+[\/\-]\d+/.test(str)) {
-            // Replace "-" with "/" for consistent parsing
-            const normalized = str.replace(/-/g, '/');
-            const parts = normalized.split('/');
-            if (parts.length >= 2) {
-                const day = parseInt(parts[0]);
-                const month = parseInt(parts[1]);
-                let year = parts.length > 2 ? parseInt(parts[2]) : currentYear;
-                
-                // Handle 2-digit years - always assume 2000s for roadmaps
-                if (year < 100) {
-                    year = 2000 + year;
-                }
-                
-                if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
-                    const dayStr = String(day).padStart(2, '0');
-                    const monthStr = String(month).padStart(2, '0');
-                    return `${year}-${monthStr}-${dayStr}`;
-                }
-            }
-        }
-        
-        // Handle month names (Jan, February, etc.)
-        const monthMap = {
-            'jan': '01', 'january': '01',
-            'feb': '02', 'february': '02',
-            'mar': '03', 'march': '03',
-            'apr': '04', 'april': '04',
-            'may': '05',
-            'jun': '06', 'june': '06',
-            'jul': '07', 'july': '07',
-            'aug': '08', 'august': '08',
-            'sep': '09', 'sept': '09', 'september': '09',
-            'oct': '10', 'october': '10',
-            'nov': '11', 'november': '11',
-            'dec': '12', 'december': '12'
-        };
-        
-        // Check for month name patterns
-        for (const [monthName, monthNum] of Object.entries(monthMap)) {
-            if (str.includes(monthName)) {
-                // Extract day if present
-                const dayMatch = str.match(/\d+/);
-                const day = dayMatch ? parseInt(dayMatch[0]) : 1;
-                
-                // Extract year if present - handle both 2-digit and 4-digit years
-                const yearMatch = str.match(/\b\d{2,4}\b/);
-                let year = currentYear;
-                if (yearMatch) {
-                    year = parseInt(yearMatch[0]);
-                    // Handle 2-digit years - always assume 2000s for roadmaps
-                    if (year < 100) {
-                        year = 2000 + year;
-                    }
-                }
-                
-                if (day >= 1 && day <= 31) {
-                    const dayStr = String(day).padStart(2, '0');
-                    return `${year}-${monthNum}-${dayStr}`;
-                }
-            }
-        }
-        
-        return null;
+        const date = this.parseStoryDate(dateStr, defaultYear);
+        if (!date) return null;
+
+        return [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, '0'),
+            String(date.getDate()).padStart(2, '0'),
+        ].join('-');
     }
 
     /**
@@ -739,14 +747,14 @@ export class IMOUtility {
      */
     static isStartDateWithin7DaysForward(storyDateStr, targetStartDate) {
         if (!storyDateStr || !targetStartDate) return false;
-        
+
         const storyDate = new Date(storyDateStr);
         const targetDate = new Date(targetStartDate);
-        
+
         // Calculate 7 days forward from target date
         const rangeEnd = new Date(targetDate);
         rangeEnd.setDate(targetDate.getDate() + 7);
-        
+
         // Story date must be >= target date AND <= target date + 7 days
         // This ensures we never go backward from the target date
         return storyDate >= targetDate && storyDate <= rangeEnd;
@@ -762,17 +770,17 @@ export class IMOUtility {
      */
     static isWithinDateRange(storyDateStr, targetDateStr, daysBefore, daysAfter) {
         if (!storyDateStr || !targetDateStr) return false;
-        
+
         const storyDate = new Date(storyDateStr);
         const targetDate = new Date(targetDateStr);
-        
+
         // Calculate the range boundaries
         const rangeStart = new Date(targetDate);
         rangeStart.setDate(targetDate.getDate() - daysBefore);
-        
+
         const rangeEnd = new Date(targetDate);
         rangeEnd.setDate(targetDate.getDate() + daysAfter);
-        
+
         return storyDate >= rangeStart && storyDate <= rangeEnd;
     }
 
@@ -797,13 +805,7 @@ export class IMOUtility {
         if (story.isProposed) {
             return { text: 'Proposed', className: 'status-proposed', icon: '💡' };
         }
-        
+
         return { text: 'In Progress', className: 'status-in-progress', icon: '🔄' };
     }
-}
-
-// Phase 2 will remove this. Inline scripts in views still resolve `IMOUtility`
-// against window; we keep that working until those scripts move to imports.
-if (typeof window !== 'undefined') {
-    window.IMOUtility = IMOUtility;
 }

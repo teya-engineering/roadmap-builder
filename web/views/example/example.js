@@ -1,7 +1,5 @@
-// Auto-extracted from views/example.html during Phase 2 of the v2 migration.
-// Phase 3 will slice this into smaller modules. For now it preserves the
-// original logic intact, including its dependence on window globals set by
-// the utilities (DateUtility, RoadmapGenerator, etc.).
+// Inline event attributes in this view resolve their handlers against window,
+// so init exposes those handlers after the view mounts.
 
 /**
  * Mount this view. Called by the SPA router on every navigation here.
@@ -19,7 +17,7 @@ export function init(_root) {
     try {
         // === BEGIN legacy script body ===
 
-    let selectedStory = null;
+    const selectedStory = null;
 
     // Add click event listeners to all story items
     document.addEventListener('DOMContentLoaded', function () {
@@ -29,7 +27,7 @@ export function init(_root) {
 
 
         // Editing disabled - no click event listeners added
-        storyItems.forEach((story, index) => {
+        storyItems.forEach((story) => {
             // Remove pointer cursor for non-editable stories
             story.style.cursor = 'default';
         });
@@ -57,9 +55,7 @@ export function init(_root) {
 
         // === END legacy script body ===
 
-        // Expose function declarations to window so inline onclick="foo()"
-        // handlers in the view markup keep resolving. Phase 3 will migrate
-        // these to delegated addEventListener wiring and remove these.
+        // Inline event attributes resolve their handlers against window.
         if (typeof editStory === 'function') window.editStory = editStory;
     } finally {
         document.addEventListener = __origAdd;

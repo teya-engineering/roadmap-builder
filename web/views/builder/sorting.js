@@ -10,6 +10,8 @@
 // cross-module by roadmap-generator.js) and stays in builder.js.
 
 import { showToast } from './notifications.js';
+import { ConfigUtility } from '../../utilities/config-utility.js';
+import { DateUtility } from '../../utilities/date-utility.js';
 
 /**
  * @param {object} deps
@@ -31,7 +33,7 @@ export function createSortingHandlers({ collectStoryData, generatePreview }) {
 
     function reorderStoriesInUI(sortByEnd = false) {
         const year = parseInt(document.getElementById('roadmapYear').value) || 2025;
-        const dateUtility = window.DateUtility;
+        const dateUtility = DateUtility;
 
         document.querySelectorAll('.epic-section').forEach((epicEl) => {
             const epicId = epicEl.id.split('-')[1];
@@ -103,7 +105,7 @@ export function createSortingHandlers({ collectStoryData, generatePreview }) {
     function handleSortingToggle() {
         const startToggle = document.getElementById('story-sorting-toggle');
         if (!startToggle) return;
-        const config = window.ConfigUtility;
+        const config = ConfigUtility;
 
         config.setSortStories(startToggle.checked);
         if (startToggle.checked) {
@@ -127,7 +129,7 @@ export function createSortingHandlers({ collectStoryData, generatePreview }) {
     function handleEndSortingToggle() {
         const endToggle = document.getElementById('story-sorting-end-toggle');
         if (!endToggle) return;
-        const config = window.ConfigUtility;
+        const config = ConfigUtility;
 
         config.setSortByEnd(endToggle.checked);
         if (endToggle.checked) {

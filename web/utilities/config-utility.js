@@ -1,13 +1,20 @@
-/**
- * Centralized Configuration & Layout Utility
- * Consolidates constants, magic numbers, and layout calculations
- */
+import {
+    MAX_COLUMNS,
+    POSITION_LIMIT,
+    monthToGridStart,
+    shouldPlaceBadgeBelow,
+    textBoxWidth,
+    zoomLevel,
+} from '../domain/grid.js';
+
+import { MONTH_LONG, MONTH_SHORT } from '../domain/dates.js';
+
 export class ConfigUtility {
     // Grid and Layout Constants
     static GRID = {
         ZOOM_THRESHOLD: 75,           // Grid units below which items can zoom
-        MAX_COLUMNS: 120,             // Maximum grid columns (December end)
-        POSITION_LIMIT: 109,          // Grid columns limit for positioning logic
+        MAX_COLUMNS,
+        POSITION_LIMIT,
         MONTHS_IN_YEAR: 12,
         COLUMNS_PER_MONTH: 10
     };
@@ -27,8 +34,8 @@ export class ConfigUtility {
 
     // Month Names and Positioning
     static MONTHS = {
-        NAMES: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
-        FULL_NAMES: ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'],
+        NAMES: [...MONTH_SHORT],
+        FULL_NAMES: [...MONTH_LONG],
         GRID_POSITIONS: {
             'JAN': 1, 'JANUARY': 1, 'FEB': 11, 'FEBRUARY': 11, 'MAR': 21, 'MARCH': 21,
             'APR': 31, 'APRIL': 31, 'MAY': 41, 'JUN': 51, 'JUNE': 51, 'JUL': 61, 'JULY': 61,
@@ -154,11 +161,7 @@ export class ConfigUtility {
      * @returns {number} - Width in grid units
      */
     static calculateTextBoxWidth(totalItems) {
-        if (totalItems <= 7) {
-            return this.TEXT_BOX_WIDTHS[totalItems] || this.TEXT_BOX_WIDTHS[1];
-        }
-        // For 8+ items: start from 85 (7 items) and add 12 for each additional item
-        return this.TEXT_BOX_WIDTHS[7] + (totalItems - 7) * this.TEXT_BOX_WIDTHS.BASE_MULTIPLIER;
+        return textBoxWidth(totalItems);
     }
 
     /**
@@ -169,33 +172,7 @@ export class ConfigUtility {
      * @returns {string} - Zoom level class: 'large', 'medium', or 'small'
      */
     static getZoomLevel(width, startGrid = null, endGrid = null) {
-        // Special rule: Stories starting in January (grid 1-10) and > 3 months cap at 1.05x zoom
-        if (startGrid !== null && startGrid <= 10 && width > 30) {
-            // Cap at 'small' (1.05x) if they would normally zoom higher
-            if (width < 40) return 'small';      // Would be 'large', cap to 'small'
-            if (width < 75) return 'small';      // Would be 'medium', cap to 'small'
-        }
-        
-        // Special rule: Stories ending in December (grid >= 111) and > 3 months cap at 1.05x zoom
-        if (endGrid !== null && endGrid >= 111 && width > 30) {
-            // Cap at 'small' (1.05x) if they would normally zoom higher
-            if (width < 40) return 'small';      // Would be 'large', cap to 'small'
-            if (width < 75) return 'small';      // Would be 'medium', cap to 'small'
-        }
-        
-        // Normal zoom levels
-        if (width < 40) return 'large';      // < 4 months: 1.20x zoom
-        if (width < 75) return 'medium';     // 4-7.5 months: 1.15x zoom
-        return 'small';                      // 7.5+ months: 1.05x zoom (collapsed small/tiny)
-    }
-
-    /**
-     * Check if an item can zoom based on its width (deprecated - use getZoomLevel)
-     * @param {number} width - Width in grid units
-     * @returns {boolean} - True if item can zoom
-     */
-    static canZoom(width) {
-        return true; // All items can zoom now, just at different levels
+        return zoomLevel(width, startGrid, endGrid);
     }
 
     /**
@@ -249,7 +226,7 @@ export class ConfigUtility {
      * @returns {boolean} - True if should position below
      */
     static shouldPositionBelow(storyWidth, textBoxWidth, totalItems) {
-        return (storyWidth + textBoxWidth > this.GRID.POSITION_LIMIT) || (totalItems >= 3);
+        return shouldPlaceBadgeBelow(storyWidth, textBoxWidth, totalItems);
     }
 
     /**
@@ -258,7 +235,7 @@ export class ConfigUtility {
      * @returns {boolean} - True if exceeds maximum
      */
     static exceedsMaxGrid(gridPosition) {
-        return gridPosition > this.GRID.MAX_COLUMNS;
+        return gridPosition > MAX_COLUMNS;
     }
 
     /**
@@ -266,7 +243,7 @@ export class ConfigUtility {
      * @returns {number} - Maximum grid position
      */
     static getMaxGrid() {
-        return this.GRID.MAX_COLUMNS;
+        return MAX_COLUMNS;
     }
 
     /**
@@ -275,7 +252,7 @@ export class ConfigUtility {
      * @returns {string} - Month name
      */
     static getMonthName(index) {
-        return this.MONTHS.NAMES[index] || 'JAN';
+        return MONTH_SHORT[index] || 'JAN';
     }
 
     /**
@@ -284,7 +261,7 @@ export class ConfigUtility {
      * @returns {number} - Grid position
      */
     static getMonthGridPosition(month) {
-        return this.MONTHS.GRID_POSITIONS[month.toUpperCase()] || 1;
+        return monthToGridStart(month);
     }
 
     /**
@@ -292,7 +269,7 @@ export class ConfigUtility {
      * @returns {Array} - Array of month names
      */
     static getAllMonthNames() {
-        return [...this.MONTHS.NAMES];
+        return [...MONTH_SHORT];
     }
 
     // Story Sorting Configuration
@@ -305,7 +282,7 @@ export class ConfigUtility {
                     return stored === 'true';
                 }
             }
-        } catch (e) {}
+        } catch {}
         return false; // Default: sorting off
     }
     
@@ -314,7 +291,7 @@ export class ConfigUtility {
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('roadmap-sort-stories', enabled.toString());
             }
-        } catch (e) {}
+        } catch {}
     }
 
     // New: separate preferences for start vs end sorting (mutually exclusive)
@@ -324,7 +301,7 @@ export class ConfigUtility {
                 const stored = localStorage.getItem('roadmap-sort-by-start');
                 return stored === 'true';
             }
-        } catch (e) {}
+        } catch {}
         return false;
     }
 
@@ -334,7 +311,7 @@ export class ConfigUtility {
                 const stored = localStorage.getItem('roadmap-sort-by-end');
                 return stored === 'true';
             }
-        } catch (e) {}
+        } catch {}
         return false;
     }
 
@@ -343,7 +320,7 @@ export class ConfigUtility {
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('roadmap-sort-by-start', enabled.toString());
             }
-        } catch (e) {}
+        } catch {}
     }
 
     static setSortByEnd(enabled) {
@@ -351,7 +328,7 @@ export class ConfigUtility {
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('roadmap-sort-by-end', enabled.toString());
             }
-        } catch (e) {}
+        } catch {}
     }
 
     // Force all text boxes below stories
@@ -361,7 +338,7 @@ export class ConfigUtility {
                 const stored = localStorage.getItem('roadmap-force-text-below');
                 return stored === 'true';
             }
-        } catch (e) {}
+        } catch {}
         return false;
     }
 
@@ -370,7 +347,7 @@ export class ConfigUtility {
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('roadmap-force-text-below', enabled.toString());
             }
-        } catch (e) {}
+        } catch {}
     }
 
     // Status event rendering style: 'hover' (track + popover under the bar)
@@ -381,7 +358,7 @@ export class ConfigUtility {
                 const stored = localStorage.getItem('roadmap-status-style');
                 if (stored === 'hover') return 'hover';
             }
-        } catch (e) {}
+        } catch {}
         return 'side';
     }
 
@@ -390,12 +367,6 @@ export class ConfigUtility {
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('roadmap-status-style', style === 'side' ? 'side' : 'hover');
             }
-        } catch (e) {}
+        } catch {}
     }
-}
-
-// Phase 2 will remove this. Inline scripts in views still resolve `ConfigUtility`
-// against window; we keep that working until those scripts move to imports.
-if (typeof window !== 'undefined') {
-    window.ConfigUtility = ConfigUtility;
 }

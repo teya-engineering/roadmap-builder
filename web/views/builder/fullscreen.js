@@ -1,3 +1,5 @@
+import { RoadmapGenerator } from '../../roadmap-generator.js';
+
 // Fullscreen helpers for the preview pane.
 //
 // showFullscreen / hideFullscreen drive the in-page #fullscreen-overlay
@@ -7,12 +9,12 @@
 
 /**
  * Render the current team data into the fullscreen overlay iframe and show
- * the overlay. RoadmapGenerator and currentTeamData live on window (set by
- * the Phase 1 utility shim and the form load flow respectively).
+ * the overlay. The form load flow keeps the latest team data on window for
+ * preview features that live outside the form module.
  */
 export function showFullscreen() {
     if (window.currentTeamData) {
-        const generator = new window.RoadmapGenerator(window.currentTeamData.roadmapYear);
+        const generator = new RoadmapGenerator(window.currentTeamData.roadmapYear);
         // generateRoadmap(teamData, embedded=false, enableEditing=false) -> read-only fullscreen render.
         const html = generator.generateRoadmap(window.currentTeamData, false, false);
         const iframe = document.getElementById('fullscreen-preview');

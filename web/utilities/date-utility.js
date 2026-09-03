@@ -1,127 +1,43 @@
-/**
- * Centralized European Date Utility
- * Handles all date parsing, formatting, and validation with European DD/MM/YY preference
- */
+import {
+    EUROPEAN_DATE_REGEX,
+    ISO_DATE_REGEX,
+    MONTH_LONG,
+    MONTH_SHORT,
+    europeanToIso,
+    formatEuropean,
+    monthIndex,
+    parseEuropean,
+    todayEuropean,
+} from '../domain/dates.js';
+
 export class DateUtility {
-    static monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    static fullMonthNames = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    static monthNames = [...MONTH_SHORT];
+    static fullMonthNames = [...MONTH_LONG];
     
     // Centralized regex patterns for date validation and parsing
-    static EUROPEAN_DATE_REGEX = /^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/;
-    static ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+    static EUROPEAN_DATE_REGEX = EUROPEAN_DATE_REGEX;
+    static ISO_DATE_REGEX = ISO_DATE_REGEX;
     static MONTH_YEAR_REGEX = /^(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s*(\d{4}|\d{2})?$/i;
 
     /**
      * Get current date in European DD/MM/YY format
      */
     static getTodaysDateEuropean() {
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, '0');
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const year = String(today.getFullYear()).slice(-2);
-        return `${day}/${month}/${year}`;
+        return todayEuropean();
     }
 
     /**
      * Format European date - normalize all European formats to DD/MM/YY for consistent display
      */
     static formatDateEuropean(dateStr, roadmapYear = null) {
-        if (!dateStr || typeof dateStr !== 'string') return dateStr;
-        
-        try {
-            let parts;
-            
-            if (dateStr.includes('/')) {
-                parts = dateStr.split('/');
-            } else if (dateStr.includes('-')) {
-                parts = dateStr.split('-');
-            } else {
-                return dateStr;
-            }
-            
-            if (parts.length >= 2) {
-                const day = parts[0].padStart(2, '0');
-                const month = parts[1].padStart(2, '0');
-                let year = parts[2] || (roadmapYear || new Date().getFullYear()).toString();
-                
-                if (year.length === 2) {
-                    const twoDigitYear = parseInt(year);
-                    
-                    if (twoDigitYear <= 30) {
-                        year = (2000 + twoDigitYear).toString(); // 00-30 = 2000-2030
-                    } else {
-                        year = (2000 + twoDigitYear).toString(); // Always assume 2000s for roadmaps
-                    }
-                }
-                
-                const twoDigitYear = year.slice(-2);
-                return `${day}/${month}/${twoDigitYear}`;
-            }
-            
-            return dateStr;
-        } catch (e) {
-            return dateStr;
-        }
+        return formatEuropean(dateStr, roadmapYear);
     }
 
     /**
      * Convert European date format to ISO format (YYYY-MM-DD)
      */
     static convertEuropeanToISO(dateStr, roadmapYear = null) {
-        if (!dateStr || typeof dateStr !== 'string') return dateStr;
-        
-        try {
-            let parts;
-            
-            if (dateStr.includes('/')) {
-                parts = dateStr.split('/');
-            } else if (dateStr.includes('-')) {
-                parts = dateStr.split('-');
-            } else {
-                return dateStr;
-            }
-            
-            if (parts.length >= 2) {
-                let day = parseInt(parts[0]);
-                let month = parseInt(parts[1]);
-                let year = parts[2] || (roadmapYear || new Date().getFullYear()).toString();
-                
-                // Smart validation with auto-correction for swapped day/month
-                if (month > 12 && day <= 12) {
-                    // Month is invalid but day could be month - swap them
-                    [day, month] = [month, day]; // Swap values
-                }
-                
-                // Final validation
-                if (day < 1 || day > 31 || month < 1 || month > 12) {
-                    return dateStr;
-                }
-                
-                const dayStr = String(day).padStart(2, '0');
-                const monthStr = String(month).padStart(2, '0');
-                
-                if (year.length === 2) {
-                    const twoDigitYear = parseInt(year);
-                    
-                    if (twoDigitYear <= 30) {
-                        year = (2000 + twoDigitYear).toString(); // 00-30 = 2000-2030
-                    } else {
-                        year = (2000 + twoDigitYear).toString(); // Always assume 2000s for roadmaps
-                    }
-                }
-                
-                const isoDate = `${year}-${monthStr}-${dayStr}`;
-                const testDate = new Date(isoDate);
-                if (!isNaN(testDate.getTime())) {
-                    return isoDate;
-                } else {
-                    return dateStr;
-                }
-            }
-            return dateStr;
-        } catch (e) {
-            return dateStr;
-        }
+        return europeanToIso(dateStr, roadmapYear);
     }
 
     /**
@@ -132,7 +48,7 @@ export class DateUtility {
         
         try {
             // ONLY European format (DD/MM/YY) - convert to ISO first
-            if (/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/.test(dateStr)) {
+            if (/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/.test(dateStr)) {
                 const isoDate = this.convertEuropeanToISO(dateStr, null);
                 if (isoDate) {
                     const date = new Date(isoDate);
@@ -154,7 +70,7 @@ export class DateUtility {
             
             // NO OTHER FORMATS ALLOWED - prevents any US date interpretation
             return null;
-        } catch (e) {
+        } catch {
             return null;
         }
     }
@@ -228,8 +144,8 @@ export class DateUtility {
         }
        
         // Handle DD/MM/YY format
-        if (value.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
-            const parts = value.split(/[\/\-]/);
+        if (value.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
+            const parts = value.split(/[-/]/);
             if (parts.length >= 2) {
                 let day = parseInt(parts[0]);
                 let month = parseInt(parts[1]);
@@ -292,7 +208,7 @@ export class DateUtility {
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const year = String(date.getFullYear()).slice(-2);
             return `${day}/${month}/${year}`;
-        } catch (e) {
+        } catch {
             return '';
         }
     }
@@ -310,18 +226,9 @@ export class DateUtility {
             }
             
             return newDate < prevDate; // Early if new date is before previous date
-        } catch (e) {
+        } catch {
             return false; // Default to delay if parsing fails
         }
-    }
-
-    /**
-     * Validate if a date string is valid
-     */
-    static isValidDate(dateStr) {
-        if (!dateStr) return false;
-        const parsed = this.parseDateSafe(dateStr);
-        return parsed !== null;
     }
 
     /**
@@ -371,7 +278,7 @@ export class DateUtility {
             
             const monthStartColumn = monthToGridCallback(this.getMonthName(month));
             return monthStartColumn + positionWithinMonth;
-        } catch (e) {
+        } catch {
             return 1;
         }
     }
@@ -386,7 +293,7 @@ export class DateUtility {
             return this.dateToGrid(value, monthToGridCallback);
         }
         
-        if (typeof value === 'string' && value.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+        if (typeof value === 'string' && value.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
             const isoDate = this.convertEuropeanToISO(value, null);
             return this.dateToGrid(isoDate, monthToGridCallback);
         }
@@ -445,53 +352,6 @@ export class DateUtility {
     }
 
     /**
-     * Get the semantic meaning of a date for roadmap positioning
-     * @param {string} dateStr - Date string to analyze
-     * @returns {object} - {type: 'start'|'end'|'end-prev'|'mid', dayOfMonth: number}
-     */
-    static getDatePositionType(dateStr) {
-        const date = this.parseDateSafe(dateStr);
-        if (!date) return { type: 'mid', dayOfMonth: null };
-        
-        const dayOfMonth = date.getDate();
-        if (this.isStartOfMonth(dateStr)) {
-            return { type: 'start', dayOfMonth };
-        } else if (this.isEndOfPreviousMonth(dateStr)) {
-            return { type: 'end-prev', dayOfMonth };
-        } else if (this.isEndOfMonth(dateStr)) {
-            return { type: 'end', dayOfMonth };
-        } else {
-            return { type: 'mid', dayOfMonth };
-        }
-    }
-
-    /**
-     * Add or subtract days from a date string
-     * @param {string} dateStr - Date string (European or ISO format)
-     * @param {number} days - Number of days to add (positive) or subtract (negative)
-     * @returns {string|null} - Adjusted date in ISO format (YYYY-MM-DD) or null if invalid
-     */
-    static addDays(dateStr, days) {
-        const date = this.parseDateSafe(dateStr);
-        if (!date || !Number.isInteger(days)) return null;
-        
-        const adjustedDate = new Date(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        if (isNaN(adjustedDate.getTime())) return null;
-        
-        return adjustedDate.toISOString().split('T')[0];
-    }
-
-    /**
-     * Convert a Date object to ISO date string (YYYY-MM-DD)
-     * @param {Date} date - Date object
-     * @returns {string|null} - ISO date string or null if invalid
-     */
-    static dateToISOString(date) {
-        if (!date || isNaN(date.getTime())) return null;
-        return date.toISOString().split('T')[0];
-    }
-
-    /**
      * Check if a Date object is valid
      * @param {Date} date - Date object to validate
      * @returns {boolean} - True if valid
@@ -499,68 +359,6 @@ export class DateUtility {
     static isValidDate(date) {
         return date instanceof Date && !isNaN(date.getTime());
     }
-
-    /**
-     * Check if a date is in January
-     * @param {string} dateStr - Date string to check
-     * @returns {boolean} - True if date is in January
-     */
-    static isJanuary(dateStr) {
-        // Handle ISO format check first
-        if (typeof dateStr === 'string' && dateStr.startsWith('2025-01')) {
-            return true;
-        }
-        
-        // Handle European format check
-        if (typeof dateStr === 'string' && dateStr.match(/^\d{1,2}[\/\-]0?1[\/\-]/)) {
-            return true; // Day/1/Year or Day/01/Year patterns
-        }
-        
-        // Fallback to date parsing
-        const date = this.parseDateSafe(dateStr);
-        return date ? date.getMonth() === 0 : false; // January is month 0
-    }
-
-    /**
-     * Check if a date is in October  
-     * @param {string} dateStr - Date string to check
-     * @returns {boolean} - True if date is in October
-     */
-    static isOctober(dateStr) {
-        // Handle ISO format check first
-        if (typeof dateStr === 'string' && dateStr.startsWith('2025-10')) {
-            return true;
-        }
-        
-        // Handle European format check for October
-        if (typeof dateStr === 'string' && dateStr.match(/^\d{1,2}[\/\-]10[\/\-]/)) {
-            return true; // Day/10/Year patterns
-        }
-        
-        // Fallback to date parsing
-        const date = this.parseDateSafe(dateStr);
-        return date ? date.getMonth() === 9 : false; // October is month 9
-    }
-
-    /**
-     * Get the month from a date string and return the month name
-     * @param {string} dateStr - Date string
-     * @returns {string} - Month name (JAN, FEB, etc.) or 'JAN' if invalid
-     */
-    static getMonthFromDate(dateStr) {
-        const date = this.parseDateSafe(dateStr);
-        if (!date) return 'JAN';
-        return this.getMonthName(date.getMonth() + 1);
-    }
-
-    /**
-     * Adjust date for visual alignment in roadmap grid
-     * Used for positioning stories that start/end at certain parts of the month
-     * @param {string} dateStr - Date string to adjust
-     * @param {string} adjustmentType - 'start-back', 'start-forward', 'mid-forward', 'end-forward'
-     * @returns {string|null} - Adjusted date in ISO format or null if invalid
-     */
-
 
     /**
      * Compare two dates chronologically (for sorting)
@@ -636,27 +434,12 @@ export class DateUtility {
      */
     static convertMonthToStartDate(monthName, roadmapYear = null) {
         if (!monthName || typeof monthName !== 'string') return monthName;
-        
-        const currentYear = roadmapYear || new Date().getFullYear();
-        const yearShort = currentYear.toString().slice(-2);
-        
-        const monthMap = {
-            'JAN': '01/01/' + yearShort, 'JANUARY': '01/01/' + yearShort,
-            'FEB': '01/02/' + yearShort, 'FEBRUARY': '01/02/' + yearShort,
-            'MAR': '01/03/' + yearShort, 'MARCH': '01/03/' + yearShort,
-            'APR': '01/04/' + yearShort, 'APRIL': '01/04/' + yearShort,
-            'MAY': '01/05/' + yearShort,
-            'JUN': '01/06/' + yearShort, 'JUNE': '01/06/' + yearShort,
-            'JUL': '01/07/' + yearShort, 'JULY': '01/07/' + yearShort,
-            'AUG': '01/08/' + yearShort, 'AUGUST': '01/08/' + yearShort,
-            'SEP': '01/09/' + yearShort, 'SEPTEMBER': '01/09/' + yearShort,
-            'OCT': '01/10/' + yearShort, 'OCTOBER': '01/10/' + yearShort,
-            'NOV': '01/11/' + yearShort, 'NOVEMBER': '01/11/' + yearShort,
-            'DEC': '01/12/' + yearShort, 'DECEMBER': '01/12/' + yearShort
-        };
-        
-        const upperMonth = monthName.toUpperCase();
-        return monthMap[upperMonth] || monthName; // Return original if not a recognized month
+
+        const index = monthIndex(monthName);
+        if (index < 0) return monthName;
+
+        const year = roadmapYear ?? new Date().getFullYear();
+        return `01/${String(index + 1).padStart(2, '0')}/${String(year).slice(-2)}`;
     }
     
     /**
@@ -667,31 +450,13 @@ export class DateUtility {
      */
     static convertMonthToEndDate(monthName, roadmapYear = null) {
         if (!monthName || typeof monthName !== 'string') return monthName;
-        
-        const currentYear = roadmapYear || new Date().getFullYear();
-        const yearShort = currentYear.toString().slice(-2);
-        
-        // Calculate days in February for leap year
-        const isLeapYear = (currentYear % 4 === 0 && currentYear % 100 !== 0) || (currentYear % 400 === 0);
-        const febDays = isLeapYear ? 29 : 28;
-        
-        const monthMap = {
-            'JAN': '31/01/' + yearShort, 'JANUARY': '31/01/' + yearShort,
-            'FEB': febDays + '/02/' + yearShort, 'FEBRUARY': febDays + '/02/' + yearShort,
-            'MAR': '31/03/' + yearShort, 'MARCH': '31/03/' + yearShort,
-            'APR': '30/04/' + yearShort, 'APRIL': '30/04/' + yearShort,
-            'MAY': '31/05/' + yearShort,
-            'JUN': '30/06/' + yearShort, 'JUNE': '30/06/' + yearShort,
-            'JUL': '31/07/' + yearShort, 'JULY': '31/07/' + yearShort,
-            'AUG': '31/08/' + yearShort, 'AUGUST': '31/08/' + yearShort,
-            'SEP': '30/09/' + yearShort, 'SEPTEMBER': '30/09/' + yearShort,
-            'OCT': '31/10/' + yearShort, 'OCTOBER': '31/10/' + yearShort,
-            'NOV': '30/11/' + yearShort, 'NOVEMBER': '30/11/' + yearShort,
-            'DEC': '31/12/' + yearShort, 'DECEMBER': '31/12/' + yearShort
-        };
-        
-        const upperMonth = monthName.toUpperCase();
-        return monthMap[upperMonth] || monthName; // Return original if not a recognized month
+
+        const index = monthIndex(monthName);
+        if (index < 0) return monthName;
+
+        const year = roadmapYear ?? new Date().getFullYear();
+        const lastDay = new Date(year, index + 1, 0).getDate();
+        return `${lastDay}/${String(index + 1).padStart(2, '0')}/${String(year).slice(-2)}`;
     }
     
     /**
@@ -700,22 +465,6 @@ export class DateUtility {
      * @returns {Date} - Parsed Date object
      */
     static parseEuropeanDateForTimeline(dateStr) {
-        if (!dateStr) return new Date(0); // Very old date for empty strings
-        
-        const parts = dateStr.split('/');
-        if (parts.length === 3) {
-            const day = parseInt(parts[0]);
-            const month = parseInt(parts[1]) - 1; // Month is 0-indexed
-            let year = parseInt(parts[2]);
-            if (year < 100) year += 2000; // Convert YY to YYYY
-            return new Date(year, month, day);
-        }
-        return new Date(dateStr); // Fallback
+        return parseEuropean(dateStr);
     }
 }
-
-// Phase 2 will remove this. Inline scripts in views still resolve `DateUtility`
-// against window; we keep that working until those scripts move to imports.
-if (typeof window !== 'undefined') {
-    window.DateUtility = DateUtility;
-} 

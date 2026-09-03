@@ -4,9 +4,8 @@
 // removed and the new view is mounted.
 //
 // View modules are imported once and cached by the browser; init(root) is
-// re-invoked on every navigation back to that view, which is the view's
-// responsibility to make idempotent (the auto-extracted Phase 2 modules do
-// this by re-firing the legacy DOMContentLoaded handlers).
+// re-invoked on every navigation back to that view. Each view handles repeat
+// mounts and may return a cleanup function for the router to call.
 
 const ROUTES = {
     '/builder': {
@@ -28,6 +27,7 @@ const ROUTES = {
 const DEFAULT_ROUTE = '/builder';
 
 const main = document.getElementById('app');
+let cleanupCurrentView = null;
 
 function normalizePath(path) {
     const cleaned = path.replace(/\/+$/, '');
@@ -52,6 +52,11 @@ function injectViewCss(href, route) {
     document.head.appendChild(link);
 }
 
+function cleanupView() {
+    if (cleanupCurrentView) cleanupCurrentView();
+    cleanupCurrentView = null;
+}
+
 async function render() {
     const route = resolveRoute();
     const config = ROUTES[route];
@@ -63,6 +68,7 @@ async function render() {
         html = await res.text();
     } catch (err) {
         console.error(err);
+        cleanupView();
         clearPreviousViewCss();
         main.innerHTML = `<div style="padding:24px">Failed to load view: ${err.message}</div>`;
         return;
@@ -71,6 +77,7 @@ async function render() {
     // Hold off on tearing down the previous view's stylesheet until we have
     // the new markup ready - swapping earlier leaves the old DOM mounted
     // unstyled for one paint, which shows up as a flicker on tab switches.
+    cleanupView();
     clearPreviousViewCss();
     injectViewCss(config.css, route);
     main.innerHTML = html;
@@ -87,7 +94,8 @@ async function render() {
     }
     if (typeof mod.init === 'function') {
         try {
-            mod.init(main);
+            const cleanup = mod.init(main);
+            cleanupCurrentView = typeof cleanup === 'function' ? cleanup : null;
         } catch (err) {
             console.error(`init() failed for ${route}:`, err);
         }

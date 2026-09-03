@@ -2,15 +2,9 @@ import { DateUtility } from './utilities/date-utility.js';
 import { UIUtility } from './utilities/ui-utility.js';
 import { ConfigUtility } from './utilities/config-utility.js';
 
-// Wrappers preserved so existing call sites (`getDateUtility().method(...)`)
-// inside this file keep working with minimal churn. Phase 3 will inline these.
-const getDateUtility = () => DateUtility;
-const getUIUtility = () => UIUtility;
-const getConfigUtility = () => ConfigUtility;
-
 export class RoadmapGenerator {
     constructor(roadmapYear = null) {
-        this.months = getConfigUtility().getAllMonthNames();
+        this.months = ConfigUtility.getAllMonthNames();
         const year = roadmapYear || new Date().getFullYear();
         const shortYear = year.toString().slice(-2);
         this.quarters = [`Q1'${shortYear}`, `Q2'${shortYear}`, `Q3'${shortYear}`, `Q4'${shortYear}`];
@@ -29,14 +23,14 @@ export class RoadmapGenerator {
         if (story.startDate) {
             try {
                 let isoStartDate = story.startDate;
-                if (story.startDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                if (story.startDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                     isoStartDate = this.convertEuropeanToISO(story.startDate);
                 }
                 const startDate = new Date(isoStartDate);
                 if (!isNaN(startDate.getTime())) {
                     startYear = startDate.getFullYear();
                 }
-            } catch (e) {
+            } catch {
                 // If date parsing fails, continue
             }
         } else if (story.startMonth) {
@@ -48,14 +42,14 @@ export class RoadmapGenerator {
         if (story.endDate) {
             try {
                 let isoEndDate = story.endDate;
-                if (story.endDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                if (story.endDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                     isoEndDate = this.convertEuropeanToISO(story.endDate);
                 }
                 const endDate = new Date(isoEndDate);
                 if (!isNaN(endDate.getTime())) {
                     endYear = endDate.getFullYear();
                 }
-            } catch (e) {
+            } catch {
                 // If date parsing fails, continue
             }
         } else if (story.endMonth) {
@@ -88,12 +82,12 @@ export class RoadmapGenerator {
         
         try {
             let isoDate = dateStr;
-            if (dateStr.match(getDateUtility().EUROPEAN_DATE_REGEX)) {
+            if (dateStr.match(DateUtility.EUROPEAN_DATE_REGEX)) {
                 isoDate = this.convertEuropeanToISO(dateStr);
             }
             const date = new Date(isoDate);
             return !isNaN(date.getTime()) && date.getFullYear() !== this.roadmapYear;
-        } catch (e) {
+        } catch {
             return false; // If parsing fails, don't filter out
         }
     }
@@ -209,7 +203,7 @@ export class RoadmapGenerator {
             
             if (story.startDate) {
                 let isoStartDate = story.startDate;
-                if (story.startDate.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/)) {
+                if (story.startDate.match(/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/)) {
                     isoStartDate = this.convertEuropeanToISO(story.startDate);
                 }
                 storyStartDate = new Date(isoStartDate);
@@ -218,12 +212,12 @@ export class RoadmapGenerator {
             } else if (story.startMonth) {
                 // For startMonth, we need to determine the correct year
                 // If the story has no explicit year, it's from the roadmap year
-                let storyStartStr = story.startMonth;
-                let yearToUse = this.roadmapYear || new Date().getFullYear();
+                const storyStartStr = story.startMonth;
+                const yearToUse = this.roadmapYear || new Date().getFullYear();
                 
                 // If startMonth has a date format, extract the year
-                if (storyStartStr.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/)) {
-                    let isoStartDate = this.convertEuropeanToISO(storyStartStr);
+                if (storyStartStr.match(/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/)) {
+                    const isoStartDate = this.convertEuropeanToISO(storyStartStr);
                     storyStartDate = new Date(isoStartDate);
                 } else {
                     // Pure month name - use roadmap year
@@ -240,7 +234,7 @@ export class RoadmapGenerator {
             const searchStartParts = this.searchRange.startDate.split('-');
             const searchStartDate = new Date(parseInt(searchStartParts[0]), parseInt(searchStartParts[1]) - 1, parseInt(searchStartParts[2]));
             return storyStartDate <= searchStartDate;
-        } catch (e) {
+        } catch {
             return false;
         }
     }
@@ -268,7 +262,7 @@ export class RoadmapGenerator {
         if (story._startsInPreviousYear && story._actualStartYear && story._originalStartDate) {
             try {
                 let isoStartDate = story._originalStartDate;
-                if (story._originalStartDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                if (story._originalStartDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                     isoStartDate = this.convertEuropeanToISO(story._originalStartDate);
                 }
                 const startDate = new Date(isoStartDate);
@@ -276,7 +270,7 @@ export class RoadmapGenerator {
                 const actualStartMonth = monthNames[startDate.getMonth()];
                 const startInfo = `<span style="font-size: smaller; font-style: italic; font-weight: normal; color: black;"> (📅 ${actualStartMonth} ${story._actualStartYear})</span>`;
                 title += startInfo;
-            } catch (e) {
+            } catch {
                 // Fallback if date parsing fails
                 const startInfo = `<span style="font-size: smaller; font-style: italic; font-weight: normal; color: black;"> (📅 ${story._actualStartYear})</span>`;
                 title += startInfo;
@@ -393,37 +387,37 @@ export class RoadmapGenerator {
 
     // Format European date - normalize all European formats to DD/MM/YY for consistent display
     formatDateEuropean(dateStr) {
-        return getDateUtility().formatDateEuropean(dateStr, this.roadmapYear);
+        return DateUtility.formatDateEuropean(dateStr, this.roadmapYear);
     }
 
     // Convert European date format to ISO format (YYYY-MM-DD)
     convertEuropeanToISO(dateStr) {
-        return getDateUtility().convertEuropeanToISO(dateStr, this.roadmapYear);
+        return DateUtility.convertEuropeanToISO(dateStr, this.roadmapYear);
     }
 
     // Safe date parsing that handles ONLY European and ISO formats - NO US FORMAT EVER
     parseDateSafe(dateStr) {
-        return getDateUtility().parseDateSafe(dateStr);
+        return DateUtility.parseDateSafe(dateStr);
     }
 
     // Convert month name to grid position
     monthToGrid(month) {
-        return getConfigUtility().getMonthGridPosition(month);
+        return ConfigUtility.getMonthGridPosition(month);
     }
 
     // Convert specific date to grid position with sub-month precision
     dateToGrid(dateStr) {
-        return getDateUtility().dateToGrid(dateStr, (month) => this.monthToGrid(month));
+        return DateUtility.dateToGrid(dateStr, (month) => this.monthToGrid(month));
     }
 
     // Helper function to get month name from number
     getMonthName(monthNum) {
-        return getDateUtility().getMonthName(monthNum);
+        return DateUtility.getMonthName(monthNum);
     }
 
     // Smart position calculator - handles both month names and dates
     getGridPosition(value) {
-        return getDateUtility().getGridPosition(value, (month) => this.monthToGrid(month));
+        return DateUtility.getGridPosition(value, (month) => this.monthToGrid(month));
     }
 
     // Generate the CSS styles - now links to external CSS file
@@ -493,7 +487,7 @@ export class RoadmapGenerator {
         
         // Sort timeline changes by change date (most recent first)
         const sortedChanges = [...story.roadmapChanges.changes].sort((a, b) => {
-            return getDateUtility().compareDates(b.date, a.date); // Reverse order for most recent first
+            return DateUtility.compareDates(b.date, a.date); // Reverse order for most recent first
         });
         
         // Get the newEndDate from the most recent change
@@ -501,7 +495,7 @@ export class RoadmapGenerator {
         if (mostRecentChange && mostRecentChange.newEndDate) {
             // Determine if this is a date or month format
             const newEndDate = mostRecentChange.newEndDate;
-            if (newEndDate.includes('-') || newEndDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+            if (newEndDate.includes('-') || newEndDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                 // It's a date format
                 return newEndDate;
             } else {
@@ -520,7 +514,7 @@ export class RoadmapGenerator {
         if (!effectiveEndDate) return false;
         
         // Check if it's a date format (contains - or matches DD/MM pattern)
-        return effectiveEndDate.includes('-') || effectiveEndDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/);
+        return effectiveEndDate.includes('-') || effectiveEndDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/);
     }
 
     // Generate story HTML
@@ -531,7 +525,7 @@ export class RoadmapGenerator {
         }
         
         // Generate unique identifier for story-textbox pairing (sanitize for CSS selectors)
-        const storyId = getUIUtility().generateStoryId(epicName, storyIndex);
+        const storyId = UIUtility.generateStoryId(epicName, storyIndex);
         
         // Support both date formats (startDate/endDate and startMonth/endMonth)
         const startValue = story.startDate || story.startMonth;
@@ -546,7 +540,7 @@ export class RoadmapGenerator {
             try {
                 // Convert European date to ISO if needed
                 let isoStartDate = story.startDate;
-                if (story.startDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                if (story.startDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                     isoStartDate = this.convertEuropeanToISO(story.startDate);
                 }
                 
@@ -561,11 +555,11 @@ export class RoadmapGenerator {
                         const jan1IsoDate = `${this.roadmapYear}-01-01`;
                         
                         // Use the same logic as normal January 1st dates
-                        const isStartOfMonth = getDateUtility().isStartOfMonth(jan1IsoDate);
+                        const isStartOfMonth = DateUtility.isStartOfMonth(jan1IsoDate);
                         if (isStartOfMonth) {
                             startGrid = this.monthToGrid('JAN');
                         } else {
-                            startGrid = getDateUtility().dateToGrid(jan1IsoDate, this.monthToGrid.bind(this));
+                            startGrid = DateUtility.dateToGrid(jan1IsoDate, this.monthToGrid.bind(this));
                         }
                         // Note: January 1st is never the 15th, so no special backup needed here
                         
@@ -574,8 +568,8 @@ export class RoadmapGenerator {
                         story._actualStartYear = startDate.getFullYear();
                     } else {
                         // Story starts in roadmap year - use 4-position system
-                        const isStartOfMonth = getDateUtility().isStartOfMonth(isoStartDate);
-                        const isEndOfPreviousMonth = getDateUtility().isEndOfPreviousMonth(isoStartDate);
+                        const isStartOfMonth = DateUtility.isStartOfMonth(isoStartDate);
+                        const isEndOfPreviousMonth = DateUtility.isEndOfPreviousMonth(isoStartDate);
                         
                         if (isStartOfMonth) {
                             // Start of month (1st-3rd): Position at month start
@@ -583,7 +577,7 @@ export class RoadmapGenerator {
                             startGrid = this.monthToGrid(monthName);
                         } else if (isEndOfPreviousMonth) {
                             // End of previous month (1st-3rd): Position at previous month start
-                            const previousMonthName = getDateUtility().getPreviousMonthName(isoStartDate);
+                            const previousMonthName = DateUtility.getPreviousMonthName(isoStartDate);
                             startGrid = this.monthToGrid(previousMonthName);
                         } else {
                             // Regular dates (4th-31st)
@@ -598,7 +592,7 @@ export class RoadmapGenerator {
                                 startGrid = this.monthToGrid(nextMonthName);
                             } else {
                                 // Base: 4-position system
-                                startGrid = getDateUtility().dateToGrid(isoStartDate, this.monthToGrid.bind(this));
+                                startGrid = DateUtility.dateToGrid(isoStartDate, this.monthToGrid.bind(this));
                                 
                                 // Adjust: 4th–27th shift back by 2 grid units
                                 if (dayOfMonth >= 4 && dayOfMonth <= 27) {
@@ -610,7 +604,7 @@ export class RoadmapGenerator {
                 } else {
                     startGrid = this.getGridPosition(startValue);
                 }
-            } catch (e) {
+            } catch {
                 // If date parsing fails, use fallback
                 startGrid = this.getGridPosition(startValue);
             }
@@ -622,8 +616,8 @@ export class RoadmapGenerator {
         let endGrid;
         if (effectiveEndValue) {
             // Check if this is a date that represents end of month (26th-31st) or end of previous month (1st-3rd)
-            const isEndOfMonth = effectiveEndIsDate && getDateUtility().isEndOfMonth(effectiveEndValue);
-            const isEndOfPreviousMonth = effectiveEndIsDate && getDateUtility().isEndOfPreviousMonth(effectiveEndValue);
+            const isEndOfMonth = effectiveEndIsDate && DateUtility.isEndOfMonth(effectiveEndValue);
+            const isEndOfPreviousMonth = effectiveEndIsDate && DateUtility.isEndOfPreviousMonth(effectiveEndValue);
             
             if (!effectiveEndIsDate) {
                 // Month name: position at month start + 10 to span full month
@@ -635,14 +629,14 @@ export class RoadmapGenerator {
                 endGrid = this.getGridPosition(monthName) + 10;
             } else if (isEndOfPreviousMonth) {
                 // End of previous month (1st-3rd): treat as end of previous month
-                const previousMonthName = getDateUtility().getPreviousMonthName(effectiveEndValue);
+                const previousMonthName = DateUtility.getPreviousMonthName(effectiveEndValue);
                 endGrid = this.getGridPosition(previousMonthName) + 10;
             } else {
                 // Regular specific date: handle with alignment adjustments
                 try {
                     // Convert European date to ISO if needed
                     let isoEndDate = effectiveEndValue;
-                    if (effectiveEndValue.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                    if (effectiveEndValue.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                         isoEndDate = this.convertEuropeanToISO(effectiveEndValue);
                     }
                     
@@ -650,7 +644,7 @@ export class RoadmapGenerator {
                     if (!isNaN(endDate.getTime())) {
                         const dayOfMonth = endDate.getDate();
                         
-                        if (getDateUtility().isStartOfMonth(isoEndDate)) {
+                        if (DateUtility.isStartOfMonth(isoEndDate)) {
                             // Start of month (1st-3rd): Use new 4-position system
                             endGrid = this.getGridPosition(isoEndDate);
                         } else if (dayOfMonth >= 4 && dayOfMonth <= 25) {
@@ -663,7 +657,7 @@ export class RoadmapGenerator {
                     } else {
                         endGrid = this.getGridPosition(effectiveEndValue);
                     }
-                } catch (e) {
+                } catch {
                     // If date parsing fails, use original
                     endGrid = this.getGridPosition(effectiveEndValue);
                 }
@@ -686,26 +680,15 @@ export class RoadmapGenerator {
             startGrid = this.getGridPosition('JAN'); // Start from January
         }
         
-        const bulletsHTML = getUIUtility().generateBulletsHTML(story.bullets, (text) => this.formatText(text));
+        const bulletsHTML = UIUtility.generateBulletsHTML(story.bullets, (text) => this.formatText(text));
         
         // Generate stacked clock icons for multiple timeline changes (not for done/cancel/at-risk only)
         let iconHTML = '';
         if (story.hasRoadmapChanges && story.roadmapChanges.changes && story.roadmapChanges.changes.length > 0) {
             const numChanges = story.roadmapChanges.changes.length;
             
-            // Determine overall trend: count early vs late changes
-            let earlyCount = 0;
-            let lateCount = 0;
-            story.roadmapChanges.changes.forEach(change => {
-                if (this.isEarlyDelivery(change.prevEndDate, change.newEndDate)) {
-                    earlyCount++;
-                } else {
-                    lateCount++;
-                }
-            });
-            
             // No background styling - clean clock icon with larger font size
-            const clockIconStyle = `color: #666; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: ${getConfigUtility().CSS.UI.CLOCK_ICON_SIZE}px; top: ${getConfigUtility().CSS.UI.ICON_OFFSET_TOP}px; right: ${getConfigUtility().CSS.UI.ICON_OFFSET_RIGHT}px;`;
+            const clockIconStyle = `color: #666; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: ${ConfigUtility.CSS.UI.CLOCK_ICON_SIZE}px; top: ${ConfigUtility.CSS.UI.ICON_OFFSET_TOP}px; right: ${ConfigUtility.CSS.UI.ICON_OFFSET_RIGHT}px;`;
             
             if (numChanges === 1 || !this.enableStackedIcons) {
                 // Single change or stacking disabled - just one centered icon
@@ -729,7 +712,7 @@ export class RoadmapGenerator {
         
         // Add shooting star icon for BTL stories (Below the Line) to indicate future aspirations
         if (epicName === 'Below the Line') {
-            const shootingStarIconStyle = `color: #666; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: 20px; top: ${getConfigUtility().CSS.UI.ICON_OFFSET_TOP}px; right: ${getConfigUtility().CSS.UI.ICON_OFFSET_RIGHT + 1}px;`;
+            const shootingStarIconStyle = `color: #666; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: 20px; top: ${ConfigUtility.CSS.UI.ICON_OFFSET_TOP}px; right: ${ConfigUtility.CSS.UI.ICON_OFFSET_RIGHT + 1}px;`;
             iconHTML = `<div class="roadmap-icon" style="${shootingStarIconStyle}">🌠</div>`;
         }
         // Icon precedence system - only highest priority icon shows in each position
@@ -794,11 +777,11 @@ export class RoadmapGenerator {
         
         // Graduated zooming logic: all stories can zoom, just at different levels based on width
         // Pass startGrid and endGrid to apply special rules (e.g., January/December stories > 3 months cap at 1.10x)
-        const zoomLevel = getConfigUtility().getZoomLevel(storyWidth, startGrid, endGrid);
+        const zoomLevel = ConfigUtility.getZoomLevel(storyWidth, startGrid, endGrid);
         const zoomClass = ` story-zoom-${zoomLevel}`;
         
         // Add edit icon only in embedded mode (builder view)
-        const editIconHTML = getUIUtility().generateEditIconHTML(embedded, epicName, story.title, storyIndex, (text) => this.formatText(text));
+        const editIconHTML = UIUtility.generateEditIconHTML(embedded, epicName, story.title, storyIndex, (text) => this.formatText(text));
 
         // The side status text box is always rendered by generateEpic. The
         // beta toggle adds the milestone track below the bar; each pin carries
@@ -812,7 +795,7 @@ export class RoadmapGenerator {
             // Story continues after the search range - show actual end date using date-only logic
             const storyEndDateStr = this.convertStoryDateToISO(story.endDate, this.roadmapYear);
             if (storyEndDateStr) {
-                const [yearStr, monthStr, dayStr] = storyEndDateStr.split('-');
+                const [yearStr, monthStr] = storyEndDateStr.split('-');
                 const actualEndYear = parseInt(yearStr);
                 const monthIndex = parseInt(monthStr) - 1; // Convert to 0-based index
                 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -884,12 +867,12 @@ export class RoadmapGenerator {
 
     // Helper function to truncate EPIC names based on available height
     truncateEpicName(name, numStories = 1) {
-        return getUIUtility().processEpicName(name, numStories);
+        return UIUtility.processEpicName(name, numStories);
     }
 
     // Helper function to parse date strings and compare them
     isEarlyDelivery(prevEndDate, newEndDate) {
-        return getDateUtility().isEarlyDelivery(prevEndDate, newEndDate);
+        return DateUtility.isEarlyDelivery(prevEndDate, newEndDate);
     }
 
     // Compute precise grid position for a milestone date (per-day, not 4-position).
@@ -898,7 +881,7 @@ export class RoadmapGenerator {
         if (!dateStr) return null;
         try {
             let isoDate = dateStr;
-            if (dateStr.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+            if (dateStr.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                 isoDate = this.convertEuropeanToISO(dateStr);
             }
             const date = this.parseDateSafe(isoDate);
@@ -909,7 +892,7 @@ export class RoadmapGenerator {
             // Each month spans 10 grid units. Map day 1->0, day 31->10.
             const offset = ((day - 1) / 30) * 10;
             return monthStartCol + offset;
-        } catch (e) {
+        } catch {
             return null;
         }
     }
@@ -1037,7 +1020,7 @@ export class RoadmapGenerator {
             });
         }
 
-        events.sort((a, b) => getDateUtility().compareDates(a.date, b.date));
+        events.sort((a, b) => DateUtility.compareDates(a.date, b.date));
         return events;
     }
 
@@ -1052,8 +1035,8 @@ export class RoadmapGenerator {
             if (attr === 'hover') return false;
         }
         try {
-            return getConfigUtility().getStatusStyle() === 'side';
-        } catch (e) {
+            return ConfigUtility.getStatusStyle() === 'side';
+        } catch {
             return false;
         }
     }
@@ -1069,8 +1052,8 @@ export class RoadmapGenerator {
             if (searchToggle && searchToggle.checked) return true;
         }
         try {
-            return getConfigUtility().shouldForceTextBelow();
-        } catch (e) {
+            return ConfigUtility.shouldForceTextBelow();
+        } catch {
             return false;
         }
     }
@@ -1151,7 +1134,7 @@ export class RoadmapGenerator {
         }
         if (!this.shouldDisplayStory(story)) return '';
 
-        const storyId = getUIUtility().generateStoryId(epicName, storyIndex);
+        const storyId = UIUtility.generateStoryId(epicName, storyIndex);
 
         let totalItems = 0;
         if (hasChanges) totalItems += rc.changes.length;
@@ -1163,13 +1146,13 @@ export class RoadmapGenerator {
         if (hasTransferredOutInfo) totalItems += 1;
         if (hasTransferredInInfo) totalItems += 1;
         if (hasProposedInfo) totalItems += 1;
-        const textBoxWidth = getConfigUtility().calculateTextBoxWidth(totalItems);
+        const textBoxWidth = ConfigUtility.calculateTextBoxWidth(totalItems);
 
         let storyStartGrid;
         if (story.startDate) {
             try {
                 let isoStartDate = story.startDate;
-                if (story.startDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                if (story.startDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                     isoStartDate = this.convertEuropeanToISO(story.startDate);
                 }
                 const startDate = this.parseDateSafe(isoStartDate);
@@ -1178,23 +1161,23 @@ export class RoadmapGenerator {
                         story._originalStartDate = story.startDate;
                         story.startDate = `01/01/${this.roadmapYear}`;
                         const jan1IsoDate = `${this.roadmapYear}-01-01`;
-                        const isStartOfMonth = getDateUtility().isStartOfMonth(jan1IsoDate);
+                        const isStartOfMonth = DateUtility.isStartOfMonth(jan1IsoDate);
                         storyStartGrid = isStartOfMonth
                             ? this.monthToGrid('JAN')
-                            : getDateUtility().dateToGrid(jan1IsoDate, this.monthToGrid.bind(this));
+                            : DateUtility.dateToGrid(jan1IsoDate, this.monthToGrid.bind(this));
                         story._startsInPreviousYear = true;
                         story._actualStartYear = startDate.getFullYear();
                     } else {
-                        const isStartOfMonth = getDateUtility().isStartOfMonth(isoStartDate);
-                        const isEndOfPreviousMonth = getDateUtility().isEndOfPreviousMonth(isoStartDate);
+                        const isStartOfMonth = DateUtility.isStartOfMonth(isoStartDate);
+                        const isEndOfPreviousMonth = DateUtility.isEndOfPreviousMonth(isoStartDate);
                         if (isStartOfMonth) {
                             const monthName = this.getMonthName(startDate.getMonth() + 1);
                             storyStartGrid = this.monthToGrid(monthName);
                         } else if (isEndOfPreviousMonth) {
-                            const previousMonthName = getDateUtility().getPreviousMonthName(isoStartDate);
+                            const previousMonthName = DateUtility.getPreviousMonthName(isoStartDate);
                             storyStartGrid = this.monthToGrid(previousMonthName);
                         } else {
-                            storyStartGrid = getDateUtility().dateToGrid(isoStartDate, this.monthToGrid.bind(this));
+                            storyStartGrid = DateUtility.dateToGrid(isoStartDate, this.monthToGrid.bind(this));
                             const dayOfMonth = startDate.getDate();
                             if (dayOfMonth >= 11 && dayOfMonth <= 21) {
                                 storyStartGrid -= 2;
@@ -1212,7 +1195,7 @@ export class RoadmapGenerator {
                 } else {
                     storyStartGrid = this.getGridPosition(story.startDate);
                 }
-            } catch (e) {
+            } catch {
                 storyStartGrid = this.getGridPosition(story.startDate);
             }
         } else {
@@ -1225,18 +1208,18 @@ export class RoadmapGenerator {
         const effectiveEndIsDate = this.isEffectiveEndDateADate(story);
         if (effectiveEndIsDate) {
             const parsedEndDate = this.parseDateSafe(effectiveEndValue);
-            const isEndOfMonth = getDateUtility().isEndOfMonth(effectiveEndValue);
-            const isEndOfPreviousMonth = getDateUtility().isEndOfPreviousMonth(effectiveEndValue);
+            const isEndOfMonth = DateUtility.isEndOfMonth(effectiveEndValue);
+            const isEndOfPreviousMonth = DateUtility.isEndOfPreviousMonth(effectiveEndValue);
             if (isEndOfMonth) {
                 const monthName = this.getMonthName(parsedEndDate.getMonth() + 1);
                 storyEndGrid = this.getGridPosition(monthName) + 10;
                 actualEndGrid = storyEndGrid;
             } else if (isEndOfPreviousMonth) {
-                const previousMonthName = getDateUtility().getPreviousMonthName(effectiveEndValue);
+                const previousMonthName = DateUtility.getPreviousMonthName(effectiveEndValue);
                 storyEndGrid = this.getGridPosition(previousMonthName) + 10;
                 actualEndGrid = storyEndGrid;
-            } else if (parsedEndDate && getDateUtility().isValidDate(parsedEndDate)) {
-                storyEndGrid = getDateUtility().dateToGrid(effectiveEndValue, this.monthToGrid.bind(this));
+            } else if (parsedEndDate && DateUtility.isValidDate(parsedEndDate)) {
+                storyEndGrid = DateUtility.dateToGrid(effectiveEndValue, this.monthToGrid.bind(this));
                 actualEndGrid = this.getGridPosition(effectiveEndValue);
             } else {
                 storyEndGrid = this.getGridPosition(effectiveEndValue);
@@ -1265,7 +1248,7 @@ export class RoadmapGenerator {
         } else {
             const buffer = 2;
             const combinedWidth = visualStoryEndGrid + buffer + textBoxWidth;
-            if (getConfigUtility().exceedsMaxGrid(combinedWidth)) {
+            if (ConfigUtility.exceedsMaxGrid(combinedWidth)) {
                 shouldPositionBelowFinal = true;
             }
         }
@@ -1277,8 +1260,8 @@ export class RoadmapGenerator {
         if (shouldPositionBelowFinal) {
             changeStartGrid = forceBelowGlobal ? storyStartGrid : (storyStartGrid + 1);
             changeEndGrid = changeStartGrid + textBoxWidth;
-            if (getConfigUtility().exceedsMaxGrid(changeEndGrid)) {
-                const overflow = changeEndGrid - getConfigUtility().getMaxGrid();
+            if (ConfigUtility.exceedsMaxGrid(changeEndGrid)) {
+                const overflow = changeEndGrid - ConfigUtility.getMaxGrid();
                 changeStartGrid = Math.max(1, changeStartGrid - overflow);
                 changeEndGrid = changeStartGrid + textBoxWidth;
             }
@@ -1409,14 +1392,14 @@ export class RoadmapGenerator {
             allItems.push({ date: proposedInfo.date, html: generateStatusColumn('💡', '#007cba', proposedInfo.date, proposedInfo.notes) });
         }
 
-        allItems.sort((a, b) => getDateUtility().compareDates(a.date, b.date));
+        allItems.sort((a, b) => DateUtility.compareDates(a.date, b.date));
         const allItemsHTML = allItems.map(item => item.html).join('');
 
         const effectiveBelow = this.isForceTextBelow() ? true : positionBelow;
         const gridRow = effectiveBelow ? 2 : 1;
         const marginStyle = effectiveBelow ? '' : 'margin-top: 1px; ';
         const textBoxWidth = endGrid - startGrid;
-        const zoomLevel = getConfigUtility().getZoomLevel(textBoxWidth, startGrid, endGrid);
+        const zoomLevel = ConfigUtility.getZoomLevel(textBoxWidth, startGrid, endGrid);
         const zoomClass = ` story-zoom-${zoomLevel}`;
         const belowClass = effectiveBelow ? ' roadmap-text-below' : '';
         const backgroundStyle = backgroundColor ? `background-color: ${backgroundColor}; ` : '';
@@ -1446,7 +1429,7 @@ export class RoadmapGenerator {
         if (story.startDate) {
             try {
                 let isoStartDate = story.startDate;
-                if (story.startDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                if (story.startDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                     isoStartDate = this.convertEuropeanToISO(story.startDate);
                 }
                 const startDate = new Date(isoStartDate);
@@ -1459,7 +1442,7 @@ export class RoadmapGenerator {
                 } else {
                     startGrid = this.getGridPosition(startValue);
                 }
-            } catch (e) {
+            } catch {
                 startGrid = this.getGridPosition(startValue);
             }
         } else {
@@ -1469,8 +1452,8 @@ export class RoadmapGenerator {
         
         if (effectiveEndValue) {
             // Check if this is an end-of-month date (26th-31st) or end of previous month (1st-3rd)
-            const isEndOfMonth = effectiveEndIsDate && getDateUtility().isEndOfMonth(effectiveEndValue);
-            const isEndOfPreviousMonth = effectiveEndIsDate && getDateUtility().isEndOfPreviousMonth(effectiveEndValue);
+            const isEndOfMonth = effectiveEndIsDate && DateUtility.isEndOfMonth(effectiveEndValue);
+            const isEndOfPreviousMonth = effectiveEndIsDate && DateUtility.isEndOfPreviousMonth(effectiveEndValue);
             
             if (!effectiveEndIsDate) {
                 // Month name: position at month start + 10 to span full month
@@ -1482,7 +1465,7 @@ export class RoadmapGenerator {
                 endGrid = this.getGridPosition(monthName) + 10;
             } else if (isEndOfPreviousMonth) {
                 // End of previous month (1st-3rd): treat as end of previous month
-                const previousMonthName = getDateUtility().getPreviousMonthName(effectiveEndValue);
+                const previousMonthName = DateUtility.getPreviousMonthName(effectiveEndValue);
                 endGrid = this.getGridPosition(previousMonthName) + 10;
             } else {
                 endGrid = this.getGridPosition(effectiveEndValue);
@@ -1492,20 +1475,20 @@ export class RoadmapGenerator {
         }
         
         // Calculate text box positioning - place after story end
-        const textBoxWidth = getConfigUtility().calculateTextBoxWidth(1); // BTL text boxes always have 1 item (date added)
+        const textBoxWidth = ConfigUtility.calculateTextBoxWidth(1); // BTL text boxes always have 1 item (date added)
         let textStartGrid = endGrid + 2; // Small buffer after story
         let textEndGrid = textStartGrid + textBoxWidth;
         let positionBelow = false;
         
         // If text box would extend past December, position it below the story instead of to the left
-        if (getConfigUtility().exceedsMaxGrid(textEndGrid)) {
+        if (ConfigUtility.exceedsMaxGrid(textEndGrid)) {
             positionBelow = true;
             textStartGrid = startGrid + 1; // Slight indent from story start
             textEndGrid = textStartGrid + textBoxWidth;
             
             // If still too wide when below, adjust to fit
-            if (getConfigUtility().exceedsMaxGrid(textEndGrid)) {
-                const overflow = textEndGrid - getConfigUtility().getMaxGrid();
+            if (ConfigUtility.exceedsMaxGrid(textEndGrid)) {
+                const overflow = textEndGrid - ConfigUtility.getMaxGrid();
                 textStartGrid = Math.max(1, textStartGrid - overflow);
                 textEndGrid = textStartGrid + textBoxWidth;
             }
@@ -1518,7 +1501,7 @@ export class RoadmapGenerator {
         } else {
             btlVisualPosition = totalEpics + 1;
         }
-        const backgroundColor = getUIUtility().getAlternatingBackgroundColor(btlVisualPosition);
+        const backgroundColor = UIUtility.getAlternatingBackgroundColor(btlVisualPosition);
         
         // Format the date for display (European format)
         const formattedDate = this.formatDateEuropean(story.dateAdded);
@@ -1585,7 +1568,7 @@ export class RoadmapGenerator {
             btlVisualPosition = totalEpics + 1;
         }
         
-        const btlBackgroundColor = getUIUtility().getAlternatingBackgroundColor(btlVisualPosition);
+        const btlBackgroundColor = UIUtility.getAlternatingBackgroundColor(btlVisualPosition);
         
         return `
         <div class="swimlane btl-swimlane">
@@ -1599,15 +1582,15 @@ export class RoadmapGenerator {
 
     // Generate KTLO special swimlane
     generateKTLOSwimlane(ktloData, totalEpics = 0, embedded = false, ktloPosition = 'top') {
-        const bulletsHTML = getUIUtility().generateBulletsHTML(ktloData.story.bullets, (text) => this.formatText(text));
+        const bulletsHTML = UIUtility.generateBulletsHTML(ktloData.story.bullets, (text) => this.formatText(text));
         
         // KTLO spans the entire year (120 grid units), so it gets the 'tiny' zoom level
         const ktloWidth = 120; // Full year
-        const zoomLevel = getConfigUtility().getZoomLevel(ktloWidth);
+        const zoomLevel = ConfigUtility.getZoomLevel(ktloWidth);
         const zoomClass = ` story-zoom-${zoomLevel}`;
         
         // Add edit and move icons only in embedded mode (builder view) - KTLO doesn't need move icons since it's always alone
-        const editIconHTML = getUIUtility().generateEditIconHTML(embedded, 'KTLO', ktloData.story.title, 0, (text) => this.formatText(text));
+        const editIconHTML = UIUtility.generateEditIconHTML(embedded, 'KTLO', ktloData.story.title, 0, (text) => this.formatText(text));
         
         const ktloStoryHTML = `
         <div class="story-track">
@@ -1626,14 +1609,14 @@ export class RoadmapGenerator {
         // When KTLO is at top: KTLO=0, EPIC1=1, EPIC2=2, etc.
         // When KTLO is at bottom: EPIC1=0, EPIC2=1, KTLO=N, BTL=N+1
         const visualPosition = ktloPosition === 'top' ? 0 : totalEpics;
-        const ktloBackgroundColor = getUIUtility().getAlternatingBackgroundColor(visualPosition); // Even = lime, odd = brown
+        const ktloBackgroundColor = UIUtility.getAlternatingBackgroundColor(visualPosition); // Even = lime, odd = brown
         
         const monthlyBoxesHTML = ktloData.monthlyData.map((monthData, index) => {
             // Get transform configuration from ConfigUtility
-            const transform = getConfigUtility().getMonthlyBoxTransform(index);
-            const startColumn = (index * getConfigUtility().GRID.COLUMNS_PER_MONTH) + transform.startColumn;
+            const transform = ConfigUtility.getMonthlyBoxTransform(index);
+            const startColumn = (index * ConfigUtility.GRID.COLUMNS_PER_MONTH) + transform.startColumn;
             const endColumn = startColumn + 9; // Use 9 columns (20% bigger than 8)
-            const extraStyle = getConfigUtility().generateTransform(transform.x);
+            const extraStyle = ConfigUtility.generateTransform(transform.x);
             const extraClass = transform.extraClass;
             
             // Get month name for header
@@ -1673,12 +1656,12 @@ export class RoadmapGenerator {
         // When KTLO is at top: KTLO=0, EPIC1=1, EPIC2=2, etc. 
         // When KTLO is at bottom: EPIC1=0, EPIC2=1, KTLO=N, BTL=N+1
         const visualPosition = ktloPosition === 'top' ? epicIndex + 1 : epicIndex;
-        const backgroundColor = getUIUtility().getAlternatingBackgroundColor(visualPosition); // Even = lime, odd = brown
+        const backgroundColor = UIUtility.getAlternatingBackgroundColor(visualPosition); // Even = lime, odd = brown
         
         let tracksHTML = '';
         
         // Optionally sort stories by start date first, then by end date as secondary sort
-        const storiesToProcess = getConfigUtility().shouldSortStories() ? 
+        const storiesToProcess = ConfigUtility.shouldSortStories() ?
             [...epic.stories].sort((a, b) => {
                 // Get start values (date or month)
                 const aStart = a.startDate || a.startMonth || 'JAN';
@@ -1689,13 +1672,13 @@ export class RoadmapGenerator {
                 const bEnd = this.getEffectiveEndDate(b) || b.endDate || b.endMonth || 'MAR';
                 
                 // Primary sort: by start date (handles both dates and months)
-                const startComparison = getDateUtility().compareDateOrMonth(aStart, bStart, this.roadmapYear);
+                const startComparison = DateUtility.compareDateOrMonth(aStart, bStart, this.roadmapYear);
                 if (startComparison !== 0) {
                     return startComparison;
                 }
                 
                 // Secondary sort: by end date (if start dates are the same)
-                return getDateUtility().compareDateOrMonth(aEnd, bEnd, this.roadmapYear);
+                return DateUtility.compareDateOrMonth(aEnd, bEnd, this.roadmapYear);
             }) : epic.stories;
         
         storiesToProcess.forEach((story, storyIndex) => {
@@ -1982,11 +1965,6 @@ export class RoadmapGenerator {
     }
 }
 
-// Phase 2 will remove this. Inline scripts in views still resolve `RoadmapGenerator`
-// against window; we keep that working until those scripts move to imports.
-if (typeof window !== 'undefined') {
-    window.RoadmapGenerator = RoadmapGenerator;
-}
 
 // Auto-run the milestone layout pass whenever roadmap content appears or the
 // viewport resizes. Operates on the document so it works for the main app

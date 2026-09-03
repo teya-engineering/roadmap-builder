@@ -24,13 +24,13 @@ npm start   # serves web/ on http://localhost:8080
 | ------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PORT`              | `8080`    | Port to listen on.                                                                                                                                                                                                                                                                                                                                    |
 | `HOST`              | `0.0.0.0` | Bind address. Set `127.0.0.1` to keep the dev server off the LAN.                                                                                                                                                                                                                                                                                     |
-| `SLACK_WEBHOOK_URL` | _(unset)_ | Slack [incoming webhook](https://api.slack.com/messaging/webhooks) URL. When set, each roadmap save posts a summary of what changed to that channel. **Leave unset to disable** — the feature is a silent no-op. Set it in the deployment/runtime environment (e.g. the container env), not as a build arg, so the secret never ships to the browser. |
+| `SLACK_WEBHOOK_URL` | _(unset)_ | Slack [incoming webhook](https://api.slack.com/messaging/webhooks) URL. When set, each roadmap save posts a summary of what changed to that channel. **Leave unset to disable** - the feature is a silent no-op. Set it in the deployment/runtime environment (e.g. the container env), not as a build arg, so the secret never ships to the browser. |
 
 ## Slack notifications
 
 On save, the builder diffs the roadmap against its last-saved state and posts a
 summary of **what changed** to a Slack channel. There is no server-side
-persistence — roadmaps are saved to the user's local disk — so the diff is
+persistence - roadmaps are saved to the user's local disk - so the diff is
 computed in the browser and the message is sent through a thin same-origin
 proxy.
 
@@ -67,13 +67,13 @@ The diff matches stories by `storyId` and reports, per story:
 ### Reliability and security
 
 - **Best-effort, silent**: the local disk save always succeeds regardless. A
-  missing webhook or a failed POST is logged to the console only — never blocks
+  missing webhook or a failed POST is logged to the console only - never blocks
   the save and never shown to the user.
 - The webhook URL is read at request time and never sent to the browser; the
   endpoint is same-origin (no CORS), rejects non-`POST`, and caps the body at
   64 KB.
 
-**Phase 2 (not yet implemented):** a `:link: N other teams might also be working on this` cross-team overlap block, reusing the Cross-team Search matching in `web/utilities/imo-utility.js`.
+Cross-team overlap notifications are not implemented. They can reuse the matching logic in `web/utilities/imo-utility.js` when added.
 
 ## Development
 
@@ -86,9 +86,9 @@ npm run typecheck # tsc --noEmit
 
 The notification feature is covered by:
 
-- `web/domain/roadmap-diff.test.js` — the diff engine
-- `web/domain/slack-message.test.js` — the Slack message formatter
-- `web/views/builder/slack-notify.test.js` — baseline tracking, coalescing, and
+- `web/domain/roadmap-diff.test.js` - the diff engine
+- `web/domain/slack-message.test.js` - the Slack message formatter
+- `web/views/builder/slack-notify.test.js` - baseline tracking, coalescing, and
   best-effort delivery
-- `server.test.mjs` — the `/api/roadmap-saved` proxy (forwarding, validation,
+- `server.test.mjs` - the `/api/roadmap-saved` proxy (forwarding, validation,
   status codes)

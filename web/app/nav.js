@@ -1,3 +1,5 @@
+import { directoryStore } from './directory-store.js';
+
 (function () {
     const LINKS = [
         { path: '/builder', label: 'Builder' },
@@ -11,7 +13,7 @@
     // when the browser actually supports in-place writes (Chrome/Edge/Brave/
     // Arc). Safari and Firefox would silently no-op, which is worse than not
     // showing the control at all.
-    const autoSaveSupported = !!(window.AppDir && window.AppDir.canSaveInBrowser);
+    const autoSaveSupported = directoryStore.canSaveInBrowser;
 
     const autoSaveBtn = autoSaveSupported
         ? `<button type="button" id="appNavAutoSave" class="app-nav__theme app-nav__beta app-nav__autosave" title="Toggle auto-save" aria-pressed="false">
@@ -26,7 +28,7 @@
         </div>
         <div class="app-nav__bottom">
             <div class="app-nav__links">
-                ${LINKS.map(l => `<a href="${l.path}" class="app-nav__link" data-spa-link>${l.label}</a>`).join('')}
+                ${LINKS.map((l) => `<a href="${l.path}" class="app-nav__link" data-spa-link>${l.label}</a>`).join('')}
             </div>
             <button type="button" id="appNavTheme" class="app-nav__theme" title="Toggle dark mode" aria-pressed="false"></button>
             ${autoSaveBtn}
@@ -57,9 +59,14 @@
     }
 
     themeBtn.addEventListener('click', () => {
-        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        const next =
+            document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        try { localStorage.setItem('roadmap-theme', next); } catch (_e) { /* ignore */ }
+        try {
+            localStorage.setItem('roadmap-theme', next);
+        } catch {
+            /* ignore */
+        }
         renderTheme();
     });
 
@@ -68,8 +75,10 @@
     const statusStyleLabel = nav.querySelector('#appNavStatusStyleLabel');
 
     function renderStatusStyle() {
-        const isExperimental = document.documentElement.getAttribute('data-status-style') !== 'side';
-        if (statusStyleLabel) statusStyleLabel.textContent = isExperimental ? 'Beta on' : 'Beta off';
+        const isExperimental =
+            document.documentElement.getAttribute('data-status-style') !== 'side';
+        if (statusStyleLabel)
+            statusStyleLabel.textContent = isExperimental ? 'Beta on' : 'Beta off';
         statusStyleBtn.title = isExperimental
             ? 'Beta features enabled (click to disable)'
             : 'Beta features disabled (click to enable)';
@@ -77,11 +86,20 @@
     }
 
     statusStyleBtn.addEventListener('click', () => {
-        const next = document.documentElement.getAttribute('data-status-style') === 'side' ? 'hover' : 'side';
+        const next =
+            document.documentElement.getAttribute('data-status-style') === 'side'
+                ? 'hover'
+                : 'side';
         document.documentElement.setAttribute('data-status-style', next);
-        try { localStorage.setItem('roadmap-status-style', next); } catch (_e) { /* ignore */ }
+        try {
+            localStorage.setItem('roadmap-status-style', next);
+        } catch {
+            /* ignore */
+        }
         renderStatusStyle();
-        document.dispatchEvent(new CustomEvent('roadmap-status-style-changed', { detail: { style: next } }));
+        document.dispatchEvent(
+            new CustomEvent('roadmap-status-style-changed', { detail: { style: next } })
+        );
     });
 
     renderStatusStyle();
@@ -93,8 +111,11 @@
     const autoSaveLabel = nav.querySelector('#appNavAutoSaveLabel');
     if (autoSaveBtnEl) {
         const readAutoSave = () => {
-            try { return localStorage.getItem('roadmap-autosave') === 'on'; }
-            catch { return false; }
+            try {
+                return localStorage.getItem('roadmap-autosave') === 'on';
+            } catch {
+                return false;
+            }
         };
         const renderAutoSave = () => {
             const on = readAutoSave();
@@ -106,15 +127,21 @@
         };
         autoSaveBtnEl.addEventListener('click', () => {
             const next = !readAutoSave();
-            try { localStorage.setItem('roadmap-autosave', next ? 'on' : 'off'); } catch (_e) { /* ignore */ }
+            try {
+                localStorage.setItem('roadmap-autosave', next ? 'on' : 'off');
+            } catch {
+                /* ignore */
+            }
             renderAutoSave();
-            window.dispatchEvent(new CustomEvent('roadmap-autosave-changed', { detail: { enabled: next } }));
+            window.dispatchEvent(
+                new CustomEvent('roadmap-autosave-changed', { detail: { enabled: next } })
+            );
         });
         renderAutoSave();
     }
 
     function updateActive(path) {
-        nav.querySelectorAll('.app-nav__link').forEach(a => {
+        nav.querySelectorAll('.app-nav__link').forEach((a) => {
             if (a.getAttribute('href') === path) a.setAttribute('aria-current', 'page');
             else a.removeAttribute('aria-current');
         });
@@ -160,11 +187,11 @@
     }
 
     folderBtn.addEventListener('click', async () => {
-        const snap = window.AppDir.get();
+        const snap = directoryStore.get();
         // If we already have a granted native folder handle that's just
         // pending re-permission, skip the menu and re-request access.
         if (snap.handle && snap.permission !== 'granted' && snap.kind === 'native') {
-            const after = await window.AppDir.requestAccess();
+            const after = await directoryStore.requestAccess();
             if (after.permission === 'granted') return;
             // Permission denied/dismissed - fall through to the menu.
         }
@@ -178,15 +205,15 @@
         closeMenu();
         const choice = btn.dataset.pick;
         if (choice === 'folder') {
-            await window.AppDir.select();
+            await directoryStore.select();
         } else if (choice === 'file') {
-            const result = await window.AppDir.selectFile();
+            const result = await directoryStore.selectFile();
             if (result && typeof window.onRoadmapFilePicked === 'function') {
                 window.onRoadmapFilePicked(result);
             }
         }
     });
 
-    if (window.AppDir) window.AppDir.subscribe(renderFolder);
+    directoryStore.subscribe(renderFolder);
     window.__updateNav = updateActive;
 })();

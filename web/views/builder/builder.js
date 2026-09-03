@@ -1,26 +1,3 @@
-// Auto-extracted from views/builder.html during Phase 2 of the v2 migration.
-// Phase 3 is gradually slicing this into smaller modules. So far:
-//   - Share dropdown UI moved to ./share.js
-//   - PDF/JPG export moved to ./export.js
-//   - Story drag-and-drop handlers moved to ./drag-drop.js
-//   - Country-flag mutual-exclusion handlers moved to ./country-flags.js
-//   - Modal focus trap moved to ./focus-trap.js
-//   - Story status checkboxes moved to ./status.js
-//   - Info entry helpers moved to ./info-entries.js
-//   - Story sorting toggles moved to ./sorting.js
-//   - Timeline change handlers (story-form + edit-modal + applyPending) moved to ./timeline-changes.js
-//   - Toast notifications moved to ./notifications.js
-//   - Fullscreen helpers moved to ./fullscreen.js
-//   - Stats modal moved to ./stats.js
-//   - KTLO percentage validation moved to ./ktlo-validation.js
-//   - Generic collapse helpers + builder-panel collapse moved to ./collapse.js
-//   - KTLO section show/hide/reposition moved to ./ktlo-sections.js
-//   - File browser side panel + drag-drop file load moved to ./file-browser.js
-//   - Date picker UI + tracking moved to ./date-pickers.js
-//   - Story up/down move helpers moved to ./story-moves.js
-// The remainder is still legacy script-body code that depends on window
-// globals set by the utilities (DateUtility, RoadmapGenerator, etc.).
-
 import * as share from './share.js';
 import * as saveDropdown from './save-dropdown.js';
 import { exportJPG, exportPDF, createExportHTML } from './export.js';
@@ -45,7 +22,6 @@ import {
     createEditTimelineChangeHandlers,
     sortTimelineChangesByDate,
 } from './timeline-changes.js';
-import { showToast } from './notifications.js';
 import * as fullscreen from './fullscreen.js';
 import { createStatsHandlers } from './stats.js';
 import {
@@ -57,6 +33,11 @@ import * as save from './save.js';
 import * as slackNotify from './slack-notify.js';
 import { enableTitleEditing } from './inline-edit.js';
 import { confettiBurst } from './confetti.js';
+import { RoadmapGenerator } from '../../roadmap-generator.js';
+import { ConfigUtility } from '../../utilities/config-utility.js';
+import { DateUtility } from '../../utilities/date-utility.js';
+import { renderCountryFlagsHTML } from '../../utilities/countries.js';
+import { directoryStore } from '../../app/directory-store.js';
 
 /**
  * Mount this view. Called by the SPA router on every navigation here.
@@ -113,7 +94,7 @@ export function init(_root) {
             if (!teamData || typeof teamData !== 'object') throw new Error('not a roadmap document');
             if (typeof window.fixDatesOnLoad === 'function') window.fixDatesOnLoad(teamData);
             window.loadTeamData(teamData);
-            if (typeof window.updateFilenameDisplay === 'function') window.updateFilenameDisplay(name);
+            window.updateFilenameDisplay(name);
             // fileHandle is null on Safari/Firefox (read-only fallback); save
             // stays disabled in that case.
             save.setFileHandle(fileHandle && typeof fileHandle.createWritable === 'function' ? fileHandle : null);
@@ -281,28 +262,13 @@ export function init(_root) {
     function renderRoadmapToMount(teamData) {
         const mount = document.getElementById('roadmap-mount');
         if (!mount) return;
-        const Generator = window.RoadmapGenerator;
-        if (!Generator) return;
-        const generator = new Generator(teamData.roadmapYear);
+        const generator = new RoadmapGenerator(teamData.roadmapYear);
         mount.innerHTML = generator.generateRoadmapBody(teamData, true);
     }
 
-    // Phase 1 regressed the legacy body's reliance on `<script>`-tag globals.
-    // The utility classes/functions and the getX() wrappers used to live in
-    // the global scope; converting their files to ES modules made them
-    // module-scoped. Each one is still aliased to window by a Phase 1 shim,
-    // so we point the legacy names at window.* here and the 30+ call sites
-    // below keep working unchanged. Phase 3 follow-up: rewrite the call sites
-    // with direct imports and delete this block.
-    const getConfigUtility = () => window.ConfigUtility;
-    const getDateUtility = () => window.DateUtility;
-    const getUIUtility = () => window.UIUtility;
-    const DateUtility = window.DateUtility;
-    const RoadmapGenerator = window.RoadmapGenerator;
-    const renderCountryFlagsHTML = window.renderCountryFlagsHTML;
-
     const __viewReady = [];
     const __origAdd = document.addEventListener.bind(document);
+    let cleanupDirectorySubscription = () => {};
     document.addEventListener = function (type, listener, opts) {
         if (type === 'DOMContentLoaded') { __viewReady.push(listener); return; }
         return __origAdd(type, listener, opts);
@@ -326,7 +292,7 @@ export function init(_root) {
             return id;
         }
         
-        function createStoryId(epicId) {
+        function createStoryId() {
             // Create hexadecimal ID for Stories (e.g., "0x50000001", "0x50000002")
             // Using 5 prefix (looks like S) to distinguish from EPICs which use E prefix
             storyIdCounter++;
@@ -692,11 +658,6 @@ export function init(_root) {
         
         
         
-        // (moved to ./ktlo-sections.js)
-        
-        // Generic collapse toggle function
-        // toggleCollapse (generic helper) moved to ./collapse.js.
-        
         function toggleBTLCollapse() {
             const contentDiv = document.getElementById('btl-content');
             const collapseBtn = document.getElementById('btl-collapse-btn');
@@ -817,10 +778,10 @@ export function init(_root) {
         // markup, and addInfoEntry/convertSingleInfoToMultiple are deps of
         // the status module below.
         const __infoEntries = createInfoEntryHandlers({
-            getToday: () => window.DateUtility.getTodaysDateEuropean(),
+            getToday: () => DateUtility.getTodaysDateEuropean(),
             onChange: () => generatePreview(),
         });
-        const { addInfoEntry, removeInfoEntry, convertSingleInfoToMultiple } = __infoEntries;
+        const { addInfoEntry, convertSingleInfoToMultiple } = __infoEntries;
         Object.assign(window, __infoEntries);
 
         // Sorting handlers. storeOriginalStoryOrder is called from loadTeamData
@@ -839,11 +800,10 @@ export function init(_root) {
         const __timeline = createTimelineChangeHandlers({
             addListenersToElement,
             initializeDatePicker,
-            getToday: () => window.DateUtility.getTodaysDateEuropean(),
+            getToday: () => DateUtility.getTodaysDateEuropean(),
         });
         const {
             toggleChanges, addChange, updateChangeButton,
-            applyPendingTimelineChanges,
             resetCounter: resetTimelineChangeCounter,
         } = __timeline;
         Object.assign(window, __timeline);
@@ -854,7 +814,7 @@ export function init(_root) {
         // flag and the Set entry before re-installing.
         const __editTimeline = createEditTimelineChangeHandlers({
             reinitializeDatePicker,
-            getToday: () => window.DateUtility.getTodaysDateEuropean(),
+            getToday: () => DateUtility.getTodaysDateEuropean(),
         });
         const {
             toggleEditTimelineChanges, addEditChange, updateEditChangeButton,
@@ -882,14 +842,13 @@ export function init(_root) {
             initializeDatePickersForSection,
             generatePreview,
         });
-        const { toggleKTLOPosition, handleKTLOToggleShortcut } = __ktloSections;
+        const { handleKTLOToggleShortcut } = __ktloSections;
         Object.assign(window, __ktloSections, {
             hideKTLOSection, showKTLOSection, repositionKTLOSection,
         });
 
         // File browser: side panel listing of .json roadmaps + drag-drop
-        // file load. Subscribes to AppDir for the selected folder; bails
-        // when builder isn't mounted (router-level cleanup is a future task).
+        // file load. Subscribes to the directory store for the selected folder.
         // toggleFileBrowser/loadDirectoryFiles/openRoadmapFile are
         // referenced from inline onclick attributes and from body code.
         const __fileBrowser = createFileBrowser({
@@ -898,15 +857,15 @@ export function init(_root) {
             setFileHandle: save.setFileHandle,
         });
         const {
-            toggleFileBrowser, loadDirectoryFiles, openRoadmapFile,
+            toggleFileBrowser,
             initializeDragAndDrop,
         } = __fileBrowser;
         Object.assign(window, __fileBrowser);
         // Mirror the legacy boot pattern: wire drag-drop on DOMContentLoaded
-        // and subscribe to AppDir now (subscribe immediately fires once with
+        // and subscribe now (subscribe immediately fires once with
         // current state, so the file list paints if a folder is already set).
         document.addEventListener('DOMContentLoaded', initializeDragAndDrop);
-        __fileBrowser.subscribeToAppDir();
+        cleanupDirectorySubscription = __fileBrowser.subscribeToDirectoryStore();
 
         // KTLO percentage validation. The legacy body bound this on
         // DOMContentLoaded; we shimmed addEventListener to capture that
@@ -920,31 +879,18 @@ export function init(_root) {
         // onchange="handle*Change('${storyId}')" attribute resolution.
         const __statusBundle = createStatusHandlers({ addInfoEntry, convertSingleInfoToMultiple });
         const {
-            STATUS_CONFIG, StatusUtils, handleStatusChange,
             handleDoneChange, handleCancelledChange, handleAtRiskChange,
             handleNewStoryChange, handleInfoChange,
             handleTransferredInChange, handleTransferredOutChange, handleProposedChange,
         } = __statusBundle;
         Object.assign(window, __statusBundle);
 
-        // (moved to ./ktlo-sections.js)
-        
-        // (moved to ./ktlo-sections.js)
-
-        
-        // (moved to ./ktlo-sections.js)
-        
         // Debounced generatePreview to avoid too many rapid updates
         let previewTimeout;
         function debouncedGeneratePreview() {
             clearTimeout(previewTimeout);
-            previewTimeout = setTimeout(generatePreview, getConfigUtility().CSS.TIMING.DEBOUNCE_DELAY); // Wait for debounce delay after last change
+            previewTimeout = setTimeout(generatePreview, ConfigUtility.CSS.TIMING.DEBOUNCE_DELAY); // Wait for debounce delay after last change
         }
-
-        // Keyboard shortcut for toggling KTLO position
-        // (moved to ./ktlo-sections.js)
-
-        // (moved to ./ktlo-sections.js)
 
         // Story sorting toggles (start/end) are now in ./sorting.js. The
         // factory is wired at the top of init() and exposes the handlers
@@ -977,10 +923,6 @@ export function init(_root) {
         });
 
 
-        // (originalStoryOrders, storeOriginalStoryOrder, reorderStoriesInUI,
-        // restoreOriginalStoryOrder, showSortingNotification moved to ./sorting.js)
-        // (moved to ./ktlo-sections.js)
-        
         function addAutoUpdateListeners() {
             // Team information fields
             const teamFields = ['roadmapYear', 'teamName', 'directorVP', 'em', 'pm', 'teamDescription'];
@@ -1145,8 +1087,6 @@ export function init(_root) {
                 element.addEventListener('change', debouncedGeneratePreview);
             }
         }
-        
-        // collapseAllSections moved to ./collapse.js.
         
         function addStory(epicId) {
             storyCounters[epicId]++;
@@ -1547,8 +1487,8 @@ export function init(_root) {
         function addBTLStory() {
             // Check if we already have max BTL stories
             const existingBTLStories = document.querySelectorAll('#btl-stories-container .story-section');
-            if (existingBTLStories.length >= getConfigUtility().CSS.UI.BTL_MAX_STORIES) {
-                alert(`Maximum of ${getConfigUtility().CSS.UI.BTL_MAX_STORIES} BTL stories allowed. Please remove an existing story before adding a new one.`);
+            if (existingBTLStories.length >= ConfigUtility.CSS.UI.BTL_MAX_STORIES) {
+                alert(`Maximum of ${ConfigUtility.CSS.UI.BTL_MAX_STORIES} BTL stories allowed. Please remove an existing story before adding a new one.`);
                 return;
             }
             
@@ -1710,9 +1650,6 @@ export function init(_root) {
             }
         }
         
-        // (moved to ./story-moves.js)
-        
-        // (moved to ./story-moves.js)
         // Story-form timeline-change handlers (toggleChanges) are now in
         // ./timeline-changes.js. The factory is wired at the top of init().
         
@@ -1728,21 +1665,6 @@ export function init(_root) {
         
         // Simple date picker helper using native HTML5 date input
 
-        // Global function to refresh all date pickers with their current values
-        
-        // Update date picker ranges when roadmap year changes
-
-        // ===== OPTIMIZED CHECKBOX HANDLING SYSTEM =====
-        // 
-        // This optimization reduces ~150 lines of repetitive checkbox code to ~30 lines
-        // Benefits:
-        // - Single generic handler function replaces 7 individual functions
-        // - Configuration-driven approach for easy maintenance
-        // - Utility functions for data management
-        // - Maintains full backward compatibility
-        //
-        
-        // Configuration object defining all status types
         // Status checkboxes (Done/Cancelled/At Risk/New/Info/Transferred In/Out/
         // Proposed) are now in ./status.js. The factory is wired at the top of
         // init() and exposes the handlers on window for inline onchange attrs.
@@ -1783,7 +1705,7 @@ export function init(_root) {
 
             const dateField = document.getElementById(`edit-info-date-${entryId}`);
             if (dateField) {
-                dateField.value = window.DateUtility.getTodaysDateEuropean();
+                dateField.value = DateUtility.getTodaysDateEuropean();
                 dateField.focus({ preventScroll: true });
             }
         }
@@ -1793,15 +1715,6 @@ export function init(_root) {
             if (entry) entry.remove();
         }
 
-        // (handleTransferredOutChange/handleTransferredInChange/handleProposedChange
-        // moved to ./status.js)
-        // (addChange/removeChange/updateChangeButton moved to ./timeline-changes.js)
-        
-        // Story reordering with up/down arrows
-        // (moved to ./story-moves.js)
-        
-        // (moved to ./story-moves.js)
-        
         function updateStoryNumbers(epicElement) {
             const stories = epicElement.querySelectorAll('.story-section');
             stories.forEach((story, index) => {
@@ -1824,11 +1737,6 @@ export function init(_root) {
                 }
             });
         }
-        
-        // Move story functions that work with epic name and story index from roadmap preview
-        // (moved to ./story-moves.js)
-        
-        // (moved to ./story-moves.js)
         
         function generatePreview() {
             if (isGeneratingPreview) return;
@@ -1892,9 +1800,9 @@ export function init(_root) {
                         }
                         
                         // Setup January/December monthly box priming for iframe
-                        setupMonthlyBoxPriming(iframeDoc, iframe.contentWindow);
+                        setupMonthlyBoxPriming(iframeDoc);
                         
-                        storyItems.forEach((story, index) => {
+                        storyItems.forEach((story) => {
                             // Add single-click event listener to open edit modal
                             story.addEventListener('click', function(e) {
                                 e.preventDefault();
@@ -1938,7 +1846,7 @@ export function init(_root) {
                     
                 }, 500); // Wait 500ms for iframe content to fully render
                 
-            } catch (error) {
+            } catch {
                 // Story interaction initialization failed, continue without it
             }
         }
@@ -2004,7 +1912,6 @@ export function init(_root) {
                 const onMouseDown = (e) => {
                     isDragging = true;
                     startY = e.clientY;
-                    const rect = roadmapContainer.getBoundingClientRect();
                     startTop = guideLine.offsetTop;
                     
                     // Change opacity while dragging
@@ -2029,7 +1936,7 @@ export function init(_root) {
                     e.preventDefault();
                 };
                 
-                const onMouseUp = (e) => {
+                const onMouseUp = () => {
                     if (isDragging) {
                         isDragging = false;
                         guideLine.style.opacity = '0.7';
@@ -2080,7 +1987,7 @@ export function init(_root) {
                 // Log the keyboard shortcut for user reference
                 
                 
-            } catch (error) {
+            } catch {
                 
             }
         }
@@ -2139,7 +2046,7 @@ export function init(_root) {
                         const story = collectStoryData(storyId);
                         // Add story as-is without modifying the title
                         stories.push(story);
-                    } catch (error) {
+                    } catch {
                         // Add a basic story if collection fails
                         stories.push({
                             title: `Story ${stories.length + 1}`,
@@ -2151,8 +2058,8 @@ export function init(_root) {
                 });
                 
                 // Sort stories if the feature is enabled
-                const sortByStart = getConfigUtility().shouldSortStories() || getConfigUtility().shouldSortByStart();
-                const sortByEnd = getConfigUtility().shouldSortByEnd();
+                const sortByStart = ConfigUtility.shouldSortStories() || ConfigUtility.shouldSortByStart();
+                const sortByEnd = ConfigUtility.shouldSortByEnd();
                 if (sortByStart || sortByEnd) {
                     stories.sort((a, b) => {
                         const aStart = a.startDate || a.startMonth || 'JAN';
@@ -2161,13 +2068,13 @@ export function init(_root) {
                         const bEnd = b.endDate || b.endMonth || 'MAR';
                         const year = parseInt(document.getElementById('roadmapYear').value) || 2025;
                         if (sortByEnd) {
-                            const endComparison = getDateUtility().compareDateOrMonth(aEnd, bEnd, year);
+                            const endComparison = DateUtility.compareDateOrMonth(aEnd, bEnd, year);
                             if (endComparison !== 0) return endComparison;
-                            return getDateUtility().compareDateOrMonth(aStart, bStart, year);
+                            return DateUtility.compareDateOrMonth(aStart, bStart, year);
                         } else {
-                            const startComparison = getDateUtility().compareDateOrMonth(aStart, bStart, year);
+                            const startComparison = DateUtility.compareDateOrMonth(aStart, bStart, year);
                             if (startComparison !== 0) return startComparison;
-                            return getDateUtility().compareDateOrMonth(aEnd, bEnd, year);
+                            return DateUtility.compareDateOrMonth(aEnd, bEnd, year);
                         }
                     });
                 }
@@ -2210,7 +2117,7 @@ export function init(_root) {
             // Collect BTL data
             try {
                 teamData.btlSwimlane = collectBTLData();
-            } catch (error) {
+            } catch {
                 // Provide fallback BTL data
                 teamData.btlSwimlane = {
                     stories: [] // Empty by default
@@ -2237,7 +2144,7 @@ export function init(_root) {
             const ensureDateHasYear = (dateStr) => {
                 if (!dateStr) return dateStr;
                 // If date is in dd/mm or dd-mm format without year, normalize to "/" and add year
-                if (/^\d{1,2}[\/\-]\d{1,2}$/.test(dateStr)) {
+                if (/^\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
                     const roadmapYear = parseInt(document.getElementById('roadmapYear').value) || new Date().getFullYear();
                     // Replace all "-" with "/" for consistency, then add year
                     const normalizedDate = dateStr.replace(/-/g, '/');
@@ -2249,7 +2156,7 @@ export function init(_root) {
             // Determine if it's a month or date format
             if (start) {
                 // Check for date formats: ISO (YYYY-MM-DD) or European (DD/MM or DD/MM/YYYY)
-                if (start.includes('-') || start.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                if (start.includes('-') || start.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                     story.startDate = ensureDateHasYear(start);
                 } else {
                     story.startMonth = start.toUpperCase();
@@ -2261,7 +2168,7 @@ export function init(_root) {
             
             if (end) {
                 // Check for date formats: ISO (YYYY-MM-DD) or European (DD/MM or DD/MM/YYYY)
-                if (end.includes('-') || end.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                if (end.includes('-') || end.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                     story.endDate = ensureDateHasYear(end);
                 } else {
                     story.endMonth = end.toUpperCase();
@@ -2464,7 +2371,7 @@ export function init(_root) {
                     // Find only the container divs (not the individual input fields)
                     const changeContainers = document.querySelectorAll(`#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`);
 
-                    changeContainers.forEach((changeEl, index) => {
+                    changeContainers.forEach((changeEl) => {
                         // Use the full ID minus the "change-" prefix: "1-4-change-1750523789967"
                         const changeId = changeEl.id.replace('change-', ''); // Get: "1-4-change-1750523789967"
                         const date = document.getElementById(`change-date-${changeId}`)?.value;
@@ -2498,7 +2405,7 @@ export function init(_root) {
                         // Update start date if the most recent change records one
                         if (mostRecentChange && mostRecentChange.newStartDate) {
                             const newStartDate = mostRecentChange.newStartDate;
-                            if (newStartDate.includes('-') || newStartDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                            if (newStartDate.includes('-') || newStartDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                                 story.startDate = newStartDate;
                                 delete story.startMonth;
                                 const startEl = document.getElementById(`story-start-${storyId}`);
@@ -2516,7 +2423,7 @@ export function init(_root) {
                             const newEndDate = mostRecentChange.newEndDate;
 
                             // Determine if this is a date or month format and update accordingly
-                            if (newEndDate.includes('-') || newEndDate.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                            if (newEndDate.includes('-') || newEndDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                                 // It's a date format - update endDate and clear endMonth (already has year from ensureDateHasYear above)
                                 story.endDate = newEndDate;
                                 delete story.endMonth;
@@ -2676,7 +2583,7 @@ export function init(_root) {
                 
                 // Determine if it's a month or date format
                 if (start) {
-                    if (start.includes('-') || start.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                    if (start.includes('-') || start.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                         story.startDate = start;
                     } else {
                         story.startMonth = start.toUpperCase();
@@ -2686,7 +2593,7 @@ export function init(_root) {
                 }
                 
                 if (end) {
-                    if (end.includes('-') || end.match(/^\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?$/)) {
+                    if (end.includes('-') || end.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                         story.endDate = end;
                     } else {
                         story.endMonth = end.toUpperCase();
@@ -2791,12 +2698,10 @@ export function init(_root) {
 
             // New roadmap = no associated file or folder yet. Clear:
             //   - save module's per-file handle (so path 1 doesn't fire)
-            //   - AppDir's folder/file selection (so path 2 doesn't fire
+            //   - the shared folder/file selection (so path 2 doesn't fire
             //     and the Save button auto-disables via canSave())
             save.setFileHandle(null);
-            if (window.AppDir && typeof window.AppDir.clear === 'function') {
-                window.AppDir.clear();
-            }
+            await directoryStore.clear();
 
             // Immediately prompt for a save destination (filename + dir),
             // not just a folder. The new roadmap goes into single-file mode
@@ -2804,22 +2709,18 @@ export function init(_root) {
             // without prompting. If the user cancels, they can still pick
             // later via the top-nav Load roadmaps button.
             const suggestedName = `MyTeam.Teya-Roadmap.${selectedYear}.json`;
-            if (window.AppDir && typeof window.AppDir.selectSaveLocation === 'function') {
-                try {
-                    const result = await window.AppDir.selectSaveLocation(suggestedName);
-                    if (result) {
-                        // Hand the writable handle to save module so path 1
-                        // fires for silent writes. Safari/Firefox return null
-                        // here (selectSaveLocation is Chromium-only); they get
-                        // a read-only editor with the Save button disabled.
-                        if (result.fileHandle) save.setFileHandle(result.fileHandle);
-                        if (typeof window.updateFilenameDisplay === 'function') {
-                            window.updateFilenameDisplay(result.name);
-                        }
-                    }
-                } catch (e) {
-                    console.warn(e);
+            try {
+                const result = await directoryStore.selectSaveLocation(suggestedName);
+                if (result) {
+                    // Hand the writable handle to save module so path 1
+                    // fires for silent writes. Safari/Firefox return null
+                    // here (selectSaveLocation is Chromium-only); they get
+                    // a read-only editor with the Save button disabled.
+                    if (result.fileHandle) save.setFileHandle(result.fileHandle);
+                    updateFilenameDisplay(result.name);
                 }
+            } catch (error) {
+                console.warn(error);
             }
 
             // Set flag to prevent KTLO data corruption during new roadmap creation
@@ -2960,18 +2861,16 @@ export function init(_root) {
             // No writable handle yet: prompt the user once via showSaveFilePicker.
             // The chosen handle sticks for subsequent saves.
             if (!save.canSave()) {
-                const result = await window.AppDir.selectSaveLocation(suggestedName);
+                const result = await directoryStore.selectSaveLocation(suggestedName);
                 if (!result || !result.fileHandle) return; // cancelled
                 save.setFileHandle(result.fileHandle);
-                if (typeof window.updateFilenameDisplay === 'function') {
-                    window.updateFilenameDisplay(result.name);
-                }
+                updateFilenameDisplay(result.name);
                 await save.save({ suggestedName });
                 return;
             }
 
             // Existing handle: confirm the overwrite before writing.
-            const snap = window.AppDir?.get?.();
+            const snap = directoryStore.get();
             const targetLabel = snap && snap.type === 'file' && snap.name
                 ? snap.name
                 : suggestedName;
@@ -3021,7 +2920,7 @@ export function init(_root) {
             const fixDate = (dateStr) => {
                 if (!dateStr || typeof dateStr !== 'string') return dateStr;
                 // Match dd/mm or dd-mm format (without year)
-                if (/^\d{1,2}[\/\-]\d{1,2}$/.test(dateStr)) {
+                if (/^\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
                     // Replace all "-" with "/" for consistency, then add year
                     const normalizedDate = dateStr.replace(/-/g, '/');
                     return normalizedDate + '/' + roadmapYear;
@@ -3151,15 +3050,6 @@ export function init(_root) {
             event.target.value = '';
         }
         
-        // Stats modal controls
-        // Stats modal (open/close, computeRoadmapStats, all render*Breakdown
-        // helpers, barChart/card primitives) moved to ./stats.js. Wired at
-        // the top of init().
-
-
-        
-        
-        
         function updateIdCountersAfterImport() {
             // Update ID counters to avoid conflicts with imported IDs
             let maxEpicIdNumber = 0;
@@ -3206,9 +3096,7 @@ export function init(_root) {
         
         
         
-        // applyPendingTimelineChanges moved to ./timeline-changes.js
-        // (returned from createTimelineChangeHandlers; bound as a local at top of init).
-                function loadTeamData(teamData) {
+        function loadTeamData(teamData) {
             // Clear existing EPICs first
             document.getElementById('epics-container').innerHTML = '';
             epicCounter = 0;
@@ -3230,11 +3118,11 @@ export function init(_root) {
                 tempForceTextBelow = false;
                 window.tempForceTextBelow = false;
                 // Persist cleared state
-                getConfigUtility().setSortStories(false);
-                getConfigUtility().setSortByStart(false);
-                getConfigUtility().setSortByEnd(false);
-                getConfigUtility().setForceTextBelow(false);
-            } catch (_) {}
+                ConfigUtility.setSortStories(false);
+                ConfigUtility.setSortByStart(false);
+                ConfigUtility.setSortByEnd(false);
+                ConfigUtility.setForceTextBelow(false);
+            } catch {}
             
             // Load roadmap year
             document.getElementById('roadmapYear').value = teamData.roadmapYear || 2025;
@@ -3272,7 +3160,7 @@ export function init(_root) {
                     }
                 });
                 
-                                teamData.epics.forEach((epic, epicIndex) => {
+                teamData.epics.forEach((epic) => {
                     addEpic();
                     const currentEpicId = epicCounter;
                     
@@ -3434,7 +3322,7 @@ export function init(_root) {
                         loadKTLOMonth(selector.value);
                     }
                 }
-            } catch (error) {
+            } catch {
                 // Don't throw the error, just continue so loading can complete
             }
         }
@@ -3445,10 +3333,11 @@ export function init(_root) {
                 document.getElementById('btl-stories-container').innerHTML = '';
                 btlStoryCounter = 0;
                 
+                let loadedBTLCount = 0;
+
                 // Load BTL stories if they exist
                 if (btlData.stories && Array.isArray(btlData.stories)) {
-                    let loadedBTLCount = 0;
-                    btlData.stories.forEach((story, index) => {
+                    btlData.stories.forEach((story) => {
                         // Only load first 3 BTL stories, ignore the rest
                         if (loadedBTLCount >= 3) {
         
@@ -3534,7 +3423,7 @@ export function init(_root) {
                 }
                 
                 updateBTLAddButton(); // Update button state after loading from JSON
-            } catch (error) {
+            } catch {
                 // Don't throw the error, just continue so loading can complete
             }
         }
@@ -3900,18 +3789,10 @@ export function init(_root) {
                         }
                     }
                 }
-            } catch (error) {
+            } catch {
                 // Continue loading other stories even if this one fails
             }
         }
-        
-        // exportHTML moved to ./export.js (createExportHTML).
-
-        
-        // Fullscreen helpers (showFullscreen / hideFullscreen / toggleFullscreen)
-        // moved to ./fullscreen.js. Imported and re-exposed on window at the top
-        // of init(); hideFullscreen is also bound as a local for the Escape
-        // keydown handler below.
         
         // Keyboard shortcuts
         document.addEventListener('keydown', function(event) {
@@ -4551,8 +4432,6 @@ export function init(_root) {
             if (descriptionInput) descriptionInput.value = data.description;
         }
 
-        // (addEditChange/removeEditChange/sortTimelineChangesByDate/updateEditChangeButton
-        // moved to ./timeline-changes.js)
         // Monthly KTLO Edit Modal Functions
         let currentEditingMonth = null;
         
@@ -4639,7 +4518,7 @@ export function init(_root) {
             
             // Get values from modal
             const number = document.getElementById('editMonthlyKTLONumber').value;
-            let percentage = document.getElementById('editMonthlyKTLOPercentage').value;
+            const percentage = document.getElementById('editMonthlyKTLOPercentage').value;
             const description = document.getElementById('editMonthlyKTLODescription').value;
             
             // Validate percentage directly - don't save if invalid
@@ -4780,7 +4659,7 @@ export function init(_root) {
 
                 let targetEpic = null;
                 
-                for (let epicEl of epicElements) {
+                for (const epicEl of epicElements) {
                     const epicId = epicEl.id.split('-')[1];
                     const epicNameEl = document.getElementById(`epic-name-${epicId}`);
                     if (epicNameEl && epicNameEl.value.trim() === epicName.trim()) {
@@ -4840,7 +4719,7 @@ export function init(_root) {
                     
                     // Always check for existing timeline change elements
                     const changeContainers = document.querySelectorAll(`#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`);
-                    let timelineChanges = [];
+                    const timelineChanges = [];
                     
                     changeContainers.forEach(changeEl => {
                         const changeId = changeEl.id.replace('change-', '');
@@ -4943,7 +4822,7 @@ export function init(_root) {
 
                 return null;
                 
-            } catch (error) {
+            } catch {
                 return null;
             }
         }
@@ -5181,8 +5060,6 @@ export function init(_root) {
                     const atRiskNotesEl = document.getElementById(`atrisk-notes-${storyId}`);
                     const newStoryDateEl = document.getElementById(`newstory-date-${storyId}`);
                     const newStoryNotesEl = document.getElementById(`newstory-notes-${storyId}`);
-                    const infoDateEl = document.getElementById(`info-date-${storyId}`);
-                    const infoNotesEl = document.getElementById(`info-notes-${storyId}`);
                     const transferredOutDateEl = document.getElementById(`transferredout-date-${storyId}`);
                     const transferredOutNotesEl = document.getElementById(`transferredout-notes-${storyId}`);
                     const transferredInDateEl = document.getElementById(`transferredin-date-${storyId}`);
@@ -5499,7 +5376,7 @@ export function init(_root) {
         });
 
                 // Enable hover for all monthly boxes including January/December
-        function setupMonthlyBoxPriming(doc, windowContext) {
+        function setupMonthlyBoxPriming(doc) {
             // Override the embedded CSS to allow January/December hover
             const style = doc.createElement('style');
             style.textContent = `
@@ -5563,18 +5440,6 @@ export function init(_root) {
             doc.head.appendChild(style);
         }
 
-        // KTLO percentage validation moved to ./ktlo-validation.js.
-        // initializeKTLOValidation is registered as a DOMContentLoaded
-        // handler at the top of init() since the legacy body would do
-        // the same.
-
-        // Drag and Drop Functionality - entire builder panel
-
-
-        // Initialize drag and drop when page loads
-        
-        // Builder collapse moved to ./collapse.js (createBuilderCollapse).
-        
         // Update document title based on team name
         function updateDocumentTitle() {
             const teamNameInput = document.getElementById('teamName');
@@ -5601,7 +5466,7 @@ export function init(_root) {
 ;
 
         // File Browser functionality. Directory selection is owned by the
-        // shared AppDir store (see /app/directory-store.js) — we just read
+        // shared directory store (see /app/directory-store.js) - we just read
         // from it and re-render the file list when it changes.
 
         // Toggle file browser collapse
@@ -5681,36 +5546,34 @@ export function init(_root) {
         // Check if File System Access API is supported and show warning if not
         document.addEventListener('DOMContentLoaded', async function() {
             // Check for loaded data first - this must happen before default template loading
-            const hasExternalData = checkForLoadedData();
+            checkForLoadedData();
             
             // Initialize sorting checkboxes from saved prefs
             const sortingToggle = document.getElementById('story-sorting-toggle');
             const endToggle = document.getElementById('story-sorting-end-toggle');
             const textBelowToggle = document.getElementById('force-text-below-toggle');
             if (sortingToggle) {
-                const byStart = getConfigUtility().shouldSortByStart() || getConfigUtility().shouldSortStories();
+                const byStart = ConfigUtility.shouldSortByStart() || ConfigUtility.shouldSortStories();
                 sortingToggle.checked = !!byStart;
             }
             if (endToggle) {
-                endToggle.checked = !!getConfigUtility().shouldSortByEnd();
+                endToggle.checked = !!ConfigUtility.shouldSortByEnd();
             }
             // Force text below is a one-time action, don't restore from saved state
             if (textBelowToggle) {
                 textBelowToggle.checked = false;
             }
             
-            // The shared AppDir store drives the file list. Subscribe once
+            // The shared directory store drives the file list. Subscribe once
             // and re-render whenever the selected folder (or its permission)
-            // changes. Works for the initial state too since AppDir emits
+            // changes. Works for the initial state too since the store emits
             // synchronously on subscribe.
         });
         
     
         // === END legacy script body ===
 
-        // Expose function declarations to window so inline onclick="foo()"
-        // handlers in the view markup keep resolving. Phase 3 will migrate
-        // these to delegated addEventListener wiring and remove these.
+        // Inline event attributes resolve their handlers against window.
         // toggleShareDropdown, closeShareDropdown, toggleShareDropdownBottom,
         // closeShareDropdownBottom, exportJPG, exportPDF are exposed at the top
         // of init() via Object.assign(window, share, exportLib).
@@ -5793,4 +5656,5 @@ if (typeof checkForLoadedData === 'function') window.checkForLoadedData = checkF
     for (const fn of __viewReady) {
         try { fn.call(document, new Event('DOMContentLoaded')); } catch (e) { console.error(e); }
     }
+    return cleanupDirectorySubscription;
 }

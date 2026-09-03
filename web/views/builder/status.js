@@ -1,3 +1,5 @@
+import { DateUtility } from '../../utilities/date-utility.js';
+
 // Status checkboxes (Done, Cancelled, At Risk, New, Info, Transferred In/Out,
 // Proposed) on each story. The seven simple status types share one generic
 // handler `handleStatusChange`; "info" is special-cased because it manages a
@@ -108,7 +110,7 @@ export function createStatusHandlers({ addInfoEntry, convertSingleInfoToMultiple
 
         const dateField = document.getElementById(`${dateFieldKey(statusType)}-date-${storyId}`);
         if (dateField && !dateField.value) {
-            dateField.value = window.DateUtility.getTodaysDateEuropean();
+            dateField.value = DateUtility.getTodaysDateEuropean();
         }
         setTimeout(() => {
             if (dateField) dateField.focus({ preventScroll: true });

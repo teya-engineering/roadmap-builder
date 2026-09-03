@@ -1,3 +1,5 @@
+import { DateUtility } from '../../utilities/date-utility.js';
+
 // Roadmap stats modal: bar charts of on-time / delayed / accelerated /
 // cancelled stories with click-to-expand drill-downs.
 //
@@ -25,7 +27,7 @@ export function createStatsHandlers({ collectFormData }) {
             // bar charts; stash stats globally so the handlers can read them.
             window.__roadmapStats = stats;
             setTimeout(setupTooltips, 100);
-        } catch (_) {
+        } catch {
             // Swallow stats failures - the user can still work without the modal.
         }
     }
@@ -132,8 +134,8 @@ export function createStatsHandlers({ collectFormData }) {
                 const changes = story.roadmapChanges?.changes || [];
                 for (const change of changes) {
                     if (!change.prevEndDate || !change.newEndDate) continue;
-                    const prevISO = window.DateUtility.parseTextValue(change.prevEndDate, true, roadmapYear);
-                    const newISO = window.DateUtility.parseTextValue(change.newEndDate, true, roadmapYear);
+                    const prevISO = DateUtility.parseTextValue(change.prevEndDate, true, roadmapYear);
+                    const newISO = DateUtility.parseTextValue(change.newEndDate, true, roadmapYear);
                     if (!prevISO || !newISO) continue;
                     if (newISO > prevISO) actualDelayCount++;
                     else if (newISO < prevISO) hasAcceleration = true;
@@ -178,7 +180,7 @@ export function createStatsHandlers({ collectFormData }) {
                 const p = Date.parse(change.prevEndDate);
                 if (!isNaN(n) && !isNaN(p) && n > p) return true;
             }
-        } catch (_) {}
+        } catch {}
         return false;
     }
 

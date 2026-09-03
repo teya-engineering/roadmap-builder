@@ -1,3 +1,5 @@
+import { DateUtility } from '../../utilities/date-utility.js';
+
 // Date picker UI for the text inputs that accept dates or month names.
 //
 // Each input gets a hidden native <input type="date"> sibling that opens
@@ -103,9 +105,8 @@ export function createDatePickers({ getRoadmapYear }) {
         styleInputAsDateField(inputElement);
 
         const parseTextValue = (value) =>
-            window.DateUtility.parseTextValue(value, isEndField, getRoadmapYear());
-        const formatDateToText = (dateValue) =>
-            window.DateUtility.formatDateToText(dateValue);
+            DateUtility.parseTextValue(value, isEndField, getRoadmapYear());
+        const formatDateToText = (dateValue) => DateUtility.formatDateToText(dateValue);
 
         const syncToDateInput = () => {
             if (!inputElement || !inputElement.value) return;
@@ -314,8 +315,8 @@ export function createDatePickers({ getRoadmapYear }) {
 
         try {
             const year = getRoadmapYear();
-            const startISO = window.DateUtility.parseTextValue(startValue, false, year);
-            const endISO = window.DateUtility.parseTextValue(endValue, true, year);
+            const startISO = DateUtility.parseTextValue(startValue, false, year);
+            const endISO = DateUtility.parseTextValue(endValue, true, year);
             if (startISO && endISO && endISO < startISO) {
                 endField.style.borderColor = '#dc3545';
                 endField.style.backgroundColor = '#ffe6e6';

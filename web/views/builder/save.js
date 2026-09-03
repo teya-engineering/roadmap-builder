@@ -16,12 +16,13 @@
 //   1. Existing writable file handle (from showOpenFilePicker, the
 //      file-browser side panel, or the "Save As" dialog). Silent write
 //      in place.
-//   2. AppDir directory handle: synthesise a writable file handle via
+//   2. Selected directory handle: synthesise a writable file handle via
 //      dirHandle.getFileHandle(filename, {create:true}) and write. Covers
 //      the new-roadmap and drag-drop cases where we have a folder but no
 //      per-file handle.
 
 import { getState } from './state.js';
+import { directoryStore } from '../../app/directory-store.js';
 
 const AUTO_SAVE_KEY = 'roadmap-autosave';
 const AUTO_SAVE_DEBOUNCE_MS = 1500;
@@ -66,7 +67,7 @@ export function init({ statusElement, onAutoSavePrepare }) {
     // because the status setter dispatches roadmap:saved, which the builder
     // reads to fire the confetti animation.
     setStatus('idle');
-    subscribeToAppDir();
+    subscribeToDirectoryStore();
     initAutoSave();
 }
 
@@ -75,14 +76,16 @@ export function init({ statusElement, onAutoSavePrepare }) {
 // re-attaching would silently duplicate work on each navigation.
 let autoSaveListenersAttached = false;
 function initAutoSave() {
-    try { autoSaveEnabled = localStorage.getItem(AUTO_SAVE_KEY) === 'on'; }
-    catch { autoSaveEnabled = false; }
+    try {
+        autoSaveEnabled = localStorage.getItem(AUTO_SAVE_KEY) === 'on';
+    } catch {
+        autoSaveEnabled = false;
+    }
     if (autoSaveListenersAttached) return;
     autoSaveListenersAttached = true;
 
-    // The nav toggle lives outside the module graph (plain script), so we
-    // exchange state via a custom event + localStorage rather than a direct
-    // import.
+    // A custom event keeps the nav and builder views independent while the
+    // setting remains available through localStorage after either view mounts.
     window.addEventListener('roadmap-autosave-changed', (e) => {
         autoSaveEnabled = !!(e && e.detail && e.detail.enabled);
         if (autoSaveEnabled && dirty) scheduleAutoSave();
@@ -135,15 +138,12 @@ async function performAutoSave() {
     await save({ suggestedName, auto: true });
 }
 
-// Subscribe to the AppDir store once, so dirHandle/dirKind track the
-// user's folder selection. AppDir.subscribe is idempotent enough that a
-// repeat subscription on view re-mount is fine.
-let appDirSubscribed = false;
-function subscribeToAppDir() {
-    if (appDirSubscribed) return;
-    if (!window.AppDir) return; // not loaded yet; ignore (init() runs late enough that this is unusual)
-    appDirSubscribed = true;
-    window.AppDir.subscribe((snap) => {
+// Subscribe once so dirHandle and dirKind track the user's folder selection.
+let directoryStoreSubscribed = false;
+function subscribeToDirectoryStore() {
+    if (directoryStoreSubscribed) return;
+    directoryStoreSubscribed = true;
+    directoryStore.subscribe((snap) => {
         const isUsable = snap && snap.handle && snap.permission !== 'denied';
         dirHandle = isUsable ? snap.handle : null;
         dirKind = isUsable ? snap.kind : null;
@@ -163,7 +163,8 @@ function subscribeToAppDir() {
 // place). For other cases, require a writable native directory handle.
 export function canSave() {
     if (fileHandle && typeof fileHandle.createWritable === 'function') return true;
-    if (dirHandle && dirKind === 'native' && typeof dirHandle.getFileHandle === 'function') return true;
+    if (dirHandle && dirKind === 'native' && typeof dirHandle.getFileHandle === 'function')
+        return true;
     return false;
 }
 
@@ -171,7 +172,7 @@ export function canSave() {
 // File System Access API). When false, "Save file" surfaces a popup
 // instructing the user to use Chrome/Edge or to download instead.
 export function canSaveInBrowser() {
-    return Boolean(window.AppDir && window.AppDir.canSaveInBrowser);
+    return directoryStore.canSaveInBrowser;
 }
 
 export function setFileHandle(handle) {
@@ -197,7 +198,7 @@ export function getLastError() {
  *
  * @param {{ suggestedName: string, auto?: boolean }} options
  *   suggestedName: filename (no path) used for path 2 (creating a file
- *                  inside the AppDir folder).
+ *                  inside the selected folder).
  *   auto: true when triggered by the auto-save scheduler. Suppresses the
  *         post-save confetti so an idle-debounce write doesn't spam the
  *         celebration animation on every keystroke pause.
@@ -219,11 +220,15 @@ export async function save({ suggestedName, auto = false }) {
     setStatus('saving');
     lastErrorMessage = '';
     try {
-        const json = JSON.stringify({
-            version: '1.0',
-            created: new Date().toISOString(),
-            teamData: state,
-        }, null, 2);
+        const json = JSON.stringify(
+            {
+                version: '1.0',
+                created: new Date().toISOString(),
+                teamData: state,
+            },
+            null,
+            2
+        );
 
         // Path 1: existing writable file handle.
         if (fileHandle && typeof fileHandle.createWritable === 'function') {
@@ -236,7 +241,7 @@ export async function save({ suggestedName, auto = false }) {
         // Stale handle: drop it.
         fileHandle = null;
 
-        // Path 2: AppDir directory handle. Synthesise a writable file handle
+        // Path 2: selected directory handle. Synthesise a writable file handle
         // for `suggestedName` inside the picked folder.
         if (dirHandle && dirKind === 'native' && typeof dirHandle.getFileHandle === 'function') {
             const fh = await dirHandle.getFileHandle(suggestedName, { create: true });
@@ -273,11 +278,15 @@ export async function save({ suggestedName, auto = false }) {
 export function download({ suggestedName }) {
     const state = getState();
     if (!state) return;
-    const json = JSON.stringify({
-        version: '1.0',
-        created: new Date().toISOString(),
-        teamData: state,
-    }, null, 2);
+    const json = JSON.stringify(
+        {
+            version: '1.0',
+            created: new Date().toISOString(),
+            teamData: state,
+        },
+        null,
+        2
+    );
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
