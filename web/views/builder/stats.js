@@ -347,8 +347,8 @@ export function createStatsHandlers({ collectFormData }) {
         doneStories,
         notDoneStories,
         totalStories,
-        leftBorderDone = '#28a745',
-        leftBorderNotDone = '#ffc107'
+        leftBorderDone = 'var(--stats-on-time)',
+        leftBorderNotDone = 'var(--stats-pending)'
     ) {
         const done = doneStories.length;
         const notDone = notDoneStories.length;

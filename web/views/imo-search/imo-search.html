@@ -5,16 +5,16 @@
         <div class="search-header">
             <div class="title-and-controls">
                 <div class="search-title">
-                    <h1>🔍 Cross-Team Search</h1>
+                    <h1>Cross-Team Search</h1>
                     <div class="search-title-actions">
-                        <button class="search-button" id="combinedSearchBtn" onclick="performCombinedSearch()" disabled style="min-width: 120px;">
-                            🔍 Search
+                        <button class="search-button primary-action" id="combinedSearchBtn" onclick="performCombinedSearch()" disabled>
+                            Search
                         </button>
-                        <button class="search-button" onclick="openSearchStatsModal()" id="searchStatsBtn" disabled style="min-width: 120px;">
-                            📊 Stats
+                        <button class="search-button secondary" onclick="openSearchStatsModal()" id="searchStatsBtn" disabled>
+                            Stats
                         </button>
-                        <button class="search-button" onclick="clearAllSearchFields()" style="min-width: 160px;">
-                            🧹 Clear All
+                        <button class="search-button secondary" onclick="clearAllSearchFields()">
+                            Clear filters
                         </button>
                     </div>
                 </div>
@@ -23,17 +23,18 @@
                     <div class="directory-row">
                         <span class="directory-status" id="directoryStatus">No folder selected - pick one in the top bar</span>
                     </div>
-                    <div style="margin-top: 12px; text-align: left;">
-                        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; white-space: nowrap;">
+                    <div class="directory-options">
+                        <label class="product-roadmap-filter">
                             <input type="checkbox" id="filterProductRoadmapOnly">
-                            <span style="white-space: nowrap;">Product Roadmap Only</span>
+                            <span>Product Roadmap Only</span>
                         </label>
                     </div>
                 </div>
 
+                <div class="search-filter-grid">
                 <!-- Director/VP ID Search -->
                 <div class="search-section">
-                    <h3 class="search-section-title">🏷️ Director/VP ID Search</h3>
+                    <h3 class="search-section-title">Director/VP ID</h3>
                     <div class="search-input-group">
                         <input type="text"
                                class="search-input imo-input"
@@ -45,7 +46,7 @@
 
                 <!-- Country Flag Search -->
                 <div class="search-section">
-                    <h3 class="search-section-title">🌍 Country Flag Search</h3>
+                    <h3 class="search-section-title">Country</h3>
                     <div class="country-flags-search-row">
                         <div id="searchFlagsContainer" class="country-flags-search-slot"></div>
                     </div>
@@ -53,7 +54,7 @@
 
                 <!-- IMO Search -->
                 <div class="search-section">
-                    <h3 class="search-section-title">🔍 IMO/Project ID Search</h3>
+                    <h3 class="search-section-title">IMO/Project ID</h3>
                     <div class="search-input-group">
                             <input type="text"
                                class="search-input imo-input"
@@ -70,7 +71,7 @@
                 </div>
                 <!-- Story Title Search -->
                 <div class="search-section">
-                    <h3 class="search-section-title">📝 Story Title Search</h3>
+                    <h3 class="search-section-title">Story title</h3>
                     <div class="search-input-group">
                         <input type="text"
                                class="search-input imo-input"
@@ -81,7 +82,7 @@
                 </div>
                 <!-- Date Range Search -->
                 <div class="search-section">
-                    <h3 class="search-section-title">📅 Date Search</h3>
+                    <h3 class="search-section-title">Date</h3>
                     <div class="search-input-group">
                         <input type="date"
                                class="search-input date-input"
@@ -100,72 +101,68 @@
                             <option value="current-year">Current Year</option>
                         </select>
                     </div>
-                    <div id="searchModeHelp" style="font-size: 12px; color: #666; margin-top: 5px;">
+                    <div id="searchModeHelp" class="search-help-text">
                         Exact: Stories must start/end exactly on the specified dates.
                     </div>
                 </div>
 
                 <!-- Status Filters Section -->
-                <div class="search-section">
-                    <h3 class="search-section-title">🎯 Status Filters</h3>
-                    <div style="padding: 0 5px; margin-top: 10px;">
+                <div class="search-section search-section--wide">
+                    <h3 class="search-section-title">Status</h3>
+                    <div class="status-filter-content">
                         <!-- Row 1: New, Done, Cancelled, Info, Timeline -->
-                        <div style="display: flex; flex-wrap: wrap; column-gap: 15px; row-gap: 8px; align-items: center; margin-bottom: 10px;">
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;" onclick="cycleFilterState('filterNew', event)">
+                        <div class="status-filter-options">
+                            <label class="status-filter-option" onclick="cycleFilterState('filterNew', event)">
                                 <span id="filterNew" class="tri-state-checkbox" data-state="none"></span>
                                 <span>New</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;" onclick="cycleFilterState('filterDone', event)">
+                            <label class="status-filter-option" onclick="cycleFilterState('filterDone', event)">
                                 <span id="filterDone" class="tri-state-checkbox" data-state="none"></span>
                                 <span>Done</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;" onclick="cycleFilterState('filterCancelled', event)">
+                            <label class="status-filter-option" onclick="cycleFilterState('filterCancelled', event)">
                                 <span id="filterCancelled" class="tri-state-checkbox" data-state="none"></span>
                                 <span>Cancelled</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;" onclick="cycleFilterState('filterInfo', event)">
+                            <label class="status-filter-option" onclick="cycleFilterState('filterInfo', event)">
                                 <span id="filterInfo" class="tri-state-checkbox" data-state="none"></span>
                                 <span>Info</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;" onclick="cycleFilterState('filterTimeline', event)">
+                            <label class="status-filter-option" onclick="cycleFilterState('filterTimeline', event)">
                                 <span id="filterTimeline" class="tri-state-checkbox" data-state="none"></span>
                                 <span>Timeline</span>
                             </label>
-                            <!-- Force line break -->
-                            <div style="flex-basis: 100%; height: 0;"></div>
-                            <!-- Row 2: At Risk, Proposed, Transferred: In, Out -->
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap;" onclick="cycleFilterState('filterAtRisk', event)">
+                            <label class="status-filter-option" onclick="cycleFilterState('filterAtRisk', event)">
                                 <span id="filterAtRisk" class="tri-state-checkbox" data-state="none"></span>
                                 <span>At Risk</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;" onclick="cycleFilterState('filterProposed', event)">
+                            <label class="status-filter-option" onclick="cycleFilterState('filterProposed', event)">
                                 <span id="filterProposed" class="tri-state-checkbox" data-state="none"></span>
                                 <span>Proposed</span>
                             </label>
-                            <span style="font-weight: bold; margin-right: 5px; display: flex; align-items: center; position: relative; top: -2px; left: 6px;">Transferred:</span>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin-right: 5px;" onclick="cycleFilterState('filterTransferredIn', event)">
+                            <span class="status-filter-group-label">Transferred:</span>
+                            <label class="status-filter-option" onclick="cycleFilterState('filterTransferredIn', event)">
                                 <span id="filterTransferredIn" class="tri-state-checkbox" data-state="none"></span>
                                 <span>In</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;" onclick="cycleFilterState('filterTransferredOut', event)">
+                            <label class="status-filter-option" onclick="cycleFilterState('filterTransferredOut', event)">
                                 <span id="filterTransferredOut" class="tri-state-checkbox" data-state="none"></span>
                                 <span>Out</span>
                             </label>
                         </div>
-                        <div style="font-size: 11px; color: #888; margin-top: 8px;">
+                        <div class="status-filter-help">
                             Click once for ✓ (include), twice for ! (exclude/NOT), three times to clear. Filters apply to all search results.
                         </div>
                         <!-- Advanced Expression Filter -->
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-                            <div style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 5px;">Advanced Filter (Optional):</div>
-                            <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="advanced-filter">
+                            <label for="advancedFilterExpression" class="advanced-filter-label">Advanced filter (optional)</label>
+                            <div class="advanced-filter-input">
                                 <input type="text" id="advancedFilterExpression"
                                        placeholder="e.g., Done && !Timeline, (Cancelled || AtRisk) && New"
                                        onchange="handleAdvancedFilterChange(this)"
-                                       onkeydown="handleAdvancedFilterKeyDown(event, this)"
-                                       style="width: 50%; height: 32px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 12px; box-sizing: border-box;">
+                                       onkeydown="handleAdvancedFilterKeyDown(event, this)">
                             </div>
-                            <div style="font-size: 10px; color: #888; margin-top: 5px;">
+                            <div class="advanced-filter-help">
                                 Use: <code>&&</code> (AND), <code>||</code> (OR), <code>!</code> (NOT), <code>( )</code> (grouping)<br>
                                 Status names: Done, Cancelled, Timeline, New, AtRisk, Proposed, Info, TransferredIn, TransferredOut<br>
                                 Field presence: IMO, Priority (use <code>!</code> for empty) &nbsp;&nbsp; Priority values: High, Medium, Low<br>
@@ -174,20 +171,21 @@
                         </div>
                     </div>
                 </div>
+                </div>
 
                 </div>
 
             </div>
         <!-- Main Content Area -->
-        <div class="main-content">
+        <div class="search-main-content">
             <div id="contentArea">
                 <!-- Blank State -->
                 <div class="blank-state" id="blankState">
                     <div class="blank-state-icon">🔍</div>
-                    <h2>Cross-Team IMO & Timeline Search</h2>
-                    <p>Search across multiple team roadmaps to find stories by IMO number or timeline</p>
-                    <p style="font-size: 14px; color: #999;">
-                        First select a directory containing roadmap JSON files, then enter your search query
+                    <h2>Search across team roadmaps</h2>
+                    <p>Find stories by owner, project, title, date, country, or status.</p>
+                    <p class="blank-state-note">
+                        Pick a folder from the top bar, then use any combination of filters.
                     </p>
                             </div>
                             </div>
@@ -247,17 +245,17 @@
                         <div class="readonly-field" id="viewBTLDescription"></div>
                     </div>
                     <!-- Monthly KTLO Data (only shown for KTLO) -->
-                    <div id="viewKTLOMonthlySection" style="display: none; margin-top: 15px; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                    <div id="viewKTLOMonthlySection" class="border-section ktlo-monthly-section" style="display: none;">
                         <h4 style="margin: 0 0 15px 0;">Monthly KTLO Data</h4>
                         <div id="viewKTLOMonthsContainer"></div>
                     </div>
                     <div class="form-group" style="margin-top: 20px;">
-                        <label>Director/VP ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                        <label>Director/VP ID <span class="optional-label">(optional)</span>:</label>
                         <div class="readonly-field" id="viewDirectorVPId"></div>
                     </div>
                     <div class="form-group" style="display: flex; gap: 15px; align-items: flex-start;">
                         <div style="flex: 1;">
-                            <label>IMO <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                            <label>IMO <span class="optional-label">(optional)</span>:</label>
                             <div class="readonly-field" id="viewIMO"></div>
                         </div>
                         <div style="flex: 1;">
@@ -424,16 +422,16 @@
     </div>
 
     <!-- Search Stats Modal -->
-    <div id="searchStatsModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
-        <div style="background: #fff; border-radius: 10px; width: 60vw; max-width: 500px; max-height: 90vh; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: flex; flex-direction: column;">
-            <div style="display:flex; align-items:center; justify-content:space-between; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; flex-shrink: 0;">
-                <h3 style="margin:0; font-size: 18px;">📊 Search Results Statistics</h3>
-                <button onclick="closeSearchStatsModal()" style="border:none; background:none; font-size: 20px; line-height: 1; cursor:pointer; color: #666; padding: 4px;">×</button>
+    <div id="searchStatsModal" class="modal" style="display: none;">
+        <div class="modal-content search-stats-modal-content">
+            <div class="modal-header">
+                <h3>Search Results Statistics</h3>
+                <span class="close" onclick="closeSearchStatsModal()">&times;</span>
             </div>
-            <div id="searchStatsModalBody" style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
+            <div id="searchStatsModalBody" class="modal-body">
                 <!-- Stats content will be injected here -->
             </div>
-            <div style="padding: 12px 16px; border-top: 1px solid #e5e7eb; text-align: right; flex-shrink: 0;">
+            <div class="modal-footer search-stats-modal-footer">
                 <button onclick="closeSearchStatsModal()" class="secondary">Close</button>
             </div>
         </div>

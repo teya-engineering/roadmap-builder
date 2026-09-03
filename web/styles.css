@@ -67,6 +67,12 @@
     --danger-hover: var(--color-danger-700);
     --danger-soft: #fef2f2;
 
+    --stats-on-time: #15803d;
+    --stats-delayed: #dc2626;
+    --stats-accelerated: #0e7490;
+    --stats-cancelled: #64748b;
+    --stats-pending: #a16207;
+
     /* Spacing (4px grid) */
     --space-1: 4px;
     --space-2: 8px;
@@ -125,6 +131,12 @@
 
     --primary: var(--color-primary-500);
     --primary-hover: #60a5fa;
+
+    --stats-on-time: #4ade80;
+    --stats-delayed: #f87171;
+    --stats-accelerated: #22d3ee;
+    --stats-cancelled: #94a3b8;
+    --stats-pending: #fbbf24;
 
     --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3);

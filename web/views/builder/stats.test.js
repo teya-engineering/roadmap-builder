@@ -38,6 +38,7 @@ test('stats content uses theme-aware colors', () => {
     assert.match(html, /var\(--stats-delayed\)/);
     assert.match(html, /var\(--stats-accelerated\)/);
     assert.match(html, /var\(--stats-cancelled\)/);
+    assert.match(html, /var\(--stats-pending\)/);
 
     for (const fixedNeutral of [
         '#333',

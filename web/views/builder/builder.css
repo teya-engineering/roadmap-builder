@@ -120,18 +120,6 @@
         }
 
         /* Bar chart expand/collapse (stats modal) */
-        #statsModal {
-            --stats-on-time: #15803d;
-            --stats-delayed: #dc2626;
-            --stats-accelerated: #0e7490;
-            --stats-cancelled: #64748b;
-        }
-        :root[data-theme='dark'] #statsModal {
-            --stats-on-time: #4ade80;
-            --stats-delayed: #f87171;
-            --stats-accelerated: #22d3ee;
-            --stats-cancelled: #94a3b8;
-        }
         .bar-chart-container[data-tooltip="breakdown"]:hover {
             background: var(--surface-2) !important;
         }

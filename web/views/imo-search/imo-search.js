@@ -194,15 +194,15 @@ export function init(_root) {
         function renderSearchStatsHtml(s) {
             return (
                 '<div style="padding: 20px;">' +
-                    '<h3 style="margin: 0 0 20px 0; color: #333; text-align: center;">📊 Search Results Overview</h3>' +
-                    '<div style="margin-bottom: 20px; text-align: center; font-size: 14px; color: #666;">' +
+                    '<h3 style="margin: 0 0 20px 0; color: var(--text-strong); text-align: center;">Search Results Overview</h3>' +
+                    '<div style="margin-bottom: 20px; text-align: center; font-size: 14px; color: var(--text-muted);">' +
                         `${s.totalStories} Stories across ${s.totalTeams} Teams` +
                     '</div>' +
                     '<div style="max-width: 600px; margin: 0 auto;">' +
-                        barChart('On-time Projects', s.onTime, s.totalStories, '#28a745', s, 'ontime') +
-                        barChart('Delayed Projects', s.totalDelayed, s.totalStories, '#dc3545', s, 'delayed') +
-                        barChart('Accelerated Projects', s.accelerated, s.totalStories, '#17a2b8', s, 'accelerated') +
-                        barChart('Cancelled', s.cancelled, s.totalStories, '#6c757d', s, 'cancelled') +
+                        barChart('On-time Projects', s.onTime, s.totalStories, 'var(--stats-on-time)', s, 'ontime') +
+                        barChart('Delayed Projects', s.totalDelayed, s.totalStories, 'var(--stats-delayed)', s, 'delayed') +
+                        barChart('Accelerated Projects', s.accelerated, s.totalStories, 'var(--stats-accelerated)', s, 'accelerated') +
+                        barChart('Cancelled', s.cancelled, s.totalStories, 'var(--stats-cancelled)', s, 'cancelled') +
                     '</div>' +
                 '</div>'
             );
@@ -218,13 +218,13 @@ export function init(_root) {
                 tooltipContent = `data-tooltip="breakdown" data-breakdown-type="${breakdownType}"`;
                 cursorStyle = 'pointer';
                 // Add expand/collapse chevron icon on the LEFT
-                expandIcon = `<span class="expand-chevron" style="margin-right: 8px; font-size: 12px; color: #6b7280; transition: transform 0.2s ease; pointer-events: none;">▶</span>`;
+                expandIcon = `<span class="expand-chevron" style="margin-right: 8px; font-size: 12px; color: var(--text-muted); transition: transform 0.2s ease; pointer-events: none;">▶</span>`;
             }
             
             return (
-                '<div style="margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; background: #f9fafb; cursor: ' + cursorStyle + '; transition: all 0.2s ease;" class="bar-chart-container" ' + tooltipContent + '>' +
+                '<div style="margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; background: var(--surface-1); cursor: ' + cursorStyle + '; transition: all 0.2s ease;" class="bar-chart-container" ' + tooltipContent + '>' +
                     '<div style="display: flex; justify-content: space-between; align-items: center; pointer-events: none;">' +
-                        `<span style="font-size: 14px; font-weight: 500; color: #374151; display: flex; align-items: center;">${expandIcon}${label}</span>` +
+                        `<span style="font-size: 14px; font-weight: 500; color: var(--text-default); display: flex; align-items: center;">${expandIcon}${label}</span>` +
                         `<span style="font-size: 14px; font-weight: 600; color: ${color};">${value} (${percentage}%)</span>` +
                     '</div>' +
                 '</div>'
@@ -301,11 +301,11 @@ export function init(_root) {
             breakdown.style.cssText = `
                 margin-top: 10px;
                 padding: 12px;
-                background: #f8f9fa;
-                border: 1px solid #e5e7eb;
+                background: var(--surface-1);
+                border: 1px solid var(--border-subtle);
                 border-radius: 6px;
                 font-size: 12px;
-                color: #374151;
+                color: var(--text-default);
             `;
             
             if (breakdownType === 'delayed') {
@@ -332,7 +332,7 @@ export function init(_root) {
             const notDoneStories = (stats.onTimeStories && stats.onTimeStories.notDone) || [];
             
             if (done === 0 && notDone === 0) {
-                return '<div style="color:#6b7280;">No on-time projects</div>';
+                return '<div style="color:var(--text-muted);">No on-time projects</div>';
             }
             
             const donePct = totalStories ? ((done / totalStories) * 100).toFixed(1) : 0;
@@ -341,19 +341,19 @@ export function init(_root) {
             return (
                 '<div class="delay-row" id="search-ontime-done-row" style="margin-bottom: 8px; margin-left: 10px;">' +
                     '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                        '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                        '<span style="font-size:13px; color:#374151;">Done (' + done + ' / ' + donePct + '%)</span>' +
+                        '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+                        '<span style="font-size:13px; color:var(--text-default);">Done (' + done + ' / ' + donePct + '%)</span>' +
                     '</div>' +
-                    '<div class="delay-row-details" id="search-ontime-done-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #28a745;">' +
+                    '<div class="delay-row-details" id="search-ontime-done-details" style="display:none; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid var(--stats-on-time);">' +
                         renderSearchDelayDetails(doneStories) +
                     '</div>' +
                 '</div>' +
                 '<div class="delay-row" id="search-ontime-notdone-row" style="margin-bottom: 8px; margin-left: 10px;">' +
                     '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                        '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                        '<span style="font-size:13px; color:#374151;">Not Done (' + notDone + ' / ' + notDonePct + '%)</span>' +
+                        '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+                        '<span style="font-size:13px; color:var(--text-default);">Not Done (' + notDone + ' / ' + notDonePct + '%)</span>' +
                     '</div>' +
-                    '<div class="delay-row-details" id="search-ontime-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #ffc107;">' +
+                    '<div class="delay-row-details" id="search-ontime-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid var(--stats-pending);">' +
                         renderSearchDelayDetails(notDoneStories) +
                     '</div>' +
                 '</div>'
@@ -376,7 +376,7 @@ export function init(_root) {
             const notDoneStories = acceleratedStories.notDone || [];
             
             if (done === 0 && notDone === 0) {
-                return '<div style="color:#6b7280;">No accelerated projects</div>';
+                return '<div style="color:var(--text-muted);">No accelerated projects</div>';
             }
             
             const donePct = totalStories ? ((done / totalStories) * 100).toFixed(1) : 0;
@@ -385,19 +385,19 @@ export function init(_root) {
             return (
                 '<div class="delay-row" id="search-accelerated-done-row" style="margin-bottom: 8px; margin-left: 10px;">' +
                     '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                        '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                        '<span style="font-size:13px; color:#374151;">Done (' + done + ' / ' + donePct + '%)</span>' +
+                        '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+                        '<span style="font-size:13px; color:var(--text-default);">Done (' + done + ' / ' + donePct + '%)</span>' +
                     '</div>' +
-                    '<div class="delay-row-details" id="search-accelerated-done-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #28a745;">' +
+                    '<div class="delay-row-details" id="search-accelerated-done-details" style="display:none; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid var(--stats-on-time);">' +
                         renderSearchDelayDetails(doneStories) +
                     '</div>' +
                 '</div>' +
                 '<div class="delay-row" id="search-accelerated-notdone-row" style="margin-bottom: 8px; margin-left: 10px;">' +
                     '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                        '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                        '<span style="font-size:13px; color:#374151;">Not Done (' + notDone + ' / ' + notDonePct + '%)</span>' +
+                        '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+                        '<span style="font-size:13px; color:var(--text-default);">Not Done (' + notDone + ' / ' + notDonePct + '%)</span>' +
                     '</div>' +
-                    '<div class="delay-row-details" id="search-accelerated-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #ffc107;">' +
+                    '<div class="delay-row-details" id="search-accelerated-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid var(--stats-pending);">' +
                         renderSearchDelayDetails(notDoneStories) +
                     '</div>' +
                 '</div>'
@@ -408,7 +408,7 @@ export function init(_root) {
             const counts = stats.delayBreakdown || {};
             const sorted = Object.keys(counts).map(n => parseInt(n, 10)).sort((a, b) => a - b);
             if (sorted.length === 0) {
-                return '<div style="color:#6b7280;">No delays recorded</div>';
+                return '<div style="color:var(--text-muted);">No delays recorded</div>';
             }
             
             const rows = sorted.map(delayCount => {
@@ -421,8 +421,8 @@ export function init(_root) {
                 return (
                     '<div class="delay-row" id="' + rowId + '" style="margin-bottom: 8px; margin-left: 10px;">' +
                         '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                            '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                            '<span style="font-size:13px; color:#374151;">' + delayCount + ' delay' + (delayCount > 1 ? 's' : '') + ' (' + value + ' / ' + pct + '%)</span>' +
+                            '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+                            '<span style="font-size:13px; color:var(--text-default);">' + delayCount + ' delay' + (delayCount > 1 ? 's' : '') + ' (' + value + ' / ' + pct + '%)</span>' +
                         '</div>' +
                         '<div class="delay-row-details" id="' + detailsId + '" style="display:none; margin-left: 20px;">' +
                             renderSearchDelaySubBreakdown(delayGroup, delayCount, value) +
@@ -452,19 +452,19 @@ export function init(_root) {
             return (
                 '<div class="delay-row" id="search-delay-' + delayCount + '-done-row" style="margin-bottom: 8px; margin-left: 10px;">' +
                     '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                        '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                        '<span style="font-size:13px; color:#374151;">Done (' + doneCount + ' / ' + donePct + '%)</span>' +
+                        '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+                        '<span style="font-size:13px; color:var(--text-default);">Done (' + doneCount + ' / ' + donePct + '%)</span>' +
                     '</div>' +
-                    '<div class="delay-row-details" id="search-delay-' + delayCount + '-done-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #28a745;">' +
+                    '<div class="delay-row-details" id="search-delay-' + delayCount + '-done-details" style="display:none; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid var(--stats-on-time);">' +
                         renderSearchDelayDetails(doneStories) +
                     '</div>' +
                 '</div>' +
                 '<div class="delay-row" id="search-delay-' + delayCount + '-notdone-row" style="margin-bottom: 8px; margin-left: 10px;">' +
                     '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                        '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                        '<span style="font-size:13px; color:#374151;">Not Done (' + notDoneCount + ' / ' + notDonePct + '%)</span>' +
+                        '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+                        '<span style="font-size:13px; color:var(--text-default);">Not Done (' + notDoneCount + ' / ' + notDonePct + '%)</span>' +
                     '</div>' +
-                    '<div class="delay-row-details" id="search-delay-' + delayCount + '-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #ffc107;">' +
+                    '<div class="delay-row-details" id="search-delay-' + delayCount + '-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid var(--stats-pending);">' +
                         renderSearchDelayDetails(notDoneStories) +
                     '</div>' +
                 '</div>'
@@ -482,13 +482,13 @@ export function init(_root) {
         }
 
         function renderSearchDelayDetails(stories) {
-            if (!stories || !stories.length) return '<div style="color:#6b7280;">No items</div>';
+            if (!stories || !stories.length) return '<div style="color:var(--text-muted);">No items</div>';
             const sorted = [...stories].sort(compareByTeamThenTitle);
             return sorted.map(s => {
                 const title = (s.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const team = (s.teamName || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return '<div style="font-size:12px; color:#374151; padding:2px 0;">' +
-                    (team ? '<span style="color:#6b7280;">[' + team + ']</span> ' : '') +
+                return '<div style="font-size:12px; color:var(--text-default); padding:2px 0;">' +
+                    (team ? '<span style="color:var(--text-muted);">[' + team + ']</span> ' : '') +
                     title +
                 '</div>';
             }).join('');
@@ -497,18 +497,18 @@ export function init(_root) {
         function renderSearchCancelledBreakdown(stats) {
             const cancelled = Array.isArray(stats.cancelledStories) ? stats.cancelledStories : [];
             if (cancelled.length === 0) {
-                return '<div style="color:#6b7280;">No cancelled projects</div>';
+                return '<div style="color:var(--text-muted);">No cancelled projects</div>';
             }
             const sorted = [...cancelled].sort(compareByTeamThenTitle);
             const items = sorted.map(s => {
                 const title = (s.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const team = (s.teamName || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return '<div style="font-size:12px; color:#374151; padding:2px 0;">' +
-                    (team ? '<span style="color:#6b7280;">[' + team + ']</span> ' : '') +
+                return '<div style="font-size:12px; color:var(--text-default); padding:2px 0;">' +
+                    (team ? '<span style="color:var(--text-muted);">[' + team + ']</span> ' : '') +
                     title +
                 '</div>';
             }).join('');
-            return '<div style="display:block; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #dc3545;">' + items + '</div>';
+            return '<div style="display:block; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid var(--stats-delayed);">' + items + '</div>';
         }
         
         function setupSearchDelayBreakdownInteractions() {
@@ -678,7 +678,7 @@ export function init(_root) {
             const modalElement = document.getElementById('storyDetailsModal');
             modalElement.style.display = 'flex';
             
-            // Style checkboxes for visibility after modal is shown
+            // Keep read-only status values selectable by the shared checkbox styles.
             setTimeout(() => {
                 const checkboxIds = ['viewNewStory', 'viewDone', 'viewCancelled', 'viewInfo', 
                                    'viewTimelineChanges', 'viewAtRisk', 'viewProposed', 
@@ -686,13 +686,7 @@ export function init(_root) {
                 checkboxIds.forEach(id => {
                     const checkbox = document.getElementById(id);
                     if (checkbox) {
-                        // Remove disabled to allow styling
                         checkbox.disabled = false;
-                        // Force blue styling with !important to override red !important
-                        checkbox.style.setProperty('accent-color', '#007cba', 'important');
-                        checkbox.style.setProperty('background-color', 'transparent', 'important');
-                        checkbox.style.setProperty('border', '1px solid #ccc', 'important');
-                        checkbox.style.setProperty('outline', 'none', 'important');
                     }
                 });
             }, 100);
@@ -733,10 +727,7 @@ export function init(_root) {
                 const data = monthlyData[month];
                 if (data && (data.teamSize || data.percentage || data.description)) {
                     const monthDiv = document.createElement('div');
-                    monthDiv.style.marginBottom = '15px';
-                    monthDiv.style.padding = '10px';
-                    monthDiv.style.border = '1px solid #ddd';
-                    monthDiv.style.borderRadius = '4px';
+                    monthDiv.className = 'detail-entry';
                     
                     monthDiv.innerHTML = `
                         <h5 style="margin: 0 0 10px 0; text-transform: uppercase;">${month}</h5>
@@ -855,11 +846,7 @@ export function init(_root) {
                     roadmapInfoInfo.forEach((entry, index) => {
                         if (entry && (entry.date || entry.notes)) {
                             const entryDiv = document.createElement('div');
-                            entryDiv.style.marginBottom = '15px';
-                            entryDiv.style.padding = '10px';
-                            entryDiv.style.border = '1px solid #ddd';
-                            entryDiv.style.borderRadius = '4px';
-                            entryDiv.style.backgroundColor = '#f9f9f9';
+                            entryDiv.className = 'detail-entry';
                             
                             entryDiv.innerHTML = `
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -886,11 +873,7 @@ export function init(_root) {
                 } else if (roadmapInfoInfo && roadmapInfoInfo.date) {
                     // Single info entry (backward compatibility)
                     const entryDiv = document.createElement('div');
-                    entryDiv.style.marginBottom = '15px';
-                    entryDiv.style.padding = '10px';
-                    entryDiv.style.border = '1px solid #ddd';
-                    entryDiv.style.borderRadius = '4px';
-                    entryDiv.style.backgroundColor = '#f9f9f9';
+                    entryDiv.className = 'detail-entry';
                     
                     entryDiv.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -913,11 +896,7 @@ export function init(_root) {
                 } else {
                     // Fallback to old format
                     const entryDiv = document.createElement('div');
-                    entryDiv.style.marginBottom = '15px';
-                    entryDiv.style.padding = '10px';
-                    entryDiv.style.border = '1px solid #ddd';
-                    entryDiv.style.borderRadius = '4px';
-                    entryDiv.style.backgroundColor = '#f9f9f9';
+                    entryDiv.className = 'detail-entry';
                     
                     entryDiv.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1005,11 +984,7 @@ export function init(_root) {
                 
                 changes.forEach((change, index) => {
                     const changeDiv = document.createElement('div');
-                    changeDiv.style.marginBottom = '15px';
-                    changeDiv.style.padding = '15px';
-                    changeDiv.style.border = '1px solid #ddd';
-                    changeDiv.style.borderRadius = '4px';
-                    changeDiv.style.backgroundColor = '#f9f9f9';
+                    changeDiv.className = 'detail-entry detail-entry--large';
                     
                     const startMoved = change.prevStartDate && change.newStartDate
                         && change.prevStartDate !== change.newStartDate;
@@ -1186,14 +1161,14 @@ export function init(_root) {
             const dirStatus = document.getElementById('directoryStatus');
 
             dirStatus.textContent = `Scanning ${selectedDirectory.name}…`;
-            dirStatus.style.color = '';
+            dirStatus.dataset.state = '';
 
             try {
                 const files = await IMOUtility.scanRoadmapDirectory(selectedDirectory, { refresh });
                 const count = files.length;
                 dirStatus.textContent = `Selected: ${selectedDirectory.name} (${count} roadmap${count === 1 ? '' : 's'})`;
             } catch (error) {
-                dirStatus.style.color = '#dc3545';
+                dirStatus.dataset.state = 'error';
                 dirStatus.textContent = 'Failed to scan: ' + error.message;
             }
         }
@@ -1201,9 +1176,8 @@ export function init(_root) {
         function showDirectoryPickerUnsupported() {
             const dirStatus = document.getElementById('directoryStatus');
             if (dirStatus) {
-                dirStatus.style.color = '#dc3545';
-                dirStatus.style.fontStyle = 'normal';
-                dirStatus.innerHTML = '<strong>This browser may not fully support folder selection</strong> &mdash; Chrome or Edge recommended.';
+                dirStatus.dataset.state = 'error';
+                dirStatus.innerHTML = '<strong>This browser may not fully support folder selection</strong> - Chrome or Edge recommended.';
             }
         }
         
@@ -1451,22 +1425,22 @@ export function init(_root) {
                 const contentArea = document.getElementById('contentArea');
                 const queryLabelSafe = (searchQuery || '').toString();
                 contentArea.innerHTML = `
-                    <div class="results-container" style="margin-bottom: 0; padding-bottom: 0;">
+                    <div class="results-container">
                         <div class="search-results-header">
-                            <h2>🔍 Search Results</h2>
+                            <h2>Search results</h2>
                             <div class="search-summary">
                                 Found <strong>${stories.length}</strong> ${stories.length === 1 ? 'story' : 'stories'} 
                                 across <strong>${new Set(stories.map(s => s.teamName)).size}</strong> ${new Set(stories.map(s => s.teamName)).size === 1 ? 'team' : 'teams'} 
                                 for "<strong>${queryLabelSafe}</strong>": (${teamNamesHtml})
                             </div>
                             <div class="search-results-header-options">
-                                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; font-size: 14px;">
-                                    <input type="checkbox" id="search-force-text-below-toggle" style="width: auto; flex-shrink: 0;" onchange="handleSearchForceTextBelowToggle()" ${searchTempForceTextBelow ? 'checked' : ''}>
+                                <label class="search-results-option">
+                                    <input type="checkbox" id="search-force-text-below-toggle" onchange="handleSearchForceTextBelowToggle()" ${searchTempForceTextBelow ? 'checked' : ''}>
                                     Force all text boxes below stories
                                 </label>
                             </div>
                         </div>
-                        <div style="margin-bottom: 0; padding-bottom: 0;">
+                        <div class="search-roadmap">
                             ${cleanedHtml}
                         </div>
                     </div>
@@ -1501,16 +1475,9 @@ export function init(_root) {
                     return;
                 }
                 
-                // Ensure header is positioned for absolute child
-                const computed = window.getComputedStyle(headerEl);
-                if (!computed.position || computed.position === 'static') {
-                    headerEl.style.position = 'relative';
-                }
-
-                // Position button in top-right of search results header
                 const bar = document.createElement('div');
-                bar.style.cssText = `position: absolute; right: 5px; top: 5px; z-index: 2;`;
-                bar.innerHTML = '<button id="inlineSearchStatsBtn" class="search-button" style="min-width: 120px;">📊 Stats</button>';
+                bar.className = 'search-results-actions';
+                bar.innerHTML = '<button id="inlineSearchStatsBtn" class="search-button secondary">Stats</button>';
 
                 headerEl.appendChild(bar);
                 
@@ -1697,21 +1664,21 @@ export function init(_root) {
             const contentArea = document.getElementById('contentArea');
             
             let icon = '📝';
-            let color = '#007cba';
+            let state = 'info';
             
             if (type === 'warning') {
                 icon = '⚠️';
-                color = '#856404';
+                state = 'warning';
             } else if (type === 'error') {
                 icon = '❌';
-                color = '#721c24';
+                state = 'error';
             }
             
             contentArea.innerHTML = `
                 <div class="blank-state">
-                    <div style="font-size: 48px; margin-bottom: 20px;">${icon}</div>
-                    <h2 style="color: ${color};">${message}</h2>
-                    <button onclick="showBlankState()" class="secondary" style="margin-top: 20px;">
+                    <div class="blank-state-icon">${icon}</div>
+                    <h2 class="blank-state-title blank-state-title--${state}">${message}</h2>
+                    <button onclick="showBlankState()" class="secondary">
                         Try Another Search
                     </button>
                 </div>
@@ -1726,11 +1693,10 @@ export function init(_root) {
             contentArea.innerHTML = `
                 <div class="blank-state" id="blankState">
                     <div class="blank-state-icon">🔍</div>
-                    <h2>Cross-Team IMO & Timeline Search</h2>
-                    <p>Search across multiple team roadmaps to find stories by IMO number or timeline</p>
-                    
-                    <p style="font-size: 14px; color: #999;">
-                        First select a directory containing roadmap JSON files, then enter your search query
+                    <h2>Search across team roadmaps</h2>
+                    <p>Find stories by owner, project, title, date, country, or status.</p>
+                    <p class="blank-state-note">
+                        Pick a folder from the top bar, then use any combination of filters.
                     </p>
                 </div>
             `;
@@ -2209,48 +2175,38 @@ export function init(_root) {
          * Show advanced filter help dialog
          */
         function showAdvancedFilterHelp() {
-            // Create modal overlay
             const overlay = document.createElement('div');
             overlay.id = 'advancedFilterHelpModal';
-            overlay.style.cssText = `
-                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-                background: rgba(0,0,0,0.5); z-index: 10000;
-                display: flex; align-items: center; justify-content: center;
-            `;
+            overlay.className = 'modal';
             
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                background: white; border-radius: 8px; padding: 20px;
-                width: 500px; max-height: 70vh; overflow-y: scroll;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3); font-family: monospace;
-            `;
+            modal.className = 'modal-content advanced-filter-help-modal';
             
             modal.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin: 0;">Advanced Filter Options</h3>
-                    <button onclick="document.getElementById('advancedFilterHelpModal').remove()" 
-                            style="border: none; background: none; font-size: 20px; cursor: pointer;">✕</button>
+                <div class="modal-header">
+                    <h3>Advanced Filter Options</h3>
+                    <span class="close" onclick="document.getElementById('advancedFilterHelpModal').remove()">&times;</span>
                 </div>
-                <div style="font-size: 13px; line-height: 1.6;">
-                    <div style="margin-bottom: 15px;">
+                <div class="modal-body advanced-filter-help-body">
+                    <div class="advanced-filter-help-section">
                         <strong>OPERATORS:</strong><br>
                         <code>&&</code> AND &nbsp;&nbsp; <code>||</code> OR &nbsp;&nbsp; <code>!</code> NOT &nbsp;&nbsp; <code>( )</code> Grouping
                     </div>
-                    <div style="margin-bottom: 15px;">
+                    <div class="advanced-filter-help-section">
                         <strong>STATUS FLAGS:</strong><br>
                         <code>Done</code> <code>Cancelled</code> <code>Timeline</code> <code>New</code> <code>AtRisk</code><br>
                         <code>Proposed</code> <code>Info</code> <code>TransferredIn</code> <code>TransferredOut</code>
                     </div>
-                    <div style="margin-bottom: 15px;">
+                    <div class="advanced-filter-help-section">
                         <strong>FIELD PRESENCE:</strong><br>
                         <code>IMO</code> - IMO is filled &nbsp;&nbsp; <code>!IMO</code> - IMO is empty<br>
                         <code>Priority</code> - Priority is set &nbsp;&nbsp; <code>!Priority</code> - Priority is empty
                     </div>
-                    <div style="margin-bottom: 15px;">
+                    <div class="advanced-filter-help-section">
                         <strong>PRIORITY VALUES:</strong><br>
                         <code>High</code> <code>Medium</code> <code>Low</code> (case-insensitive)
                     </div>
-                    <div style="margin-bottom: 15px;">
+                    <div class="advanced-filter-help-section">
                         <strong>FIELD FILTERS (partial match unless noted):</strong><br>
                         <code>IMO="0043"</code> - IMO number (partial)<br>
                         <code>PRIORITY="High"</code> - Priority (exact)<br>
@@ -3013,14 +2969,14 @@ export function init(_root) {
 
                     if (!snap.handle) {
                         selectedDirectory = null;
-                        dirStatus.style.color = '';
+                        dirStatus.dataset.state = '';
                         dirStatus.textContent = 'No folder selected - pick one in the top bar';
                         updateSearchButtonStates();
                         return;
                     }
                     if (snap.permission !== 'granted') {
                         selectedDirectory = null;
-                        dirStatus.style.color = '#b45309';
+                        dirStatus.dataset.state = 'warning';
                         dirStatus.textContent = `🔒 ${snap.name} is locked. Click Unlock in the top bar to grant access.`;
                         updateSearchButtonStates();
                         return;
@@ -3032,7 +2988,7 @@ export function init(_root) {
                     // a clear message instead and tell the user to pick a folder.
                     if (snap.type === 'file') {
                         selectedDirectory = null;
-                        dirStatus.style.color = '#b45309';
+                        dirStatus.dataset.state = 'warning';
                         dirStatus.textContent = `📄 ${snap.name} is a single file. Cross-team Search needs a folder - pick one via the top bar.`;
                         updateSearchButtonStates();
                         return;
