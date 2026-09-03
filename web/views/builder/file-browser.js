@@ -3,7 +3,7 @@
 // Responsibilities:
 //   - Expand/collapse the .file-browser-panel side panel.
 //   - List .json roadmap files from the selected folder, with team
-//     name and size metadata.
+//     name and size metadata shown on hover.
 //   - Open a file from the list (loadTeamData + refresh + preview).
 //   - Accept a roadmap file via drag-drop onto the builder panel itself.
 //
@@ -84,6 +84,47 @@ export function createFileBrowser({
         await directoryStore.select();
     }
 
+    // Tooltip metadata (team name, size, modified date) needs the file
+    // contents, which is far too slow to gather for a whole folder up front.
+    // It is read on first hover instead and cached per file handle.
+    const tooltipCache = new WeakMap();
+
+    async function describeFile(name, handle) {
+        const file = await handle.getFile();
+        let teamName = 'Unknown Team';
+        const content = await file.text().catch(() => null);
+        if (content) {
+            try {
+                teamName = JSON.parse(content).teamData?.teamName || 'Unknown Team';
+            } catch {
+                teamName = 'Invalid JSON';
+            }
+        }
+        const modified = new Date(file.lastModified).toLocaleDateString('en-GB');
+        const sizeKB = (file.size / 1024).toFixed(1);
+        return `${name}\nType: JSON\nTeam: ${teamName}\nSize: ${sizeKB} KB\nModified: ${modified}`;
+    }
+
+    function attachLazyTooltip(item, name, handle) {
+        item.addEventListener(
+            'mouseenter',
+            async () => {
+                let tooltip = tooltipCache.get(handle);
+                if (!tooltip) {
+                    try {
+                        tooltip = await describeFile(name, handle);
+                    } catch (error) {
+                        console.warn(`Could not read roadmap file ${name}:`, error);
+                        tooltip = name;
+                    }
+                    tooltipCache.set(handle, tooltip);
+                }
+                item.title = tooltip;
+            },
+            { once: true }
+        );
+    }
+
     async function loadDirectoryFiles() {
         const fileList = document.getElementById('fileList');
         if (!fileList) return;
@@ -103,28 +144,7 @@ export function createFileBrowser({
             for await (const [name, handle] of selectedDirectoryHandle.entries()) {
                 if (handle.kind !== 'file') continue;
                 if (!name.toLowerCase().endsWith('.json')) continue;
-                try {
-                    const file = await handle.getFile();
-                    let teamName = 'Unknown Team';
-                    const content = await file.text().catch(() => null);
-                    if (content) {
-                        try {
-                            teamName = JSON.parse(content).teamData?.teamName || 'Unknown Team';
-                        } catch {
-                            teamName = 'Invalid JSON';
-                        }
-                    }
-                    roadmapFiles.push({
-                        name,
-                        handle,
-                        teamName,
-                        size: file.size,
-                        lastModified: file.lastModified,
-                        fileType: 'json',
-                    });
-                } catch (error) {
-                    console.warn(`Could not read roadmap file ${name}:`, error);
-                }
+                roadmapFiles.push({ name, handle });
             }
 
             roadmapFiles.sort((a, b) => a.name.localeCompare(b.name));
@@ -139,28 +159,30 @@ export function createFileBrowser({
                 return;
             }
 
-            for (const fileInfo of roadmapFiles) {
+            const currentFilename = document.getElementById('currentFilename')?.value;
+            const fragment = document.createDocumentFragment();
+            for (const { name, handle } of roadmapFiles) {
                 const item = document.createElement('div');
                 item.className = 'file-item';
-                const currentFilename = document.getElementById('currentFilename')?.value;
-                if (currentFilename === fileInfo.name) item.classList.add('active');
+                if (currentFilename === name) item.classList.add('active');
+                item.title = name;
                 item.onclick = () => {
                     fileList.querySelectorAll('.file-item.active').forEach((fileItem) => {
                         fileItem.classList.remove('active');
                     });
                     item.classList.add('active');
-                    openRoadmapFile(fileInfo.handle, fileInfo.fileType);
+                    openRoadmapFile(handle, 'json');
                 };
-                const modified = new Date(fileInfo.lastModified).toLocaleDateString('en-GB');
-                item.title = `${fileInfo.name}\nType: JSON\nTeam: ${fileInfo.teamName}\nSize: ${(fileInfo.size / 1024).toFixed(1)} KB\nModified: ${modified}`;
                 item.innerHTML = `
                     <div class="file-item-icon">${documentIcon}</div>
                     <div class="file-item-info">
-                        <div class="file-item-name">${escapeHTML(fileInfo.name)}</div>
+                        <div class="file-item-name">${escapeHTML(name)}</div>
                     </div>
                 `;
-                fileList.appendChild(item);
+                attachLazyTooltip(item, name, handle);
+                fragment.appendChild(item);
             }
+            fileList.appendChild(fragment);
         } catch (error) {
             console.error('Error loading directory files:', error);
             fileList.innerHTML =
