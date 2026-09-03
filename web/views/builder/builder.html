@@ -6,8 +6,8 @@
         <!-- File Browser Panel -->
         <div class="file-browser-panel collapsed" id="fileBrowserPanel">
             <div class="file-browser-header">
-                <h3>📁 Roadmap Files</h3>
-                <button onclick="toggleFileBrowser()" class="collapse-btn" id="fileBrowserToggle" title="Close File Browser">×</button>
+                <h3>Roadmap Files</h3>
+                <button onclick="toggleFileBrowser()" class="collapse-btn" id="fileBrowserToggle" title="Close file browser" aria-label="Close file browser">×</button>
             </div>
             <div class="file-browser-content" id="fileBrowserContent">
                 <div class="file-list" id="fileList">
@@ -22,42 +22,40 @@
             <!-- Builder Panel -->
             <div class="builder-panel">
             <div class="header-with-buttons">
-                <div style="margin-bottom: 10px;">
-                    <button class="expand-file-browser-btn visible" id="expandFileBrowserBtn" onclick="toggleFileBrowser()" title="Show File Browser">
-                        ▶ Show Files
-                    </button>
-                    <button onclick="toggleBuilderCollapse()" id="builderCollapseBtn" class="secondary builder-collapse-btn">▲ Hide Builder</button>
-                </div>
                 <div class="title-and-buttons">
-                    <div style="display: flex; align-items: baseline; gap: 16px; flex: 1 1 auto; min-width: 0;">
-                        <h1 style="margin: 0; padding: 0; text-align: left;"><span id="roadmapIcon">🗺️</span> Roadmap Builder</h1>
-                        <div class="title-meta" style="display: flex; align-items: baseline; gap: 16px; font-size: 12px; color: var(--text-muted); min-width: 0; flex: 1 1 auto;">
+                    <div class="builder-title-group">
+                        <button class="expand-file-browser-btn visible" id="expandFileBrowserBtn" onclick="toggleFileBrowser()" title="Show file browser" aria-label="Show file browser">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"></path></svg>
+                        </button>
+                        <button onclick="toggleBuilderCollapse()" id="builderCollapseBtn" class="secondary builder-collapse-btn" title="Collapse builder" aria-label="Collapse builder">▲</button>
+                        <h1>Roadmap Builder</h1>
+                        <div class="title-meta">
                             <input type="hidden" id="roadmapYear" value="2025">
-                            <span id="currentFilenameDisplay" style="display: none; align-items: baseline; gap: 4px; min-width: 0; flex: 1 1 auto;">
-                                <label for="currentFilename" style="margin: 0; font-size: 12px; font-weight: 500; white-space: nowrap;">Filename:</label>
-                                <input type="text" id="currentFilename" class="plain-text-field" placeholder="Roadmap filename" readonly tabindex="-1" title="Filename is read-only - save writes back to the loaded file" style="width: auto; flex: 1 1 auto; font-size: 12px; min-width: 0;">
+                            <span id="currentFilenameDisplay" class="filename-chip" style="display: none;">
+                                <label for="currentFilename" class="visually-hidden">Filename</label>
+                                <input type="text" id="currentFilename" class="plain-text-field" placeholder="Roadmap filename" readonly tabindex="-1" title="Filename is read-only - save writes back to the loaded file">
                             </span>
                         </div>
                     </div>
                     <div class="top-action-buttons">
-                    <button onclick="newRoadmap()" class="secondary">🆕 New Roadmap</button>
-                    <div style="display: inline-block; position: relative;">
-                        <button id="saveDropdownBtn" class="secondary" onclick="toggleSaveDropdown(event)">💾 Save</button>
-                        <div id="saveDropdownMenu" class="app-nav__folder-menu">
-                            <button type="button" class="app-nav__folder-menu-item" onclick="saveRoadmapInPlace(); closeSaveDropdown();">📝 Save file</button>
-                            <button type="button" class="app-nav__folder-menu-item" onclick="downloadRoadmap(); closeSaveDropdown();">⬇️ Download</button>
-                        </div>
-                    </div>
-                    <span id="saveStatus" class="save-status" data-status="idle"></span>
-                    <button onclick="openStatsModal()" class="secondary">📊 Stats</button>
-                    <div style="display: inline-block; position: relative;">
-                        <button id="shareDropdownBtn" class="secondary" onclick="toggleShareDropdown(event)">🌐 Export</button>
+                    <button onclick="newRoadmap()" class="secondary">New</button>
+                    <button onclick="openStatsModal()" class="secondary">Stats</button>
+                    <div class="dropdown-wrap">
+                        <button id="shareDropdownBtn" class="secondary dropdown-trigger" onclick="toggleShareDropdown(event)">Export <span aria-hidden="true">⌄</span></button>
                         <div id="shareDropdownMenu" class="app-nav__folder-menu">
                             <button type="button" class="app-nav__folder-menu-item" onclick="exportHTML(); closeShareDropdown();">HTML</button>
                             <button type="button" class="app-nav__folder-menu-item" onclick="exportJPG(); closeShareDropdown();">JPG</button>
                             <button type="button" class="app-nav__folder-menu-item" onclick="exportPDF(); closeShareDropdown();">PDF</button>
                         </div>
                     </div>
+                    <div class="dropdown-wrap">
+                        <button id="saveDropdownBtn" class="primary-action dropdown-trigger" onclick="toggleSaveDropdown(event)">Save <span aria-hidden="true">⌄</span></button>
+                        <div id="saveDropdownMenu" class="app-nav__folder-menu">
+                            <button type="button" class="app-nav__folder-menu-item" onclick="saveRoadmapInPlace(); closeSaveDropdown();">Save file</button>
+                            <button type="button" class="app-nav__folder-menu-item" onclick="downloadRoadmap(); closeSaveDropdown();">Download</button>
+                        </div>
+                    </div>
+                    <span id="saveStatus" class="save-status" data-status="idle"></span>
                 </div>
                 </div>
             </div>
@@ -101,20 +99,21 @@
                 <textarea id="teamDescription" placeholder="Describe your team's mission, goals, and context" rows="3" style="resize: vertical;"></textarea>
             </div>
             <!-- KTLO Section -->
-            <h2>KTLO (Keep The Lights On)</h2>
-            <div class="ktlo-section" style="border-color: #28a745;">
-                <div class="flex-header">
+            <div class="ktlo-section" style="--section-accent: #059669;">
+                <div class="flex-header section-card-header">
                     <div class="flex-center">
                         <button id="ktlo-collapse-btn" onclick="toggleKTLOCollapse()" title="Collapse KTLO">▼</button>
-                        <h4 class="no-margin">KTLO Configuration</h4>
+                        <span class="section-color-dot" aria-hidden="true"></span>
+                        <h4 class="no-margin">KTLO - Keep The Lights On</h4>
                     </div>
+                    <span class="section-card-meta">Shift+K toggles position</span>
                 </div>
-                <div id="ktlo-content">
+                <div id="ktlo-content" class="section-card-body">
                     <div class="form-group">
                         <label for="ktlo-position-toggle">KTLO Position: <span style="font-weight: normal; color: #666;">(Shift+K to toggle)</span></label>
                         <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; margin-top: 5px; text-align: left; margin-left: 3px;">
                             <input type="checkbox" id="ktlo-position-toggle" style="width: auto; flex-shrink: 0;">
-                            Top (Before the Epics)
+                            Position at top, before the EPICs
                         </label>
                     </div>
                     <div class="form-group">
@@ -162,30 +161,30 @@
                 </div>
             </div>
             <!-- EPICs Section -->
-            <h2>EPICs</h2>
             <div id="epics-container">
                 <!-- EPICs will be added here dynamically -->
             </div>
-            <button onclick="addEpic()">+ Add EPIC</button>
+            <button onclick="addEpic()" class="ghost-add-button epic-add-button">+ Add EPIC</button>
             <!-- Below The Line Section -->
-            <h2>Below The Line</h2>
-            <div class="btl-section">
-                <div class="flex-header">
+            <div class="btl-section" style="--section-accent: #94a3b8;">
+                <div class="flex-header section-card-header">
                     <div class="flex-center">
                         <button id="btl-collapse-btn" onclick="toggleBTLCollapse()" title="Expand Below The Line" class="collapse-btn-collapsed">▶</button>
-                        <h4 class="no-margin">Below The Line Stories</h4>
+                        <span class="section-color-dot" aria-hidden="true"></span>
+                        <h4 class="no-margin">Below The Line</h4>
+                        <span class="section-card-meta" id="btl-story-meta">0 stories · max 3</span>
                     </div>
                 </div>
-                <div id="btl-content" style="display: none;">
+                <div id="btl-content" class="section-card-body" style="display: none;">
                     <p style="margin-bottom: 15px; color: #666; font-style: italic;">Stories that are below the line - placeholder items for potential future consideration. <strong>Maximum of 3 stories.</strong></p>
                     <div id="btl-stories-container">
                         <!-- BTL stories will be added here -->
                     </div>
-                    <button onclick="addBTLStory()">+ Add Story</button>
+                    <button onclick="addBTLStory()" class="ghost-add-button">+ Add Story</button>
                 </div>
             </div>
             <!-- Story Sorting Settings -->
-            <div class="form-group" style="margin-bottom: 20px;">
+            <div class="form-group sorting-settings" style="margin-bottom: 20px;">
                 <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
                     <input type="checkbox" id="story-sorting-toggle" style="width: auto; flex-shrink: 0;" onchange="handleSortingToggle()">
                     Sort stories by start date within each epic
@@ -201,21 +200,21 @@
             </div>
             <!-- Action Buttons -->
             <div class="action-buttons">
-                <button onclick="newRoadmap()" class="secondary">🆕 New Roadmap</button>
-                <div style="display: inline-block; position: relative;">
-                    <button id="saveDropdownBtnBottom" class="secondary" onclick="toggleSaveDropdownBottom(event)">💾 Save</button>
-                    <div id="saveDropdownMenuBottom" class="app-nav__folder-menu">
-                        <button type="button" class="app-nav__folder-menu-item" onclick="saveRoadmapInPlace(); closeSaveDropdownBottom();">📝 Save file</button>
-                        <button type="button" class="app-nav__folder-menu-item" onclick="downloadRoadmap(); closeSaveDropdownBottom();">⬇️ Download</button>
-                    </div>
-                </div>
-                <button onclick="openStatsModal()" class="secondary">📊 Stats</button>
-                <div style="display: inline-block; position: relative;">
-                    <button id="shareDropdownBtnBottom" class="secondary" onclick="toggleShareDropdownBottom(event)">🌐 Export</button>
+                <button onclick="newRoadmap()" class="secondary">New</button>
+                <button onclick="openStatsModal()" class="secondary">Stats</button>
+                <div class="dropdown-wrap">
+                    <button id="shareDropdownBtnBottom" class="secondary dropdown-trigger" onclick="toggleShareDropdownBottom(event)">Export <span aria-hidden="true">⌄</span></button>
                     <div id="shareDropdownMenuBottom" class="app-nav__folder-menu">
                         <button type="button" class="app-nav__folder-menu-item" onclick="exportHTML(); closeShareDropdownBottom();">HTML</button>
                         <button type="button" class="app-nav__folder-menu-item" onclick="exportJPG(); closeShareDropdownBottom();">JPG</button>
                         <button type="button" class="app-nav__folder-menu-item" onclick="exportPDF(); closeShareDropdownBottom();">PDF</button>
+                    </div>
+                </div>
+                <div class="dropdown-wrap">
+                    <button id="saveDropdownBtnBottom" class="primary-action dropdown-trigger" onclick="toggleSaveDropdownBottom(event)">Save <span aria-hidden="true">⌄</span></button>
+                    <div id="saveDropdownMenuBottom" class="app-nav__folder-menu">
+                        <button type="button" class="app-nav__folder-menu-item" onclick="saveRoadmapInPlace(); closeSaveDropdownBottom();">Save file</button>
+                        <button type="button" class="app-nav__folder-menu-item" onclick="downloadRoadmap(); closeSaveDropdownBottom();">Download</button>
                     </div>
                 </div>
             </div>
@@ -229,7 +228,7 @@
                     <button type="button" id="fullscreen-zoom-in" onclick="zoomIn()" title="Zoom in (Cmd/Ctrl +)" aria-label="Zoom in">+</button>
                 </div>
                 <button class="fullscreen-button" onclick="event.stopPropagation(); toggleFullscreen()" title="Enter fullscreen" aria-label="Enter fullscreen">
-                    <span class="fullscreen-icon">⛶</span>
+                    <svg class="fullscreen-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                 </button>
                 <div id="roadmap-mount" class="roadmap-root"></div>
             </div>
@@ -508,7 +507,7 @@
                 <div class="flex-form">
                     <button type="button" class="btn-modal" style="background: #28a745; color: white; border: none; padding: 6px 8px; font-size: 14px; margin-right: 2px; cursor: pointer;" onclick="moveCurrentStoryUp()" title="Move story up" tabindex="-1">▲</button>
                     <button type="button" class="btn-modal" style="background: #28a745; color: white; border: none; padding: 6px 8px; font-size: 14px; margin-right: 2px; cursor: pointer;" onclick="moveCurrentStoryDown()" title="Move story down" tabindex="-1">▼</button>
-                    <button type="button" class="btn-modal danger" style="padding: 6px 8px; font-size: 14px; cursor: pointer;" onclick="deleteCurrentStory()" title="Delete story" tabindex="-1">🗑️</button>
+                    <button type="button" class="btn-modal danger" style="padding: 6px 8px; font-size: 14px; cursor: pointer;" onclick="deleteCurrentStory()" title="Delete story" aria-label="Delete story" tabindex="-1">×</button>
                 </div>
                 <div class="flex-modal-footer">
                     <button type="button" class="primary" onclick="saveStoryChanges()" tabindex="-1">OK</button>

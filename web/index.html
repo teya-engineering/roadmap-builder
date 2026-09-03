@@ -1,261 +1,362 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>🗺️ Roadmap Builder</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Expires" content="0" />
+        <title>Roadmap Builder</title>
 
-    <script>
-        // Apply persisted theme before any styles paint so the user never sees
-        // a flash of the wrong palette. Default is light; auto-detection of
-        // the OS preference is intentionally disabled.
-        (function () {
-            try {
-                var t = localStorage.getItem('roadmap-theme');
-                document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
-            } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'light');
+        <script>
+            // Apply persisted theme before any styles paint so the user never sees
+            // a flash of the wrong palette. Default is light; auto-detection of
+            // the OS preference is intentionally disabled.
+            (function () {
+                try {
+                    var t = localStorage.getItem('roadmap-theme');
+                    document.documentElement.setAttribute(
+                        'data-theme',
+                        t === 'dark' ? 'dark' : 'light'
+                    );
+                } catch (e) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+                try {
+                    var s = localStorage.getItem('roadmap-status-style');
+                    document.documentElement.setAttribute(
+                        'data-status-style',
+                        s === 'hover' ? 'hover' : 'side'
+                    );
+                } catch (e) {
+                    document.documentElement.setAttribute('data-status-style', 'side');
+                }
+            })();
+        </script>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/styles.css" />
+        <link rel="stylesheet" href="/roadmap-styles.css" />
+
+        <!-- Export libs used by the builder -->
+        <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+        <style>
+            /* The shell stays self-contained so view-level styles cannot shift it. */
+            :root {
+                --app-nav-height: 52px;
+                --app-nav-bg: #00587a;
+                --app-nav-border: #004a68;
             }
-            try {
-                var s = localStorage.getItem('roadmap-status-style');
-                document.documentElement.setAttribute('data-status-style', s === 'hover' ? 'hover' : 'side');
-            } catch (e) {
-                document.documentElement.setAttribute('data-status-style', 'side');
+
+            .app-nav {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                height: var(--app-nav-height) !important;
+                align-items: stretch !important;
+                background: var(--app-nav-bg) !important;
+                border-bottom: 1px solid var(--app-nav-border) !important;
+                font:
+                    500 13px/1 Figtree,
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    'Segoe UI',
+                    sans-serif !important;
+                z-index: 100 !important;
             }
-        })();
-    </script>
+            .app-nav * {
+                box-sizing: border-box !important;
+            }
 
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/roadmap-styles.css">
+            .app-nav__row {
+                height: 100% !important;
+                width: 100% !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 24px !important;
+                padding: 0 20px !important;
+            }
 
-    <!-- Export libs used by the builder -->
-    <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+            .app-nav__brand {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 9px !important;
+                color: #ffffff !important;
+                text-decoration: none !important;
+                font-weight: 700 !important;
+                font-size: 17px !important;
+                letter-spacing: 0.2px !important;
+                line-height: 1 !important;
+                white-space: nowrap !important;
+            }
+            .app-nav__brand:hover {
+                opacity: 0.92 !important;
+            }
 
-    <style>
-        /* SPA shell nav - fully self-contained. Hard-coded colors + !important
-           so view-level <style> blocks can't shift its appearance on navigation.
-           Fixed positioning keeps it locked in place; main content is offset
-           to match. Two-row layout: brand on top, tabs + folder below. */
-        :root {
-            --app-nav-top-h: 44px;
-            --app-nav-bottom-h: 42px;
-            --app-nav-height: calc(var(--app-nav-top-h) + var(--app-nav-bottom-h));
-            --app-brand-bg: #00587A;
-            --app-nav-bg: #00739A;
-            --app-nav-border: #004A68;
-        }
+            .app-nav__brand-mark {
+                width: 26px !important;
+                height: 26px !important;
+                border-radius: 7px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                background: #ffffff !important;
+                color: #00587a !important;
+                font-size: 14px !important;
+                font-weight: 900 !important;
+            }
 
-        .app-nav {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            box-sizing: border-box !important;
-            display: flex !important;
-            flex-direction: column !important;
-            background: var(--app-nav-bg) !important;
-            border-bottom: 1px solid var(--app-nav-border) !important;
-            font: 500 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-            z-index: 100 !important;
-        }
-        .app-nav * { box-sizing: border-box !important; }
+            .app-nav__links {
+                display: flex !important;
+                align-items: stretch !important;
+                align-self: stretch !important;
+                gap: 2px !important;
+                flex: 1 1 auto !important;
+            }
 
-        .app-nav__top {
-            height: var(--app-nav-top-h) !important;
-            display: flex !important;
-            align-items: center !important;
-            padding: 0 20px !important;
-            background: var(--app-brand-bg) !important;
-        }
+            .app-nav__link {
+                display: inline-flex !important;
+                align-items: center !important;
+                padding: 0 14px !important;
+                color: rgba(255, 255, 255, 0.75) !important;
+                text-decoration: none !important;
+                background: transparent !important;
+                border: 0 !important;
+                border-top: 2px solid transparent !important;
+                border-bottom: 2px solid transparent !important;
+                font-weight: 500 !important;
+                font-size: 13.5px !important;
+                line-height: 1 !important;
+                transition:
+                    color 120ms ease,
+                    border-color 120ms ease !important;
+            }
+            .app-nav__link:hover {
+                color: #ffffff !important;
+                border-bottom-color: rgba(255, 255, 255, 0.35) !important;
+            }
+            .app-nav__link[aria-current='page'] {
+                color: #ffffff !important;
+                border-bottom-color: #ffffff !important;
+                font-weight: 600 !important;
+            }
 
-        .app-nav__brand {
-            color: #ffffff !important;
-            text-decoration: none !important;
-            font-weight: 700 !important;
-            font-size: 22px !important;
-            letter-spacing: 0.3px !important;
-            line-height: 1 !important;
-        }
-        .app-nav__brand:hover { opacity: 0.92 !important; }
+            .app-nav__folder {
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                height: 30px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 7px !important;
+                border: 0 !important;
+                background: #ffffff !important;
+                color: #00587a !important;
+                font:
+                    600 12.5px/1 Figtree,
+                    ui-sans-serif,
+                    system-ui,
+                    sans-serif !important;
+                padding: 0 14px !important;
+                border-radius: 999px !important;
+                cursor: pointer !important;
+                max-width: 360px !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12) !important;
+                transition:
+                    background 120ms ease,
+                    color 120ms ease,
+                    border-color 120ms ease !important;
+            }
+            .app-nav__folder:hover {
+                background: #f0fbff !important;
+            }
+            .app-nav__folder[data-state='empty'] {
+                background: #ffffff !important;
+                color: #00587a !important;
+            }
+            .app-nav__folder[data-state='empty']:hover {
+                background: #f0fbff !important;
+            }
+            .app-nav__folder[data-state='prompt'] {
+                background: #fef3c7 !important;
+                color: #92400e !important;
+                border-color: #fbbf24 !important;
+            }
+            .app-nav__folder[data-state='prompt']:hover {
+                background: #fde68a !important;
+            }
 
-        .app-nav__bottom {
-            height: var(--app-nav-bottom-h) !important;
-            display: flex !important;
-            align-items: stretch !important;
-            padding: 0 20px !important;
-            gap: 4px !important;
-        }
+            .app-main {
+                padding-top: var(--app-nav-height);
+                min-height: 100vh;
+            }
 
-        .app-nav__links {
-            display: flex !important;
-            align-items: stretch !important;
-            gap: 4px !important;
-            flex: 1 1 auto !important;
-        }
+            .app-nav__folder-menu {
+                position: absolute !important;
+                top: calc(100% + 6px) !important;
+                right: 0 !important;
+                background: #ffffff !important;
+                border: 1px solid #d1d5db !important;
+                border-radius: 8px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+                display: none;
+                flex-direction: column !important;
+                min-width: 220px !important;
+                padding: 4px !important;
+                z-index: 200 !important;
+            }
+            .app-nav__folder-menu.is-open {
+                display: flex;
+            }
+            .app-nav__folder-menu-item {
+                background: transparent !important;
+                border: 0 !important;
+                padding: 8px 12px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                font:
+                    500 13px/1.4 Figtree,
+                    ui-sans-serif,
+                    system-ui,
+                    sans-serif !important;
+                text-align: left !important;
+                color: #1f2937 !important;
+                cursor: pointer !important;
+                border-radius: 4px !important;
+            }
+            .app-nav__folder-menu-item:hover {
+                background: #f3f4f6 !important;
+            }
 
-        .app-nav__link {
-            display: inline-flex !important;
-            align-items: center !important;
-            padding: 0 14px !important;
-            color: rgba(255, 255, 255, 0.75) !important;
-            text-decoration: none !important;
-            background: transparent !important;
-            border: 0 !important;
-            border-bottom: 2px solid transparent !important;
-            font-weight: 500 !important;
-            font-size: 14px !important;
-            line-height: 1 !important;
-            transition: color 120ms ease, border-color 120ms ease !important;
-        }
-        .app-nav__link:hover {
-            color: #ffffff !important;
-            border-bottom-color: rgba(255, 255, 255, 0.35) !important;
-        }
-        .app-nav__link[aria-current="page"] {
-            color: #ffffff !important;
-            border-bottom-color: #ffffff !important;
-            font-weight: 600 !important;
-        }
+            .app-nav__theme {
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                background: transparent !important;
+                color: #ffffff !important;
+                border: 1px solid rgba(255, 255, 255, 0.5) !important;
+                border-radius: 999px !important;
+                width: 28px !important;
+                height: 28px !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                cursor: pointer !important;
+                font-size: 14px !important;
+                line-height: 1 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                transition:
+                    background 120ms ease,
+                    border-color 120ms ease !important;
+            }
+            .app-nav__theme:hover {
+                background: rgba(255, 255, 255, 0.12) !important;
+            }
 
-        .app-nav__folder {
-            align-self: center !important;
-            appearance: none !important;
-            -webkit-appearance: none !important;
-            border: 1px solid rgba(255, 255, 255, 0.35) !important;
-            background: #ffffff !important;
-            color: #00587A !important;
-            font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-            padding: 8px 14px !important;
-            border-radius: 999px !important;
-            cursor: pointer !important;
-            max-width: 360px !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            white-space: nowrap !important;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12) !important;
-            transition: background 120ms ease, color 120ms ease, border-color 120ms ease !important;
-        }
-        .app-nav__folder:hover { background: #f0fbff !important; }
-        .app-nav__folder[data-state="empty"] {
-            background: transparent !important;
-            color: #ffffff !important;
-            border-color: rgba(255, 255, 255, 0.5) !important;
-            box-shadow: none !important;
-        }
-        .app-nav__folder[data-state="empty"]:hover { background: rgba(255, 255, 255, 0.1) !important; }
-        .app-nav__folder[data-state="prompt"] {
-            background: #fef3c7 !important;
-            color: #92400e !important;
-            border-color: #fbbf24 !important;
-        }
-        .app-nav__folder[data-state="prompt"]:hover { background: #fde68a !important; }
+            .app-nav__beta {
+                width: auto !important;
+                padding: 0 11px !important;
+                gap: 6px !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                letter-spacing: 0.2px !important;
+            }
+            .app-nav__status-dot {
+                width: 6px !important;
+                height: 6px !important;
+                border-radius: 999px !important;
+                background: rgba(255, 255, 255, 0.55) !important;
+                flex: 0 0 auto !important;
+            }
+            .app-nav__beta-label {
+                line-height: 1 !important;
+            }
+            #appNavStatusStyle[aria-pressed='false'] {
+                opacity: 0.55 !important;
+                border-color: rgba(255, 255, 255, 0.25) !important;
+            }
+            #appNavStatusStyle[aria-pressed='true'] {
+                background: rgba(255, 224, 102, 0.22) !important;
+                border-color: #ffd84d !important;
+                color: #ffd84d !important;
+                box-shadow:
+                    0 0 0 1px rgba(255, 216, 77, 0.35),
+                    0 0 8px rgba(255, 216, 77, 0.55) !important;
+            }
+            #appNavStatusStyle[aria-pressed='true'] .app-nav__status-dot {
+                background: #ffd84d !important;
+                box-shadow: 0 0 5px rgba(255, 216, 77, 0.8) !important;
+            }
 
-        .app-main {
-            padding-top: var(--app-nav-height);
-            min-height: 100vh;
-        }
+            #appNavAutoSave[aria-pressed='false'] {
+                opacity: 0.55 !important;
+                border-color: rgba(255, 255, 255, 0.25) !important;
+            }
+            #appNavAutoSave[aria-pressed='true'] {
+                background: rgba(110, 231, 183, 0.18) !important;
+                border-color: #6ee7b7 !important;
+                color: #6ee7b7 !important;
+                box-shadow:
+                    0 0 0 1px rgba(110, 231, 183, 0.35),
+                    0 0 8px rgba(110, 231, 183, 0.45) !important;
+            }
+            #appNavAutoSave[aria-pressed='true'] .app-nav__status-dot {
+                background: #6ee7b7 !important;
+                box-shadow: 0 0 5px rgba(110, 231, 183, 0.75) !important;
+            }
 
-        .app-nav__folder-menu {
-            position: absolute !important;
-            top: calc(100% + 6px) !important;
-            right: 0 !important;
-            background: #ffffff !important;
-            border: 1px solid #d1d5db !important;
-            border-radius: 8px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-            display: none;
-            flex-direction: column !important;
-            min-width: 220px !important;
-            padding: 4px !important;
-            z-index: 200 !important;
-        }
-        .app-nav__folder-menu.is-open {
-            display: flex;
-        }
-        .app-nav__folder-menu-item {
-            background: transparent !important;
-            border: 0 !important;
-            padding: 8px 12px !important;
-            font: 500 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-            text-align: left !important;
-            color: #1f2937 !important;
-            cursor: pointer !important;
-            border-radius: 4px !important;
-        }
-        .app-nav__folder-menu-item:hover {
-            background: #f3f4f6 !important;
-        }
+            .app-nav__actions {
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                min-width: 0 !important;
+            }
 
-        .app-nav__theme {
-            align-self: center !important;
-            appearance: none !important;
-            -webkit-appearance: none !important;
-            background: transparent !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 255, 255, 0.5) !important;
-            border-radius: 999px !important;
-            width: 30px !important;
-            height: 30px !important;
-            padding: 0 !important;
-            margin-right: 8px !important;
-            cursor: pointer !important;
-            font-size: 14px !important;
-            line-height: 1 !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: background 120ms ease, border-color 120ms ease !important;
-        }
-        .app-nav__theme:hover { background: rgba(255, 255, 255, 0.12) !important; }
+            .app-nav svg {
+                flex: 0 0 auto !important;
+            }
 
-        /* Experimental-features toggle: dim when off, glow when on so the
-           current state is obvious without reading the tooltip. The pill is
-           wider than the theme toggle to fit the "Beta on/off" label. */
-        .app-nav__beta {
-            width: auto !important;
-            padding: 0 10px !important;
-            gap: 6px !important;
-            font-size: 12px !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.2px !important;
-        }
-        .app-nav__beta-icon { font-size: 13px !important; line-height: 1 !important; }
-        .app-nav__beta-label { line-height: 1 !important; }
-        #appNavStatusStyle[aria-pressed="false"] {
-            opacity: 0.55 !important;
-            border-color: rgba(255, 255, 255, 0.25) !important;
-        }
-        #appNavStatusStyle[aria-pressed="true"] {
-            background: rgba(255, 224, 102, 0.22) !important;
-            border-color: #ffd84d !important;
-            color: #ffd84d !important;
-            box-shadow: 0 0 0 1px rgba(255, 216, 77, 0.35), 0 0 8px rgba(255, 216, 77, 0.55) !important;
-        }
+            @media (max-width: 760px) {
+                .app-nav__row {
+                    gap: 10px !important;
+                    padding: 0 12px !important;
+                }
+                .app-nav__link {
+                    padding: 0 8px !important;
+                    font-size: 12px !important;
+                }
+                .app-nav__beta-label {
+                    display: none !important;
+                }
+                .app-nav__beta {
+                    width: 28px !important;
+                    padding: 0 !important;
+                }
+                .app-nav__folder {
+                    max-width: 150px !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="app-nav" id="appNav" aria-label="Primary"></nav>
+        <main class="app-main" id="app"></main>
 
-        /* Auto-save toggle: same pill geometry as the beta toggle but with a
-           green "on" state to read as a save/persistence affordance rather
-           than "experimental." */
-        #appNavAutoSave[aria-pressed="false"] {
-            opacity: 0.55 !important;
-            border-color: rgba(255, 255, 255, 0.25) !important;
-        }
-        #appNavAutoSave[aria-pressed="true"] {
-            background: rgba(110, 231, 183, 0.18) !important;
-            border-color: #6ee7b7 !important;
-            color: #6ee7b7 !important;
-            box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.35), 0 0 8px rgba(110, 231, 183, 0.45) !important;
-        }
-    </style>
-</head>
-<body>
-    <nav class="app-nav" id="appNav" aria-label="Primary"></nav>
-    <main class="app-main" id="app"></main>
-
-    <script type="module" src="/app/nav.js"></script>
-    <script type="module" src="/app/router.js"></script>
-</body>
+        <script type="module" src="/app/nav.js"></script>
+        <script type="module" src="/app/router.js"></script>
+    </body>
 </html>

@@ -18,7 +18,9 @@ export class UIUtility {
      * @returns {string} - Background color hex code
      */
     static getAlternatingBackgroundColor(visualPosition) {
-        return (visualPosition % 2 === 0) ? this.COLORS.LIME_BACKGROUND : this.COLORS.BROWN_BACKGROUND;
+        return visualPosition % 2 === 0
+            ? this.COLORS.LIME_BACKGROUND
+            : this.COLORS.BROWN_BACKGROUND;
     }
 
     /**
@@ -52,11 +54,11 @@ export class UIUtility {
      */
     static generateEditIconHTML(embedded, epicName, storyTitle, storyIndex, formatTextFn) {
         if (!embedded) return '';
-        
+
         const safeEpicName = formatTextFn(epicName);
         const safeStoryTitle = formatTextFn(storyTitle);
-        
-        return `<div class="edit-icon" onclick="parent.openEditStoryModal({epicName: '${safeEpicName}', storyTitle: '${safeStoryTitle}', storyIndex: ${storyIndex}})" title="Edit Story">✏️</div>`;
+
+        return `<div class="edit-icon" onclick="parent.openEditStoryModal({epicName: '${safeEpicName}', storyTitle: '${safeStoryTitle}', storyIndex: ${storyIndex}})" title="Edit Story">✎</div>`;
     }
 
     /**
@@ -67,24 +69,26 @@ export class UIUtility {
      */
     static generateBulletsHTML(bullets, formatTextFn) {
         if (!bullets || !Array.isArray(bullets) || bullets.length === 0) return '';
-        
-        const bulletItems = bullets.map(bullet => {
-            const trimmedBullet = bullet.trim();
-            // Convert --- to spacing div instead of bullet point
-            if (trimmedBullet === '---') {
-                return '</ul><div style="height: 12px;"></div><ul style="font-size: 9pt; margin: 0; padding-left: 12px; list-style-type: square; color: var(--rm-text); display: block; visibility: visible;">';
-            }
 
-            // Format the bullet text and fix div tags that cause line breaks
-            let formattedBullet = formatTextFn(bullet);
-            // Convert div tags to span tags to prevent line breaks in bullets
-            formattedBullet = formattedBullet.replace(/<div(\s[^>]*)?>/g, '<span$1>');
-            formattedBullet = formattedBullet.replace(/<\/div>/g, '</span>');
+        const bulletItems = bullets
+            .map((bullet) => {
+                const trimmedBullet = bullet.trim();
+                // Convert --- to spacing div instead of bullet point
+                if (trimmedBullet === '---') {
+                    return '</ul><div style="height: 12px;"></div><ul class="task-bullets" style="display: block; visibility: visible;">';
+                }
 
-            return `<li style="margin: 0 0 3px 0; padding: 0; display: list-item; visibility: visible; color: var(--rm-text);">${formattedBullet}</li>`;
-        }).join('');
+                // Format the bullet text and fix div tags that cause line breaks
+                let formattedBullet = formatTextFn(bullet);
+                // Convert div tags to span tags to prevent line breaks in bullets
+                formattedBullet = formattedBullet.replace(/<div(\s[^>]*)?>/g, '<span$1>');
+                formattedBullet = formattedBullet.replace(/<\/div>/g, '</span>');
 
-        return `<ul style="font-size: 9pt; margin: 0; padding-left: 12px; list-style-type: square; color: var(--rm-text); display: block; visibility: visible;">${bulletItems}</ul>`;
+                return `<li style="margin: 0 0 3px 0; padding: 0; display: list-item; visibility: visible;">${formattedBullet}</li>`;
+            })
+            .join('');
+
+        return `<ul class="task-bullets" style="display: block; visibility: visible;">${bulletItems}</ul>`;
     }
 
     /**
@@ -94,11 +98,11 @@ export class UIUtility {
      */
     static cleanWhitespace(text) {
         if (!text || typeof text !== 'string') return '';
-        
+
         return text
             .replace(/[\r\n\t\f\v]/g, '') // Remove all line breaks and tabs
-            .replace(/\s+/g, ' ')          // Collapse multiple spaces
-            .trim();                       // Remove leading/trailing spaces
+            .replace(/\s+/g, ' ') // Collapse multiple spaces
+            .trim(); // Remove leading/trailing spaces
     }
 
     /**
@@ -110,7 +114,7 @@ export class UIUtility {
     static truncateText(text, maxLength) {
         if (!text || typeof text !== 'string') return '';
         if (text.length <= maxLength) return text;
-        
+
         const truncated = text.substring(0, maxLength - 3).replace(/\s+$/, '');
         return truncated + '...';
     }
@@ -123,25 +127,25 @@ export class UIUtility {
      */
     static processEpicName(name, numStories = 1) {
         if (!name) return name;
-        
+
         // Clean the name first
         const cleanName = this.cleanWhitespace(name);
-        
+
         // Determine truncation limit based on epic height (number of stories)
         let maxLength;
         if (numStories === 1) {
-            maxLength = 7;   // < 8 characters for single story EPICs
+            maxLength = 7; // < 8 characters for single story EPICs
         } else if (numStories === 2) {
-            maxLength = 14;  // < 15 characters for 2-story EPICs
+            maxLength = 14; // < 15 characters for 2-story EPICs
         } else if (numStories === 3) {
-            maxLength = 23;  // 3-story EPICs
+            maxLength = 23; // 3-story EPICs
         } else if (numStories === 4) {
-            maxLength = 30;  // 4-story EPICs
+            maxLength = 30; // 4-story EPICs
         } else {
             // 5+ stories: NO TRUNCATION LIMIT
             return cleanName;
         }
-        
+
         return this.truncateText(cleanName, maxLength);
     }
 

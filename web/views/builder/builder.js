@@ -24,10 +24,7 @@ import {
 } from './timeline-changes.js';
 import * as fullscreen from './fullscreen.js';
 import { createStatsHandlers } from './stats.js';
-import {
-    initializeKTLOValidation,
-    validateKTLOPercentage,
-} from './ktlo-validation.js';
+import { initializeKTLOValidation, validateKTLOPercentage } from './ktlo-validation.js';
 import * as roadmapState from './state.js';
 import * as save from './save.js';
 import * as slackNotify from './slack-notify.js';
@@ -50,8 +47,10 @@ export function init(_root) {
     // window. Slices that have been pulled out of the legacy body need their
     // exports re-attached here on every mount.
     Object.assign(window, share, saveDropdown, fullscreen, {
-        exportJPG, exportPDF,
-        toggleCollapse, collapseAllSections,
+        exportJPG,
+        exportPDF,
+        toggleCollapse,
+        collapseAllSections,
     });
     fullscreen.initFullscreenZoom();
 
@@ -71,12 +70,19 @@ export function init(_root) {
     // untrackDatePicker / clearAllTracking to invalidate entries when it
     // re-renders inputs that share an id.
     const __datePickers = createDatePickers({
-        getRoadmapYear: () => parseInt(document.getElementById('roadmapYear').value, 10) || new Date().getFullYear(),
+        getRoadmapYear: () =>
+            parseInt(document.getElementById('roadmapYear').value, 10) || new Date().getFullYear(),
     });
     const {
-        initializeDatePicker, initializeDatePickersForEpic, initializeDatePickersForSection,
-        refreshAllDatePickers, updateAllDatePickerRanges, validateEndDate,
-        reinitializeDatePicker, untrackDatePicker, clearAllTracking,
+        initializeDatePicker,
+        initializeDatePickersForEpic,
+        initializeDatePickersForSection,
+        refreshAllDatePickers,
+        updateAllDatePickerRanges,
+        validateEndDate,
+        reinitializeDatePicker,
+        untrackDatePicker,
+        clearAllTracking,
     } = __datePickers;
     Object.assign(window, __datePickers);
 
@@ -92,15 +98,19 @@ export function init(_root) {
         try {
             const data = JSON.parse(content);
             const teamData = data.teamData || data;
-            if (!teamData || typeof teamData !== 'object') throw new Error('not a roadmap document');
+            if (!teamData || typeof teamData !== 'object')
+                throw new Error('not a roadmap document');
             if (typeof window.fixDatesOnLoad === 'function') window.fixDatesOnLoad(teamData);
             window.loadTeamData(teamData);
             window.updateFilenameDisplay(name);
             // fileHandle is null on Safari/Firefox (read-only fallback); save
             // stays disabled in that case.
-            save.setFileHandle(fileHandle && typeof fileHandle.createWritable === 'function' ? fileHandle : null);
+            save.setFileHandle(
+                fileHandle && typeof fileHandle.createWritable === 'function' ? fileHandle : null
+            );
             setTimeout(() => {
-                if (typeof window.refreshAllDatePickers === 'function') window.refreshAllDatePickers();
+                if (typeof window.refreshAllDatePickers === 'function')
+                    window.refreshAllDatePickers();
                 if (typeof window.generatePreview === 'function') window.generatePreview();
             }, 200);
         } catch (err) {
@@ -115,12 +125,14 @@ export function init(_root) {
         // before serializing. prepareRoadmapForSave is defined later in the
         // legacy body and exposed on window; the lambda reads it lazily so
         // ordering doesn't matter.
-        if (statusEl) save.init({
-            statusElement: statusEl,
-            onAutoSavePrepare: () => (typeof window.prepareRoadmapForSave === 'function'
-                ? window.prepareRoadmapForSave()
-                : null),
-        });
+        if (statusEl)
+            save.init({
+                statusElement: statusEl,
+                onAutoSavePrepare: () =>
+                    typeof window.prepareRoadmapForSave === 'function'
+                        ? window.prepareRoadmapForSave()
+                        : null,
+            });
 
         // Slack save-notifier: diffs each save against a baseline and posts a
         // summary to the /api/roadmap-saved proxy. Listens for roadmap:saved,
@@ -271,7 +283,10 @@ export function init(_root) {
     const __origAdd = document.addEventListener.bind(document);
     let cleanupDirectorySubscription = () => {};
     document.addEventListener = function (type, listener, opts) {
-        if (type === 'DOMContentLoaded') { __viewReady.push(listener); return; }
+        if (type === 'DOMContentLoaded') {
+            __viewReady.push(listener);
+            return;
+        }
         return __origAdd(type, listener, opts);
     };
     try {
@@ -281,18 +296,18 @@ export function init(_root) {
         let storyCounters = {};
         // changeCounter moved into ./timeline-changes.js (resetTimelineChangeCounter resets it).
         let isGeneratingPreview = false; // Flag to prevent duplicate preview generation
-        
+
         // Hexadecimal counter-based unique identifier generation
         let epicIdCounter = 0;
         let storyIdCounter = 0;
-        
+
         function createEpicId() {
             // Create hexadecimal ID for EPICs (e.g., "0xE0000001", "0xE0000002")
             epicIdCounter++;
             const id = `0xE${epicIdCounter.toString(16).padStart(7, '0').toUpperCase()}`;
             return id;
         }
-        
+
         function createStoryId() {
             // Create hexadecimal ID for Stories (e.g., "0x50000001", "0x50000002")
             // Using 5 prefix (looks like S) to distinguish from EPICs which use E prefix
@@ -300,47 +315,47 @@ export function init(_root) {
             const id = `0x5${storyIdCounter.toString(16).padStart(7, '0').toUpperCase()}`;
             return id;
         }
-        
+
         async function loadDefaultTemplate() {
             // Double-check: Never load default template if external data is being processed
             if (window.loadingExternalData) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('Roadmap-Default-Template.json');
                 if (!response.ok) {
                     throw new Error(`Failed to load template: ${response.status}`);
                 }
-                
+
                 const templateData = await response.json();
-                
+
                 // Reset ID counters
                 epicIdCounter = 0;
                 storyIdCounter = 0;
-                
+
                 // Ensure monthly KTLO modal is hidden
                 const monthlyModal = document.getElementById('editMonthlyKTLOModal');
                 if (monthlyModal) {
                     monthlyModal.style.display = 'none';
                 }
-                
+
                 // Clear existing data first
                 document.getElementById('epics-container').innerHTML = '';
                 document.getElementById('btl-stories-container').innerHTML = '';
                 epicCounter = 0;
                 storyCounters = {};
                 btlStoryCounter = 0;
-                
+
                 // Initialize basic page elements
                 initializeKTLOMonths();
                 updateBTLAddButton();
                 addAutoUpdateListeners();
                 updateAllDatePickerRanges();
-                
+
                 // Load the template data
                 loadTeamData(templateData.teamData);
-                
+
                 // Set default filename based on team name and year
                 setTimeout(() => {
                     const teamName = document.getElementById('teamName').value.trim() || 'MyTeam';
@@ -348,16 +363,15 @@ export function init(_root) {
                     const defaultFilename = `${teamName}.Teya-Roadmap.${roadmapYear}.json`;
                     updateFilenameDisplay(defaultFilename);
                 }, 100);
-                
+
                 // Preview generation will be handled by loadTeamData completion tracking
-                
             } catch (error) {
                 console.error('Error loading default template:', error);
                 // Fallback to basic initialization
                 initializeBasicTemplate();
             }
         }
-        
+
         function initializeBasicTemplate() {
             // Reset ID counters
             epicIdCounter = 0;
@@ -389,7 +403,7 @@ export function init(_root) {
                 sep: { number: '0', percentage: '0', description: '' },
                 oct: { number: '0', percentage: '0', description: '' },
                 nov: { number: '0', percentage: '0', description: '' },
-                dec: { number: '0', percentage: '0', description: '' }
+                dec: { number: '0', percentage: '0', description: '' },
             };
 
             // Initialize KTLO and Monthly UI
@@ -405,22 +419,22 @@ export function init(_root) {
                 generatePreview();
             }, 100);
         }
-        
+
         // More robust initialization with multiple retry attempts
         function attemptInitialization(retryCount = 0) {
             const maxRetries = 10; // Try for up to 2 seconds (10 * 200ms)
-            
+
             if (typeof RoadmapGenerator !== 'undefined') {
                 // Check if we're loading external data before loading default template
                 if (window.loadingExternalData) {
                     return;
                 }
-                
+
                 // Success! Load the default template
                 loadDefaultTemplate();
                 return;
             }
-            
+
             if (retryCount < maxRetries) {
                 // Keep trying every 200ms
                 setTimeout(() => {
@@ -434,18 +448,19 @@ export function init(_root) {
         }
 
         // Use DOMContentLoaded instead of window.onload for more reliable initialization
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Populate the country-flags fieldset in the edit modal once.
             // Global is checked by default so opening the modal without a
             // loaded story still matches the existing "empty = Global" rule.
             const editFlagsContainer = document.getElementById('editFlagsContainer');
             if (editFlagsContainer && typeof renderCountryFlagsHTML === 'function') {
                 editFlagsContainer.innerHTML = renderCountryFlagsHTML({
-                    id: c => `editFlag${c.name}`,
-                    onChange: c => c.code === 'global'
-                        ? 'clearEditCountriesIfGlobalSelected()'
-                        : 'clearEditGlobalIfCountrySelected()',
-                    checked: c => c.code === 'global'
+                    id: (c) => `editFlag${c.name}`,
+                    onChange: (c) =>
+                        c.code === 'global'
+                            ? 'clearEditCountriesIfGlobalSelected()'
+                            : 'clearEditGlobalIfCountrySelected()',
+                    checked: (c) => c.code === 'global',
                 });
             }
 
@@ -453,18 +468,20 @@ export function init(_root) {
             document.addEventListener('keydown', handleKTLOToggleShortcut);
 
             // Close stats modal on Escape
-            document.addEventListener('keydown', function(e){
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') closeStatsModal();
             });
-            
+
             // Global focus event listener to prevent focus on hidden date inputs
-            document.addEventListener('focusin', function(event) {
+            document.addEventListener('focusin', function (event) {
                 const target = event.target;
                 // If focus lands on a hidden date input, redirect to the associated text input
-                if (target && target.type === 'date' && 
-                    target.style.opacity === '0' && 
-                    target.style.pointerEvents === 'none') {
-                    
+                if (
+                    target &&
+                    target.type === 'date' &&
+                    target.style.opacity === '0' &&
+                    target.style.pointerEvents === 'none'
+                ) {
                     // Find the associated text input (should be the previous sibling)
                     const textInput = target.previousElementSibling;
                     if (textInput && textInput.tagName === 'INPUT' && textInput.type === 'text') {
@@ -473,24 +490,24 @@ export function init(_root) {
                     }
                 }
             });
-            
+
             // Initialize date pickers for modal fields when modal opens (they may not exist yet)
-            
+
             // Check for external data first before starting default initialization
             const urlParams = new URLSearchParams(window.location.search);
             const loadDataKey = urlParams.get('loadData');
-            
+
             if (loadDataKey) {
                 // Set the flag immediately to prevent any default template loading
                 window.loadingExternalData = true;
                 // External data will be handled by the other DOMContentLoaded handler
                 return;
             }
-            
+
             // Start the initialization attempt immediately (only if no external data)
             attemptInitialization();
         });
-        
+
         // Store KTLO monthly data in memory since we only show one month at a time
         let ktloMonthlyData = {
             jan: { number: '', percentage: '', description: '' },
@@ -504,9 +521,9 @@ export function init(_root) {
             sep: { number: '', percentage: '', description: '' },
             oct: { number: '', percentage: '', description: '' },
             nov: { number: '', percentage: '', description: '' },
-            dec: { number: '', percentage: '', description: '' }
+            dec: { number: '', percentage: '', description: '' },
         };
-        
+
         function initializeKTLOMonths() {
             // Initialize the month selector to January and load its data
             const selector = document.getElementById('ktlo-month-selector');
@@ -516,134 +533,144 @@ export function init(_root) {
                 loadKTLOMonth('jan');
             }
         }
-        
+
         function switchKTLOMonth() {
             // Save current month's data before switching
             const selector = document.getElementById('ktlo-month-selector');
             const oldMonth = selector.getAttribute('data-previous-month') || selector.value;
-            
+
             // Save the old month's data
             const numberInput = document.getElementById('ktlo-current-number');
             const percentageInput = document.getElementById('ktlo-current-percentage');
             const descriptionInput = document.getElementById('ktlo-current-description');
-            
+
             ktloMonthlyData[oldMonth] = {
                 number: numberInput ? numberInput.value : '',
                 percentage: percentageInput ? percentageInput.value : '',
-                description: descriptionInput ? descriptionInput.value : ''
+                description: descriptionInput ? descriptionInput.value : '',
             };
-            
+
             // Store the new month as the "previous" for next time
             selector.setAttribute('data-previous-month', selector.value);
-            
+
             const selectedMonth = selector.value;
             loadKTLOMonth(selectedMonth);
         }
-        
+
         function loadKTLOMonth(month) {
             const data = ktloMonthlyData[month];
             const numberInput = document.getElementById('ktlo-current-number');
             const percentageInput = document.getElementById('ktlo-current-percentage');
             const descriptionInput = document.getElementById('ktlo-current-description');
-            
+
             if (numberInput) numberInput.value = data.number;
             if (percentageInput) percentageInput.value = data.percentage;
             if (descriptionInput) descriptionInput.value = data.description;
         }
-        
+
         function saveCurrentKTLOData() {
             // Don't save current data if we're creating a new roadmap (would overwrite fresh defaults)
             if (window.isCreatingNewRoadmap) {
                 return;
             }
-            
+
             const selector = document.getElementById('ktlo-month-selector');
             if (!selector) return;
-            
+
             const currentMonth = selector.value;
             const numberInput = document.getElementById('ktlo-current-number');
             const percentageInput = document.getElementById('ktlo-current-percentage');
             const descriptionInput = document.getElementById('ktlo-current-description');
-            
+
             ktloMonthlyData[currentMonth] = {
                 number: numberInput ? numberInput.value : '',
                 percentage: percentageInput ? percentageInput.value : '',
-                description: descriptionInput ? descriptionInput.value : ''
+                description: descriptionInput ? descriptionInput.value : '',
             };
         }
-        
 
-        
         function addEpic() {
             epicCounter++;
             storyCounters[epicCounter] = 0;
-            
+
             // Generate 8-character unique ID for the EPIC
             const epicId = createEpicId();
-            
+            const accentColors = ['#00739A', '#7c3aed', '#d97706', '#0284c7'];
+            const accentColor = accentColors[(epicCounter - 1) % accentColors.length];
+
             const epicHtml = `
-                <div class="epic-section" id="epic-${epicCounter}" data-epic-id="${epicId}">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="epic-section" id="epic-${epicCounter}" data-epic-id="${epicId}" style="--section-accent: ${accentColor};">
+                    <div class="epic-card-header">
+                        <div class="flex-center">
                             <button id="collapse-btn-${epicCounter}" onclick="toggleEpicCollapse(${epicCounter})" title="Collapse EPIC">▼</button>
-                            <h3 style="margin: 0;">EPIC ${epicCounter}</h3>
+                            <span class="section-color-dot" aria-hidden="true"></span>
+                            <label for="epic-name-${epicCounter}" class="visually-hidden">EPIC name</label>
+                            <input type="text" id="epic-name-${epicCounter}" class="epic-title-input" placeholder="e.g., EPIC 1" value="EPIC ${epicCounter}">
+                            <span class="section-card-meta" id="epic-story-meta-${epicCounter}">0 stories</span>
                         </div>
-                        <button class="danger" onclick="removeEpic(${epicCounter})" tabindex="-1">🗑️ Remove EPIC</button>
+                        <button class="quiet-remove-button" onclick="removeEpic(${epicCounter})" tabindex="-1">Remove</button>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="epic-name-${epicCounter}">EPIC Name:</label>
-                        <input type="text" id="epic-name-${epicCounter}" placeholder="e.g., EPIC 1" value="EPIC ${epicCounter}">
-                    </div>
-                    
+
                     <!-- Hidden ID field for data collection -->
                     <input type="hidden" id="epic-id-${epicCounter}" value="${epicId}">
                     
-                    <div id="epic-content-${epicCounter}">
-                        <h4>Stories</h4>
+                    <div id="epic-content-${epicCounter}" class="epic-card-body">
                         <div id="stories-container-${epicCounter}">
                             <!-- Stories will be added here -->
                         </div>
-                        <button onclick="addStory(${epicCounter})">+ Add Story</button>
+                        <button onclick="addStory(${epicCounter})" class="ghost-add-button">+ Add Story</button>
                     </div>
                 </div>
             `;
-            
+
             document.getElementById('epics-container').insertAdjacentHTML('beforeend', epicHtml);
-            
+
             // Add auto-update listeners to the new EPIC elements
             const epicNameField = document.getElementById(`epic-name-${epicCounter}`);
             if (epicNameField) addListenersToElement(epicNameField);
-            
+
             addStory(epicCounter); // Add one story by default
         }
-        
+
         function removeEpic(epicId) {
             const epicElement = document.getElementById(`epic-${epicId}`);
-            const epicName = document.getElementById(`epic-name-${epicId}`)?.value || `EPIC ${epicId}`;
-            
-            if (!confirm(`Are you sure you want to remove "${epicName}"? This will delete the EPIC and all its stories permanently.`)) {
+            const epicName =
+                document.getElementById(`epic-name-${epicId}`)?.value || `EPIC ${epicId}`;
+
+            if (
+                !confirm(
+                    `Are you sure you want to remove "${epicName}"? This will delete the EPIC and all its stories permanently.`
+                )
+            ) {
                 return;
             }
-            
+
             epicElement.remove();
             delete storyCounters[epicId];
-            
+
             // Refresh the roadmap preview
             generatePreview();
         }
-        
+
+        function updateEpicStoryMeta(epicId) {
+            const epicElement = document.getElementById(`epic-${epicId}`);
+            const meta = document.getElementById(`epic-story-meta-${epicId}`);
+            if (!epicElement || !meta) return;
+            const count = epicElement.querySelectorAll('.story-section').length;
+            meta.textContent = `${count} ${count === 1 ? 'story' : 'stories'}`;
+        }
+
         function toggleEpicCollapse(epicId) {
             const contentDiv = document.getElementById(`epic-content-${epicId}`);
             const collapseBtn = document.getElementById(`collapse-btn-${epicId}`);
-            
+
             if (contentDiv.style.display === 'none') {
                 // Expand
                 contentDiv.style.display = 'block';
                 collapseBtn.textContent = '▼';
                 collapseBtn.title = 'Collapse EPIC';
                 collapseBtn.classList.remove('collapse-btn-collapsed');
-                
+
                 // Initialize date pickers for this EPIC after expansion
                 setTimeout(() => {
                     initializeDatePickersForEpic(epicId);
@@ -656,20 +683,18 @@ export function init(_root) {
                 collapseBtn.classList.add('collapse-btn-collapsed');
             }
         }
-        
-        
-        
+
         function toggleBTLCollapse() {
             const contentDiv = document.getElementById('btl-content');
             const collapseBtn = document.getElementById('btl-collapse-btn');
-            
+
             if (contentDiv.style.display === 'none') {
                 // Expand
                 contentDiv.style.display = 'block';
                 collapseBtn.textContent = '▼';
                 collapseBtn.title = 'Collapse BTL';
                 collapseBtn.classList.remove('collapse-btn-collapsed');
-                
+
                 // Initialize date pickers for BTL section after expansion
                 setTimeout(() => {
                     initializeDatePickersForSection('btl');
@@ -682,13 +707,13 @@ export function init(_root) {
                 collapseBtn.classList.add('collapse-btn-collapsed');
             }
         }
-        
+
         function toggleStoryCollapse(storyId) {
             const contentDiv = document.getElementById(`story-content-${storyId}`);
             const collapseBtn = document.getElementById(`story-collapse-btn-${storyId}`);
             const headerTitle = document.getElementById(`story-header-title-${storyId}`);
             const storySection = document.getElementById(`story-${storyId}`);
-            
+
             if (contentDiv.style.display === 'none') {
                 // Expand
                 contentDiv.style.display = 'block';
@@ -721,43 +746,86 @@ export function init(_root) {
                 }
             }
         }
-        
+
         function updateStoryHeaderTitle(storyId, showTitle = false) {
             const headerTitle = document.getElementById(`story-header-title-${storyId}`);
             if (!headerTitle) return;
-            
-            // Get the story number from the header
-            const storyNumberMatch = headerTitle.textContent.match(/Story (\d+)/);
-            if (!storyNumberMatch) return;
-            const storyNumber = storyNumberMatch[1];
-            
-            if (showTitle) {
-                // Get the story title from the input field
-                let titleInputId;
-                if (storyId.startsWith('btl-')) {
-                    titleInputId = `btl-title-${storyId}`;
-                } else {
-                    titleInputId = `story-title-${storyId}`;
-                }
-                const titleInput = document.getElementById(titleInputId);
-                const title = titleInput ? titleInput.value.trim() : '';
-                
-                if (title) {
-                    headerTitle.textContent = `📋 Story ${storyNumber} (${title})`;
-                } else {
-                    headerTitle.textContent = `📋 Story ${storyNumber}`;
-                }
-            } else {
-                // Just show the story number when expanded
-                headerTitle.textContent = `📋 Story ${storyNumber}`;
-            }
+
+            const storyNumber =
+                headerTitle.dataset.storyNumber ||
+                headerTitle.textContent.match(/Story (\d+)/)?.[1] ||
+                '1';
+            headerTitle.dataset.storyNumber = storyNumber;
+
+            const titleInputId = storyId.startsWith('btl-')
+                ? `btl-title-${storyId}`
+                : `story-title-${storyId}`;
+            const title = document.getElementById(titleInputId)?.value.trim();
+            headerTitle.textContent = title || `Story ${storyNumber}`;
+            headerTitle.title = showTitle && title ? title : `Story ${storyNumber}`;
+            updateStorySummary(storyId);
         }
-        
+
+        function updateStorySummary(storyId) {
+            const statusChip = document.getElementById(`story-status-chip-${storyId}`);
+            const dateRange = document.getElementById(`story-date-range-${storyId}`);
+            if (!statusChip || !dateRange) return;
+
+            const isBTL = storyId.startsWith('btl-');
+            const value = (prefix) =>
+                document.getElementById(`${prefix}-${storyId}`)?.value.trim() || '';
+            const start = value(isBTL ? 'btl-start' : 'story-start');
+            const end = value(isBTL ? 'btl-end' : 'story-end');
+            dateRange.textContent = start && end ? `${start} → ${end}` : start || end;
+
+            statusChip.className = 'story-status-chip';
+            statusChip.textContent = '';
+            if (isBTL) return;
+
+            const checked = (prefix) => document.getElementById(`${prefix}-${storyId}`)?.checked;
+            const changes = document.querySelectorAll(
+                `#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`
+            ).length;
+            const states = [
+                [checked('story-cancelled'), 'CANCELLED', 'status-cancelled'],
+                [checked('story-done'), 'DONE', 'status-done'],
+                [checked('story-atrisk'), 'AT RISK', 'status-risk'],
+                [checked('story-proposed'), 'PROPOSED', 'status-proposed'],
+                [checked('story-newstory'), 'NEW', 'status-new'],
+                [
+                    checked('story-transferredin') || checked('story-transferredout'),
+                    'TRANSFERRED',
+                    'status-transfer',
+                ],
+                [
+                    checked('story-changes'),
+                    `${changes || 1} ${changes === 1 ? 'CHANGE' : 'CHANGES'}`,
+                    'status-changes',
+                ],
+            ];
+            const activeState = states.find(([active]) => active);
+            if (!activeState) return;
+            statusChip.textContent = activeState[1];
+            statusChip.classList.add(activeState[2]);
+        }
+
+        function refreshBuilderSummaries() {
+            document.querySelectorAll('.story-section').forEach((storyElement) => {
+                updateStoryHeaderTitle(storyElement.id.replace('story-', ''), true);
+            });
+            document.querySelectorAll('.epic-section').forEach((epicElement) => {
+                updateEpicStoryMeta(epicElement.id.replace('epic-', ''));
+            });
+        }
+
         // Slices that depend on hoisted function declarations from this body
         // are wired here. Their handlers go on window so inline on*= attributes
         // in the markup resolve.
         Object.assign(window, createStoryDragHandlers({ updateStoryNumbers, generatePreview }));
-        Object.assign(window, createCountryFlagHandlers({ onStoryChange: () => debouncedGeneratePreview() }));
+        Object.assign(
+            window,
+            createCountryFlagHandlers({ onStoryChange: () => debouncedGeneratePreview() })
+        );
         // Story moves: moveStoryUpByEpic/moveStoryDownByEpic are also called
         // directly from body code (moveCurrentStoryUp/Down) so we destructure
         // them as locals.
@@ -769,7 +837,10 @@ export function init(_root) {
         // mode in ES modules means bare references don't fall through to
         // window, unlike legacy non-module sloppy mode.
         const { setupModalFocusTrap, removeModalFocusTrap } = createModalFocusTrap({
-            closeFns: { editStoryModal: closeEditModal, editMonthlyKTLOModal: closeEditMonthlyKTLOModal },
+            closeFns: {
+                editStoryModal: closeEditModal,
+                editMonthlyKTLOModal: closeEditMonthlyKTLOModal,
+            },
         });
         window.setupModalFocusTrap = setupModalFocusTrap;
         window.removeModalFocusTrap = removeModalFocusTrap;
@@ -804,7 +875,9 @@ export function init(_root) {
             getToday: () => DateUtility.getTodaysDateEuropean(),
         });
         const {
-            toggleChanges, addChange, updateChangeButton,
+            toggleChanges,
+            addChange,
+            updateChangeButton,
             resetCounter: resetTimelineChangeCounter,
         } = __timeline;
         Object.assign(window, __timeline);
@@ -818,7 +891,9 @@ export function init(_root) {
             getToday: () => DateUtility.getTodaysDateEuropean(),
         });
         const {
-            toggleEditTimelineChanges, addEditChange, updateEditChangeButton,
+            toggleEditTimelineChanges,
+            addEditChange,
+            updateEditChangeButton,
             resetCounter: resetEditChangeCounter,
         } = __editTimeline;
         Object.assign(window, __editTimeline, { sortTimelineChangesByDate });
@@ -845,7 +920,9 @@ export function init(_root) {
         });
         const { handleKTLOToggleShortcut } = __ktloSections;
         Object.assign(window, __ktloSections, {
-            hideKTLOSection, showKTLOSection, repositionKTLOSection,
+            hideKTLOSection,
+            showKTLOSection,
+            repositionKTLOSection,
         });
 
         // File browser: side panel listing of .json roadmaps + drag-drop
@@ -853,14 +930,14 @@ export function init(_root) {
         // toggleFileBrowser/loadDirectoryFiles/openRoadmapFile are
         // referenced from inline onclick attributes and from body code.
         const __fileBrowser = createFileBrowser({
-            loadTeamData, updateFilenameDisplay,
-            refreshAllDatePickers, generatePreview, handleFileLoad,
+            loadTeamData,
+            updateFilenameDisplay,
+            refreshAllDatePickers,
+            generatePreview,
+            handleFileLoad,
             setFileHandle: save.setFileHandle,
         });
-        const {
-            toggleFileBrowser,
-            initializeDragAndDrop,
-        } = __fileBrowser;
+        const { toggleFileBrowser, initializeDragAndDrop } = __fileBrowser;
         Object.assign(window, __fileBrowser);
         // Mirror the legacy boot pattern: wire drag-drop on DOMContentLoaded
         // and subscribe now (subscribe immediately fires once with
@@ -880,9 +957,14 @@ export function init(_root) {
         // onchange="handle*Change('${storyId}')" attribute resolution.
         const __statusBundle = createStatusHandlers({ addInfoEntry, convertSingleInfoToMultiple });
         const {
-            handleDoneChange, handleCancelledChange, handleAtRiskChange,
-            handleNewStoryChange, handleInfoChange,
-            handleTransferredInChange, handleTransferredOutChange, handleProposedChange,
+            handleDoneChange,
+            handleCancelledChange,
+            handleAtRiskChange,
+            handleNewStoryChange,
+            handleInfoChange,
+            handleTransferredInChange,
+            handleTransferredOutChange,
+            handleProposedChange,
         } = __statusBundle;
         Object.assign(window, __statusBundle);
 
@@ -899,7 +981,7 @@ export function init(_root) {
 
         // Temporary variable for force text below (one-time action)
         let tempForceTextBelow = false;
-        
+
         function handleForceTextBelowToggle() {
             const toggle = document.getElementById('force-text-below-toggle');
             if (toggle) {
@@ -923,31 +1005,44 @@ export function init(_root) {
             generatePreview();
         });
 
-
         function addAutoUpdateListeners() {
             // Team information fields
-            const teamFields = ['roadmapYear', 'teamName', 'directorVP', 'em', 'pm', 'teamDescription'];
-            teamFields.forEach(id => {
+            const teamFields = [
+                'roadmapYear',
+                'teamName',
+                'directorVP',
+                'em',
+                'pm',
+                'teamDescription',
+            ];
+            teamFields.forEach((id) => {
                 const element = document.getElementById(id);
                 if (element) {
                     element.addEventListener('input', debouncedGeneratePreview);
                     element.addEventListener('change', debouncedGeneratePreview);
-                    
+
                     // Special handling for roadmapYear to update date picker ranges
                     if (id === 'roadmapYear') {
-                        element.addEventListener('change', function() {
+                        element.addEventListener('change', function () {
                             updateAllDatePickerRanges();
                         });
                     }
-                    
+
                     // Update filename when team name or year changes
                     if (id === 'teamName' || id === 'roadmapYear') {
-                        element.addEventListener('input', function() {
-                            const currentFilename = document.getElementById('currentFilename').value.trim();
+                        element.addEventListener('input', function () {
+                            const currentFilename = document
+                                .getElementById('currentFilename')
+                                .value.trim();
                             // Only auto-update if filename follows the default pattern
-                            if (currentFilename.includes('.Teya-Roadmap.') && currentFilename.endsWith('.json')) {
-                                const teamName = document.getElementById('teamName').value.trim() || 'MyTeam';
-                                const roadmapYear = document.getElementById('roadmapYear').value || '2025';
+                            if (
+                                currentFilename.includes('.Teya-Roadmap.') &&
+                                currentFilename.endsWith('.json')
+                            ) {
+                                const teamName =
+                                    document.getElementById('teamName').value.trim() || 'MyTeam';
+                                const roadmapYear =
+                                    document.getElementById('roadmapYear').value || '2025';
                                 const newFilename = `${teamName}.Teya-Roadmap.${roadmapYear}.json`;
                                 document.getElementById('currentFilename').value = newFilename;
                             }
@@ -955,21 +1050,21 @@ export function init(_root) {
                     }
                 }
             });
-            
+
             // KTLO fields
             const ktloFields = ['ktlo-title', 'ktlo-bullets'];
-            ktloFields.forEach(id => {
+            ktloFields.forEach((id) => {
                 const element = document.getElementById(id);
                 if (element) {
                     element.addEventListener('input', debouncedGeneratePreview);
                     element.addEventListener('change', debouncedGeneratePreview);
                 }
             });
-            
+
             // KTLO position toggle
             const ktloToggle = document.getElementById('ktlo-position-toggle');
             if (ktloToggle) {
-                ktloToggle.addEventListener('change', function() {
+                ktloToggle.addEventListener('change', function () {
                     // Clear hidden state when manually toggling checkbox
                     delete ktloToggle.dataset.originalPosition;
                     showKTLOSection(); // Make KTLO visible in builder
@@ -977,108 +1072,132 @@ export function init(_root) {
                     generatePreview(); // Immediate update for position changes
                 });
             }
-            
+
             // KTLO monthly data fields (new dropdown approach)
-            const ktloMonthlyFields = ['ktlo-current-number', 'ktlo-current-percentage', 'ktlo-current-description'];
-            ktloMonthlyFields.forEach(id => {
+            const ktloMonthlyFields = [
+                'ktlo-current-number',
+                'ktlo-current-percentage',
+                'ktlo-current-description',
+            ];
+            ktloMonthlyFields.forEach((id) => {
                 const element = document.getElementById(id);
                 if (element) {
-                    element.addEventListener('input', function() {
+                    element.addEventListener('input', function () {
                         saveCurrentKTLOData();
                         debouncedGeneratePreview();
                     });
-                    element.addEventListener('change', function() {
+                    element.addEventListener('change', function () {
                         saveCurrentKTLOData();
                         debouncedGeneratePreview();
                     });
                 }
             });
-            
+
             // Add listeners to existing EPIC and story elements
             addListenersToExistingElements();
         }
-        
+
         /**
          * Validate that end date is not before start date
          */
-        
+
         function addListenersToExistingElements() {
             // EPIC name fields
-            document.querySelectorAll('[id^="epic-name-"]').forEach(element => {
+            document.querySelectorAll('[id^="epic-name-"]').forEach((element) => {
                 element.addEventListener('input', debouncedGeneratePreview);
                 element.addEventListener('change', debouncedGeneratePreview);
             });
-            
+
             // Story fields
-            document.querySelectorAll('[id^="story-title-"], [id^="story-start-"], [id^="story-end-"], [id^="story-bullets-"], [id^="story-imo-"]').forEach(element => {
-                element.addEventListener('input', debouncedGeneratePreview);
-                element.addEventListener('change', debouncedGeneratePreview);
-            });
-            
+            document
+                .querySelectorAll(
+                    '[id^="story-title-"], [id^="story-start-"], [id^="story-end-"], [id^="story-bullets-"], [id^="story-imo-"]'
+                )
+                .forEach((element) => {
+                    element.addEventListener('input', debouncedGeneratePreview);
+                    element.addEventListener('change', debouncedGeneratePreview);
+                });
+
             // Add validation to story end date fields
-            document.querySelectorAll('[id^="story-end-"]').forEach(element => {
+            document.querySelectorAll('[id^="story-end-"]').forEach((element) => {
                 if (!element.dataset.hasValidation) {
                     element.addEventListener('blur', validateEndDate);
                     // Clear error styling when user starts typing
-                    element.addEventListener('input', function() {
+                    element.addEventListener('input', function () {
                         this.style.borderColor = '';
                         this.style.backgroundColor = '';
                     });
                     element.dataset.hasValidation = 'true';
                 }
             });
-            
+
             // Story checkboxes (status, timeline changes, visibility)
-            document.querySelectorAll('[id^="story-done-"], [id^="story-cancelled-"], [id^="story-atrisk-"], [id^="story-newstory-"], [id^="story-transferredout-"], [id^="story-changes-"], [id^="story-hide-from-search-"]').forEach(element => {
-                element.addEventListener('change', debouncedGeneratePreview);
-            });
-            
+            document
+                .querySelectorAll(
+                    '[id^="story-done-"], [id^="story-cancelled-"], [id^="story-atrisk-"], [id^="story-newstory-"], [id^="story-transferredout-"], [id^="story-changes-"], [id^="story-hide-from-search-"]'
+                )
+                .forEach((element) => {
+                    element.addEventListener('change', debouncedGeneratePreview);
+                });
+
             // Story status fields (done, cancel, at-risk, new story notes and dates)
-            document.querySelectorAll('[id^="done-date-"], [id^="done-notes-"], [id^="cancel-date-"], [id^="cancel-notes-"], [id^="atrisk-date-"], [id^="atrisk-notes-"], [id^="newstory-date-"], [id^="newstory-notes-"]').forEach(element => {
-                element.addEventListener('input', debouncedGeneratePreview);
-                element.addEventListener('change', debouncedGeneratePreview);
-            });
-            
+            document
+                .querySelectorAll(
+                    '[id^="done-date-"], [id^="done-notes-"], [id^="cancel-date-"], [id^="cancel-notes-"], [id^="atrisk-date-"], [id^="atrisk-notes-"], [id^="newstory-date-"], [id^="newstory-notes-"]'
+                )
+                .forEach((element) => {
+                    element.addEventListener('input', debouncedGeneratePreview);
+                    element.addEventListener('change', debouncedGeneratePreview);
+                });
+
             // Timeline change fields
-            document.querySelectorAll('[id^="change-date-"], [id^="change-desc-"], [id^="change-prevstart-"], [id^="change-newstart-"], [id^="change-prev-"], [id^="change-new-"]').forEach(element => {
-                element.addEventListener('input', debouncedGeneratePreview);
-                element.addEventListener('change', debouncedGeneratePreview);
-            });
-            
+            document
+                .querySelectorAll(
+                    '[id^="change-date-"], [id^="change-desc-"], [id^="change-prevstart-"], [id^="change-newstart-"], [id^="change-prev-"], [id^="change-new-"]'
+                )
+                .forEach((element) => {
+                    element.addEventListener('input', debouncedGeneratePreview);
+                    element.addEventListener('change', debouncedGeneratePreview);
+                });
+
             // BTL story fields
-            document.querySelectorAll('[id^="btl-title-"], [id^="btl-start-"], [id^="btl-end-"], [id^="btl-bullets-"], [id^="btl-imo-"]').forEach(element => {
-                element.addEventListener('input', debouncedGeneratePreview);
-                element.addEventListener('change', debouncedGeneratePreview);
-            });
-            
+            document
+                .querySelectorAll(
+                    '[id^="btl-title-"], [id^="btl-start-"], [id^="btl-end-"], [id^="btl-bullets-"], [id^="btl-imo-"]'
+                )
+                .forEach((element) => {
+                    element.addEventListener('input', debouncedGeneratePreview);
+                    element.addEventListener('change', debouncedGeneratePreview);
+                });
+
             // Add validation to BTL end date fields
-            document.querySelectorAll('[id^="btl-end-"]').forEach(element => {
+            document.querySelectorAll('[id^="btl-end-"]').forEach((element) => {
                 if (!element.dataset.hasValidation) {
                     element.addEventListener('blur', validateEndDate);
                     // Clear error styling when user starts typing
-                    element.addEventListener('input', function() {
+                    element.addEventListener('input', function () {
                         this.style.borderColor = '';
                         this.style.backgroundColor = '';
                     });
                     element.dataset.hasValidation = 'true';
                 }
             });
-            
+
             // Add validation to edit modal end date field
             const editEndField = document.getElementById('editEnd');
             if (editEndField && !editEndField.dataset.hasValidation) {
                 editEndField.addEventListener('blur', validateEndDate);
                 // Clear error styling when user starts typing
-                editEndField.addEventListener('input', function() {
+                editEndField.addEventListener('input', function () {
                     this.style.borderColor = '';
                     this.style.backgroundColor = '';
                 });
                 editEndField.dataset.hasValidation = 'true';
             }
-            
+
             // Date pickers are now initialized when sections are expanded
         }
-        
+
         function addListenersToElement(element) {
             // Helper function to add auto-update listeners to a single element
             if (element.type === 'checkbox') {
@@ -1088,29 +1207,30 @@ export function init(_root) {
                 element.addEventListener('change', debouncedGeneratePreview);
             }
         }
-        
+
         function addStory(epicId) {
             storyCounters[epicId]++;
             const storyId = `${epicId}-${storyCounters[epicId]}`;
-            
+
             // Generate unique Story ID
             const storyUniqueId = createStoryId();
-            
+
             const storyHtml = `
                 <div class="story-section" id="story-${storyId}" data-story-id="${storyUniqueId}" draggable="true" ondragstart="handleStoryDragStart(event, '${storyId}')" ondragover="handleStoryDragOver(event)" ondrop="handleStoryDrop(event, '${storyId}')" ondragend="handleStoryDragEnd(event)">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <button id="story-collapse-btn-${storyId}" class="collapse-btn-collapsed" onclick="toggleStoryCollapse('${storyId}')" title="Expand Story">▶</button>
-                            <h4 id="story-header-title-${storyId}" style="margin: 0; cursor: default;">📋 Story ${storyCounters[epicId]}</h4>
-                        </div>
-                        <div style="display: flex; gap: 5px; align-items: center;">
-                            <button onclick="moveStoryUp('${storyId}')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Move story up" tabindex="-1">▲</button>
-                            <button onclick="moveStoryDown('${storyId}')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Move story down" tabindex="-1">▼</button>
-                            <button class="danger" onclick="removeStory('${storyId}')" tabindex="-1">🗑️</button>
+                    <div class="story-summary">
+                        <button id="story-collapse-btn-${storyId}" class="story-collapse-state collapse-btn-collapsed" onclick="toggleStoryCollapse('${storyId}')" title="Expand Story" tabindex="-1" aria-hidden="true">▶</button>
+                        <svg class="story-drag-handle" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true"><circle cx="2.5" cy="2.5" r="1.5"></circle><circle cx="7.5" cy="2.5" r="1.5"></circle><circle cx="2.5" cy="8" r="1.5"></circle><circle cx="7.5" cy="8" r="1.5"></circle><circle cx="2.5" cy="13.5" r="1.5"></circle><circle cx="7.5" cy="13.5" r="1.5"></circle></svg>
+                        <h4 id="story-header-title-${storyId}" class="story-summary-title" data-story-number="${storyCounters[epicId]}" onclick="toggleStoryCollapse('${storyId}')">Story ${storyCounters[epicId]}</h4>
+                        <span id="story-status-chip-${storyId}" class="story-status-chip"></span>
+                        <span id="story-date-range-${storyId}" class="story-date-range"></span>
+                        <div class="story-row-actions">
+                            <button onclick="moveStoryUp('${storyId}')" title="Move story up" aria-label="Move story up" tabindex="-1">▲</button>
+                            <button onclick="moveStoryDown('${storyId}')" title="Move story down" aria-label="Move story down" tabindex="-1">▼</button>
+                            <button class="story-delete-button" onclick="removeStory('${storyId}')" title="Delete story" aria-label="Delete story" tabindex="-1">×</button>
                         </div>
                     </div>
                     
-                    <div id="story-content-${storyId}" style="display: none;">
+                    <div id="story-content-${storyId}" class="story-content" style="display: none;">
                     <!-- Story Details Box -->
                     <div class="section-box">
                         <div class="section-box-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -1170,11 +1290,12 @@ export function init(_root) {
                     </div>
                     
                     <div class="form-group">${renderCountryFlagsHTML({
-                        id: c => `story-flag-${c.name.toLowerCase()}-${storyId}`,
-                        onChange: c => c.code === 'global'
-                            ? `clearStoryCountriesIfGlobalSelected('${storyId}')`
-                            : `clearStoryGlobalIfCountrySelected('${storyId}')`,
-                        checked: c => c.code === 'global'
+                        id: (c) => `story-flag-${c.name.toLowerCase()}-${storyId}`,
+                        onChange: (c) =>
+                            c.code === 'global'
+                                ? `clearStoryCountriesIfGlobalSelected('${storyId}')`
+                                : `clearStoryGlobalIfCountrySelected('${storyId}')`,
+                        checked: (c) => c.code === 'global',
                     })}</div>
                     
                     <div class="form-group" style="margin-top: 15px;">
@@ -1353,12 +1474,15 @@ export function init(_root) {
                     </div>
                 </div>
             `;
-            
-            document.getElementById(`stories-container-${epicId}`).insertAdjacentHTML('beforeend', storyHtml);
-            
+
+            document
+                .getElementById(`stories-container-${epicId}`)
+                .insertAdjacentHTML('beforeend', storyHtml);
+            updateEpicStoryMeta(epicId);
+
             // Initialize the collapsed title display
             updateStoryHeaderTitle(storyId, true);
-            
+
             // Add auto-update listeners to the new story elements
             const storyFields = [
                 `story-title-${storyId}`,
@@ -1383,20 +1507,20 @@ export function init(_root) {
                 `transferredin-date-${storyId}`,
                 `transferredin-notes-${storyId}`,
                 `proposed-date-${storyId}`,
-                `proposed-notes-${storyId}`
+                `proposed-notes-${storyId}`,
             ];
-            
-            storyFields.forEach(fieldId => {
+
+            storyFields.forEach((fieldId) => {
                 const element = document.getElementById(fieldId);
                 if (element) {
                     addListenersToElement(element);
                 }
             });
-            
+
             // Add listener to story title to update header when collapsed
             const titleInput = document.getElementById(`story-title-${storyId}`);
             if (titleInput) {
-                titleInput.addEventListener('input', function() {
+                titleInput.addEventListener('input', function () {
                     const contentDiv = document.getElementById(`story-content-${storyId}`);
                     if (contentDiv && contentDiv.style.display === 'none') {
                         // Story is collapsed, update the header title
@@ -1404,9 +1528,9 @@ export function init(_root) {
                     }
                 });
             }
-            
+
             // Date pickers will be initialized when EPIC is expanded
-            
+
             // Add listeners to checkboxes (these need special handling in the existing onchange handlers)
             const checkboxes = [
                 `story-done-${storyId}`,
@@ -1417,22 +1541,22 @@ export function init(_root) {
                 `story-transferredout-${storyId}`,
                 `story-transferredin-${storyId}`,
                 `story-proposed-${storyId}`,
-                `story-changes-${storyId}`
+                `story-changes-${storyId}`,
             ];
-            
-            checkboxes.forEach(checkboxId => {
+
+            checkboxes.forEach((checkboxId) => {
                 const element = document.getElementById(checkboxId);
                 if (element) {
                     // Add auto-update listener that will fire after the existing onchange handler
                     element.addEventListener('change', debouncedGeneratePreview);
                 }
             });
-            
+
             // Initialize date pickers for the newly created story
             setTimeout(() => {
                 const startField = document.getElementById(`story-start-${storyId}`);
                 const endField = document.getElementById(`story-end-${storyId}`);
-                
+
                 if (startField) {
                     initializeDatePicker(startField, true);
                 }
@@ -1442,75 +1566,87 @@ export function init(_root) {
                     if (!endField.dataset.hasValidation) {
                         endField.addEventListener('blur', validateEndDate);
                         // Clear error styling when user starts typing
-                        endField.addEventListener('input', function() {
+                        endField.addEventListener('input', function () {
                             this.style.borderColor = '';
                             this.style.backgroundColor = '';
                         });
                         endField.dataset.hasValidation = 'true';
                     }
                 }
-                
+
                 // Initialize all status date fields that may be shown later
                 initializeDatePicker(document.getElementById(`done-date-${storyId}`), false);
                 initializeDatePicker(document.getElementById(`cancel-date-${storyId}`), false);
                 initializeDatePicker(document.getElementById(`atrisk-date-${storyId}`), false);
                 initializeDatePicker(document.getElementById(`newstory-date-${storyId}`), false);
                 initializeDatePicker(document.getElementById(`info-date-${storyId}`), false);
-                initializeDatePicker(document.getElementById(`transferredin-date-${storyId}`), false);
-                initializeDatePicker(document.getElementById(`transferredout-date-${storyId}`), false);
+                initializeDatePicker(
+                    document.getElementById(`transferredin-date-${storyId}`),
+                    false
+                );
+                initializeDatePicker(
+                    document.getElementById(`transferredout-date-${storyId}`),
+                    false
+                );
                 initializeDatePicker(document.getElementById(`proposed-date-${storyId}`), false);
             }, 200); // Increased delay to ensure DOM elements are ready
         }
-        
+
         function removeStory(storyId) {
             // Extract the epic ID from the story ID (format: epicId-storyNumber)
             const epicId = storyId.split('-')[0];
-            
+
             // Remove the story element
             document.getElementById(`story-${storyId}`).remove();
-            
+
             // Find the epic element and update story numbers
             const epicElement = document.getElementById(`epic-${epicId}`);
             if (epicElement) {
                 updateStoryNumbers(epicElement);
-                
+
                 // Update the story counter to match the actual number of remaining stories
                 const remainingStories = epicElement.querySelectorAll('.story-section');
                 storyCounters[epicId] = remainingStories.length;
+                updateEpicStoryMeta(epicId);
             }
-            
+
             // Refresh the roadmap preview
             generatePreview();
         }
-        
+
         let btlStoryCounter = 0;
-        
+
         function addBTLStory() {
             // Check if we already have max BTL stories
-            const existingBTLStories = document.querySelectorAll('#btl-stories-container .story-section');
+            const existingBTLStories = document.querySelectorAll(
+                '#btl-stories-container .story-section'
+            );
             if (existingBTLStories.length >= ConfigUtility.CSS.UI.BTL_MAX_STORIES) {
-                alert(`Maximum of ${ConfigUtility.CSS.UI.BTL_MAX_STORIES} BTL stories allowed. Please remove an existing story before adding a new one.`);
+                alert(
+                    `Maximum of ${ConfigUtility.CSS.UI.BTL_MAX_STORIES} BTL stories allowed. Please remove an existing story before adding a new one.`
+                );
                 return;
             }
-            
+
             btlStoryCounter++;
             const storyId = `btl-${btlStoryCounter}`;
-            
+
             const storyHtml = `
                 <div class="story-section" id="story-${storyId}" draggable="true" ondragstart="handleStoryDragStart(event, '${storyId}')" ondragover="handleStoryDragOver(event)" ondrop="handleStoryDrop(event, '${storyId}')" ondragend="handleStoryDragEnd(event)">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <button id="story-collapse-btn-${storyId}" class="collapse-btn-collapsed" onclick="toggleStoryCollapse('${storyId}')" title="Expand Story">▶</button>
-                            <h4 id="story-header-title-${storyId}" style="margin: 0; cursor: default;">📋 Story ${btlStoryCounter}</h4>
-                        </div>
-                        <div style="display: flex; gap: 5px; align-items: center;">
-                            <button onclick="moveBTLStoryUp('${storyId}')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Move story up" tabindex="-1">▲</button>
-                            <button onclick="moveBTLStoryDown('${storyId}')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Move story down" tabindex="-1">▼</button>
-                            <button class="danger" onclick="deleteBTLStory('${storyId}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Delete story" tabindex="-1">🗑️</button>
+                    <div class="story-summary">
+                        <button id="story-collapse-btn-${storyId}" class="story-collapse-state collapse-btn-collapsed" onclick="toggleStoryCollapse('${storyId}')" title="Expand Story" tabindex="-1" aria-hidden="true">▶</button>
+                        <svg class="story-drag-handle" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true"><circle cx="2.5" cy="2.5" r="1.5"></circle><circle cx="7.5" cy="2.5" r="1.5"></circle><circle cx="2.5" cy="8" r="1.5"></circle><circle cx="7.5" cy="8" r="1.5"></circle><circle cx="2.5" cy="13.5" r="1.5"></circle><circle cx="7.5" cy="13.5" r="1.5"></circle></svg>
+                        <h4 id="story-header-title-${storyId}" class="story-summary-title" data-story-number="${btlStoryCounter}" onclick="toggleStoryCollapse('${storyId}')">Story ${btlStoryCounter}</h4>
+                        <span id="story-status-chip-${storyId}" class="story-status-chip"></span>
+                        <span id="story-date-range-${storyId}" class="story-date-range"></span>
+                        <div class="story-row-actions">
+                            <button onclick="moveBTLStoryUp('${storyId}')" title="Move story up" aria-label="Move story up" tabindex="-1">▲</button>
+                            <button onclick="moveBTLStoryDown('${storyId}')" title="Move story down" aria-label="Move story down" tabindex="-1">▼</button>
+                            <button class="story-delete-button" onclick="deleteBTLStory('${storyId}')" title="Delete story" aria-label="Delete story" tabindex="-1">×</button>
                         </div>
                     </div>
                     
-                    <div id="story-content-${storyId}" style="display: none;">
+                    <div id="story-content-${storyId}" class="story-content" style="display: none;">
                     <div class="form-group">
                         <label for="btl-title-${storyId}">Story Title:</label>
                         <input type="text" id="btl-title-${storyId}" placeholder="Story title">
@@ -1564,12 +1700,14 @@ export function init(_root) {
                     </div>
                 </div>
             `;
-            
-            document.getElementById('btl-stories-container').insertAdjacentHTML('beforeend', storyHtml);
-            
+
+            document
+                .getElementById('btl-stories-container')
+                .insertAdjacentHTML('beforeend', storyHtml);
+
             // Initialize the collapsed title display
             updateStoryHeaderTitle(storyId, true);
-            
+
             // Add auto-update listeners to the new BTL story elements
             const btlFields = [
                 `btl-title-${storyId}`,
@@ -1580,20 +1718,20 @@ export function init(_root) {
                 `btl-description-${storyId}`,
                 `btl-imo-${storyId}`,
                 `btl-priority-${storyId}`,
-                `btl-comments-${storyId}`
+                `btl-comments-${storyId}`,
             ];
-            
-            btlFields.forEach(fieldId => {
+
+            btlFields.forEach((fieldId) => {
                 const element = document.getElementById(fieldId);
                 if (element) {
                     addListenersToElement(element);
                 }
             });
-            
+
             // Add listener to BTL story title to update header when collapsed
             const btlTitleInput = document.getElementById(`btl-title-${storyId}`);
             if (btlTitleInput) {
-                btlTitleInput.addEventListener('input', function() {
+                btlTitleInput.addEventListener('input', function () {
                     const contentDiv = document.getElementById(`story-content-${storyId}`);
                     if (contentDiv && contentDiv.style.display === 'none') {
                         // Story is collapsed, update the header title
@@ -1601,7 +1739,7 @@ export function init(_root) {
                     }
                 });
             }
-            
+
             // Initialize date pickers for BTL date fields immediately since BTL is always expanded
             initializeDatePicker(document.getElementById(`btl-start-${storyId}`), true);
             const btlEndField = document.getElementById(`btl-end-${storyId}`);
@@ -1611,7 +1749,7 @@ export function init(_root) {
                 if (!btlEndField.dataset.hasValidation) {
                     btlEndField.addEventListener('blur', validateEndDate);
                     // Clear error styling when user starts typing
-                    btlEndField.addEventListener('input', function() {
+                    btlEndField.addEventListener('input', function () {
                         this.style.borderColor = '';
                         this.style.backgroundColor = '';
                     });
@@ -1619,12 +1757,12 @@ export function init(_root) {
                 }
             }
             initializeDatePicker(document.getElementById(`btl-dateadded-${storyId}`), false);
-            
+
             updateBTLAddButton();
         }
-        
+
         // BTL delete function for main form
-        window.deleteBTLStory = function(storyId) {
+        window.deleteBTLStory = function (storyId) {
             const elementToRemove = document.getElementById(`story-${storyId}`);
             if (elementToRemove) {
                 elementToRemove.remove();
@@ -1633,12 +1771,17 @@ export function init(_root) {
             }
         };
 
-        
         function updateBTLAddButton() {
-            const existingBTLStories = document.querySelectorAll('#btl-stories-container .story-section');
+            const existingBTLStories = document.querySelectorAll(
+                '#btl-stories-container .story-section'
+            );
             const addButton = document.querySelector('button[onclick="addBTLStory()"]');
-            
-            if (existingBTLStories.length >= 3) {
+            const meta = document.getElementById('btl-story-meta');
+            const count = existingBTLStories.length;
+            if (meta) meta.textContent = `${count} ${count === 1 ? 'story' : 'stories'} · max 3`;
+            if (!addButton) return;
+
+            if (count >= 3) {
                 addButton.disabled = true;
                 addButton.textContent = '+ Add Story (Max 3 reached)';
                 addButton.style.opacity = '0.5';
@@ -1650,20 +1793,21 @@ export function init(_root) {
                 addButton.style.cursor = 'pointer';
             }
         }
-        
+
         // Story-form timeline-change handlers (toggleChanges) are now in
         // ./timeline-changes.js. The factory is wired at the top of init().
-        
+
         function getTodaysDateEuropean() {
             return DateUtility.getTodaysDateEuropean();
         }
-        
+
         // Utility function to get current roadmap year
         function getCurrentRoadmapYear() {
-            return parseInt(document.getElementById('roadmapYear').value) || new Date().getFullYear();
+            return (
+                parseInt(document.getElementById('roadmapYear').value) || new Date().getFullYear()
+            );
         }
 
-        
         // Simple date picker helper using native HTML5 date input
 
         // Status checkboxes (Done/Cancelled/At Risk/New/Info/Transferred In/Out/
@@ -1723,36 +1867,33 @@ export function init(_root) {
                 const storyId = story.id.replace('story-', '');
                 const titleElement = story.querySelector('h4');
                 if (titleElement) {
-                    // Check if story is collapsed
                     const contentDiv = document.getElementById(`story-content-${storyId}`);
                     const isCollapsed = contentDiv && contentDiv.style.display === 'none';
-                    
-                    if (isCollapsed) {
-                        // Story is collapsed, preserve the title suffix
-                        titleElement.textContent = `📋 Story ${storyNumber}`;
-                        updateStoryHeaderTitle(storyId, true);
-                    } else {
-                        // Story is expanded, just show number
-                        titleElement.textContent = `📋 Story ${storyNumber}`;
-                    }
+                    titleElement.dataset.storyNumber = String(storyNumber);
+                    updateStoryHeaderTitle(storyId, isCollapsed);
                 }
             });
+            const epicId = epicElement.id.replace('epic-', '');
+            updateEpicStoryMeta(epicId);
         }
-        
+
         function generatePreview() {
             if (isGeneratingPreview) return;
             isGeneratingPreview = true;
+            refreshBuilderSummaries();
 
             const mount = document.getElementById('roadmap-mount');
             try {
                 if (typeof RoadmapGenerator === 'undefined') {
                     console.error('RoadmapGenerator is undefined');
-                    if (mount) mount.innerHTML = `<div style="padding:20px; color:red;">RoadmapGenerator failed to load. Refresh and try again.</div>`;
+                    if (mount)
+                        mount.innerHTML = `<div style="padding:20px; color:red;">RoadmapGenerator failed to load. Refresh and try again.</div>`;
                     return;
                 }
                 if (typeof DateUtility === 'undefined') {
                     console.error('DateUtility is undefined');
-                    if (mount) mount.innerHTML = `<div style="padding:20px; color:red;">DateUtility failed to load. Refresh and try again.</div>`;
+                    if (mount)
+                        mount.innerHTML = `<div style="padding:20px; color:red;">DateUtility failed to load. Refresh and try again.</div>`;
                     return;
                 }
 
@@ -1785,7 +1926,7 @@ export function init(_root) {
                 isGeneratingPreview = false;
             }
         }
-        
+
         function initializeIframeInteraction(iframe) {
             try {
                 // Wait a bit for iframe content to fully load
@@ -1793,74 +1934,72 @@ export function init(_root) {
                     const setupStoryInteraction = () => {
                         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                         const storyItems = iframeDoc.querySelectorAll('.story-item, .ktlo-story');
-                        
+
                         if (storyItems.length === 0) {
-                            // Retry after 200ms  
+                            // Retry after 200ms
                             setTimeout(setupStoryInteraction, 200);
                             return;
                         }
-                        
+
                         // Setup January/December monthly box priming for iframe
                         setupMonthlyBoxPriming(iframeDoc);
-                        
+
                         storyItems.forEach((story) => {
                             // Add single-click event listener to open edit modal
-                            story.addEventListener('click', function(e) {
+                            story.addEventListener('click', function (e) {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                
+
                                 const storyData = {
                                     epicName: this.dataset.epicName,
                                     storyTitle: this.dataset.storyTitle,
-                                    storyIndex: this.dataset.storyIndex
+                                    storyIndex: this.dataset.storyIndex,
                                 };
-                                
+
                                 // Call parent window function to open the edit modal
                                 parent.openEditStoryModal(storyData);
                             });
-                            
+
                             // Add double-click event listener to open edit modal (kept for consistency)
-                            story.addEventListener('dblclick', function(e) {
+                            story.addEventListener('dblclick', function (e) {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                
+
                                 const storyData = {
                                     epicName: this.dataset.epicName,
                                     storyTitle: this.dataset.storyTitle,
-                                    storyIndex: this.dataset.storyIndex
+                                    storyIndex: this.dataset.storyIndex,
                                 };
-                                
+
                                 // Call parent window function to open the edit modal
                                 parent.openEditStoryModal(storyData);
                             });
-                            
+
                             // Add visual indicator that stories are clickable
                             story.style.cursor = 'pointer';
                         });
                     };
-                    
+
                     // Start the setup process
                     setupStoryInteraction();
-                    
+
                     // Add draggable alignment guide
                     addAlignmentGuide(iframe);
-                    
                 }, 500); // Wait 500ms for iframe content to fully render
-                
             } catch {
                 // Story interaction initialization failed, continue without it
             }
         }
-        
+
         function addAlignmentGuide(iframe) {
             try {
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 const roadmapContainer = iframeDoc.querySelector('.roadmap-container');
-                
+
                 if (!roadmapContainer) {
                     return; // No roadmap container found
                 }
-                
+
                 // Create the alignment guide line
                 const guideLine = iframeDoc.createElement('div');
                 guideLine.id = 'alignment-guide';
@@ -1879,7 +2018,7 @@ export function init(_root) {
                     pointer-events: auto;
                     display: none;
                 `;
-                
+
                 // Add a small handle in the center for easier grabbing
                 const handle = iframeDoc.createElement('div');
                 handle.style.cssText = `
@@ -1895,48 +2034,48 @@ export function init(_root) {
                     cursor: ns-resize;
                 `;
                 guideLine.appendChild(handle);
-                
+
                 // Make the roadmap container relatively positioned if it isn't already
                 const containerStyle = iframe.contentWindow.getComputedStyle(roadmapContainer);
                 if (containerStyle.position === 'static') {
                     roadmapContainer.style.position = 'relative';
                 }
-                
+
                 // Add the guide line to the roadmap container
                 roadmapContainer.appendChild(guideLine);
-                
+
                 // Make it draggable
                 let isDragging = false;
                 let startY = 0;
                 let startTop = 0;
-                
+
                 const onMouseDown = (e) => {
                     isDragging = true;
                     startY = e.clientY;
                     startTop = guideLine.offsetTop;
-                    
+
                     // Change opacity while dragging
                     guideLine.style.opacity = '1';
-                    
+
                     // Prevent text selection
                     iframeDoc.body.style.userSelect = 'none';
                     e.preventDefault();
                 };
-                
+
                 const onMouseMove = (e) => {
                     if (!isDragging) return;
-                    
+
                     const deltaY = e.clientY - startY;
                     const newTop = startTop + deltaY;
                     const containerHeight = roadmapContainer.offsetHeight;
-                    
+
                     // Constrain within roadmap container bounds
                     const clampedTop = Math.max(0, Math.min(newTop, containerHeight - 4));
                     guideLine.style.top = clampedTop + 'px';
-                    
+
                     e.preventDefault();
                 };
-                
+
                 const onMouseUp = () => {
                     if (isDragging) {
                         isDragging = false;
@@ -1944,32 +2083,32 @@ export function init(_root) {
                         iframeDoc.body.style.userSelect = '';
                     }
                 };
-                
+
                 // Add event listeners
                 guideLine.addEventListener('mousedown', onMouseDown);
                 iframeDoc.addEventListener('mousemove', onMouseMove);
                 iframeDoc.addEventListener('mouseup', onMouseUp);
-                
+
                 // Also listen on the parent window to handle mouse leaving iframe
                 window.addEventListener('mousemove', (e) => {
                     if (isDragging) {
                         // Convert parent window coordinates to iframe coordinates
                         const iframeRect = iframe.getBoundingClientRect();
                         const iframeEvent = {
-                            clientY: e.clientY - iframeRect.top
+                            clientY: e.clientY - iframeRect.top,
                         };
                         onMouseMove(iframeEvent);
                     }
                 });
-                
+
                 window.addEventListener('mouseup', onMouseUp);
-                
+
                 // Toggle function for keyboard shortcut
                 const toggleAlignmentGuide = () => {
                     const isVisible = guideLine.style.display !== 'none';
                     guideLine.style.display = isVisible ? 'none' : 'block';
                 };
-                
+
                 // Keyboard shortcut handler (Cmd+Shift+L or Ctrl+Shift+L)
                 const handleKeydown = (e) => {
                     if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
@@ -1977,22 +2116,18 @@ export function init(_root) {
                         toggleAlignmentGuide();
                     }
                 };
-                
+
                 // Add keyboard listeners to both iframe and parent window
                 iframeDoc.addEventListener('keydown', handleKeydown);
                 window.addEventListener('keydown', handleKeydown);
-                
+
                 // Store the toggle function globally so it can be called from elsewhere if needed
                 iframe.contentWindow.toggleAlignmentGuide = toggleAlignmentGuide;
-                
+
                 // Log the keyboard shortcut for user reference
-                
-                
-            } catch {
-                
-            }
+            } catch {}
         }
-        
+
         function collectFormData() {
             const teamData = {
                 roadmapYear: parseInt(document.getElementById('roadmapYear').value) || 2025,
@@ -2001,22 +2136,22 @@ export function init(_root) {
                 em: document.getElementById('em').value || 'Engineering Manager',
                 pm: document.getElementById('pm').value || 'Product Manager',
                 description: [],
-                epics: []
+                epics: [],
             };
-            
+
             // Collect description
             const description = document.getElementById('teamDescription').value;
             if (description && description.trim()) {
                 teamData.description = description.trim();
             }
-            
+
             // Collect EPICs
             const epicElements = document.querySelectorAll('.epic-section');
-            epicElements.forEach(epicEl => {
+            epicElements.forEach((epicEl) => {
                 const epicId = epicEl.id.split('-')[1];
                 const epicNameEl = document.getElementById(`epic-name-${epicId}`);
                 const epicUniqueIdEl = document.getElementById(`epic-id-${epicId}`);
-                
+
                 // Ensure we always have a valid EPIC name
                 let epicName = `EPIC ${epicId}`; // Default fallback
                 if (epicNameEl && epicNameEl.value !== null && epicNameEl.value !== undefined) {
@@ -2025,23 +2160,22 @@ export function init(_root) {
                         epicName = inputValue;
                     }
                 }
-                
+
                 // Skip invalid EPICs (missing name element or ID)
                 if (!epicNameEl || !epicId || epicId === 'undefined' || epicId === 'null') {
-
                     return; // Skip this EPIC
                 }
-                
+
                 const epic = {
                     name: epicName,
                     epicId: epicUniqueIdEl ? epicUniqueIdEl.value : null, // Add unique EPIC ID
-                    stories: []
+                    stories: [],
                 };
-                
+
                 // Collect stories for this EPIC
                 const storyElements = epicEl.querySelectorAll('.story-section');
                 const stories = [];
-                storyElements.forEach(storyEl => {
+                storyElements.forEach((storyEl) => {
                     const storyId = storyEl.id.replace('story-', '');
                     try {
                         const story = collectStoryData(storyId);
@@ -2053,13 +2187,14 @@ export function init(_root) {
                             title: `Story ${stories.length + 1}`,
                             startMonth: 'JAN',
                             endMonth: 'MAR',
-                            bullets: ['Default story']
+                            bullets: ['Default story'],
                         });
                     }
                 });
-                
+
                 // Sort stories if the feature is enabled
-                const sortByStart = ConfigUtility.shouldSortStories() || ConfigUtility.shouldSortByStart();
+                const sortByStart =
+                    ConfigUtility.shouldSortStories() || ConfigUtility.shouldSortByStart();
                 const sortByEnd = ConfigUtility.shouldSortByEnd();
                 if (sortByStart || sortByEnd) {
                     stories.sort((a, b) => {
@@ -2073,58 +2208,126 @@ export function init(_root) {
                             if (endComparison !== 0) return endComparison;
                             return DateUtility.compareDateOrMonth(aStart, bStart, year);
                         } else {
-                            const startComparison = DateUtility.compareDateOrMonth(aStart, bStart, year);
+                            const startComparison = DateUtility.compareDateOrMonth(
+                                aStart,
+                                bStart,
+                                year
+                            );
                             if (startComparison !== 0) return startComparison;
                             return DateUtility.compareDateOrMonth(aEnd, bEnd, year);
                         }
                     });
                 }
-                
+
                 epic.stories = stories;
-                
+
                 teamData.epics.push(epic);
             });
-            
+
             // Collect KTLO data from form with fallback
             try {
                 teamData.ktloSwimlane = collectKTLOData();
             } catch (error) {
                 console.error('KTLO Collection Error:', error);
-                
+
                 // Provide fallback KTLO data
                 teamData.ktloSwimlane = {
-                    position: "bottom",
+                    position: 'bottom',
                     story: {
-                        title: "KTLO",
-                        bullets: ["Keep the Lights On", "Operational Excellence", "Infrastructure Maintenance"]
+                        title: 'KTLO',
+                        bullets: [
+                            'Keep the Lights On',
+                            'Operational Excellence',
+                            'Infrastructure Maintenance',
+                        ],
                     },
                     monthlyData: [
-                        { month: "JAN", number: 15, percentage: 85, description: "Server Maintenance" },
-                        { month: "FEB", number: 12, percentage: 90, description: "Database optimization" },
-                        { month: "MAR", number: 18, percentage: 88, description: "Security patches and monitoring" },
-                        { month: "APR", number: 14, percentage: 92, description: "Performance tuning" },
-                        { month: "MAY", number: 16, percentage: 87, description: "Backup system upgrades" },
-                        { month: "JUN", number: 13, percentage: 94, description: "Network infrastructure review" },
-                        { month: "JUL", number: 17, percentage: 89, description: "Application health checks" },
-                        { month: "AUG", number: 11, percentage: 93, description: "Documentation updates" },
-                        { month: "SEP", number: 19, percentage: 86, description: "Disaster recovery testing" },
-                        { month: "OCT", number: 15, percentage: 91, description: "Capacity planning review" },
-                        { month: "NOV", number: 13, percentage: 95, description: "Year-end maintenance" },
-                        { month: "DEC", number: 10, percentage: 88, description: "Holiday coverage" }
-                    ]
+                        {
+                            month: 'JAN',
+                            number: 15,
+                            percentage: 85,
+                            description: 'Server Maintenance',
+                        },
+                        {
+                            month: 'FEB',
+                            number: 12,
+                            percentage: 90,
+                            description: 'Database optimization',
+                        },
+                        {
+                            month: 'MAR',
+                            number: 18,
+                            percentage: 88,
+                            description: 'Security patches and monitoring',
+                        },
+                        {
+                            month: 'APR',
+                            number: 14,
+                            percentage: 92,
+                            description: 'Performance tuning',
+                        },
+                        {
+                            month: 'MAY',
+                            number: 16,
+                            percentage: 87,
+                            description: 'Backup system upgrades',
+                        },
+                        {
+                            month: 'JUN',
+                            number: 13,
+                            percentage: 94,
+                            description: 'Network infrastructure review',
+                        },
+                        {
+                            month: 'JUL',
+                            number: 17,
+                            percentage: 89,
+                            description: 'Application health checks',
+                        },
+                        {
+                            month: 'AUG',
+                            number: 11,
+                            percentage: 93,
+                            description: 'Documentation updates',
+                        },
+                        {
+                            month: 'SEP',
+                            number: 19,
+                            percentage: 86,
+                            description: 'Disaster recovery testing',
+                        },
+                        {
+                            month: 'OCT',
+                            number: 15,
+                            percentage: 91,
+                            description: 'Capacity planning review',
+                        },
+                        {
+                            month: 'NOV',
+                            number: 13,
+                            percentage: 95,
+                            description: 'Year-end maintenance',
+                        },
+                        {
+                            month: 'DEC',
+                            number: 10,
+                            percentage: 88,
+                            description: 'Holiday coverage',
+                        },
+                    ],
                 };
             }
-            
+
             // Collect BTL data
             try {
                 teamData.btlSwimlane = collectBTLData();
             } catch {
                 // Provide fallback BTL data
                 teamData.btlSwimlane = {
-                    stories: [] // Empty by default
+                    stories: [], // Empty by default
                 };
             }
-            
+
             return teamData;
         }
         function collectStoryData(storyId) {
@@ -2134,26 +2337,28 @@ export function init(_root) {
                 title: titleEl ? titleEl.value || '' : '',
                 storyId: storyUniqueIdEl ? storyUniqueIdEl.value : null, // Add unique Story ID
             };
-            
+
             // Handle start/end dates
             const startEl = document.getElementById(`story-start-${storyId}`);
             const endEl = document.getElementById(`story-end-${storyId}`);
             const start = startEl ? startEl.value : '';
             const end = endEl ? endEl.value : '';
-            
+
             // Helper function to ensure date has year and uses consistent "/" separator
             const ensureDateHasYear = (dateStr) => {
                 if (!dateStr) return dateStr;
                 // If date is in dd/mm or dd-mm format without year, normalize to "/" and add year
                 if (/^\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
-                    const roadmapYear = parseInt(document.getElementById('roadmapYear').value) || new Date().getFullYear();
+                    const roadmapYear =
+                        parseInt(document.getElementById('roadmapYear').value) ||
+                        new Date().getFullYear();
                     // Replace all "-" with "/" for consistency, then add year
                     const normalizedDate = dateStr.replace(/-/g, '/');
                     return normalizedDate + '/' + roadmapYear;
                 }
                 return dateStr;
             };
-            
+
             // Determine if it's a month or date format
             if (start) {
                 // Check for date formats: ISO (YYYY-MM-DD) or European (DD/MM or DD/MM/YYYY)
@@ -2166,7 +2371,7 @@ export function init(_root) {
                 // Default start month if not provided
                 story.startMonth = 'JAN';
             }
-            
+
             if (end) {
                 // Check for date formats: ISO (YYYY-MM-DD) or European (DD/MM or DD/MM/YYYY)
                 if (end.includes('-') || end.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
@@ -2178,28 +2383,28 @@ export function init(_root) {
                 // Default end month if not provided
                 story.endMonth = 'MAR';
             }
-            
+
             // Handle bullets
             const bulletsEl = document.getElementById(`story-bullets-${storyId}`);
             const bullets = bulletsEl ? bulletsEl.value : '';
             if (bullets) {
-                story.bullets = bullets.split('\n').filter(line => line.trim());
+                story.bullets = bullets.split('\n').filter((line) => line.trim());
             }
-            
+
             // Handle Director/VP ID
             const directorVPIdEl = document.getElementById(`story-director-vp-id-${storyId}`);
             const directorVPId = directorVPIdEl ? directorVPIdEl.value.trim() : '';
             if (directorVPId) {
                 story.directorVPId = directorVPId;
             }
-            
+
             // Handle IMO
             const imoEl = document.getElementById(`story-imo-${storyId}`);
             const imo = imoEl ? imoEl.value.trim() : '';
             if (imo) {
                 story.imo = imo;
             }
-            
+
             // Handle Priority
             const priorityEl = document.getElementById(`story-priority-${storyId}`);
             const priority = priorityEl ? priorityEl.value : '';
@@ -2213,32 +2418,49 @@ export function init(_root) {
             if (comments) {
                 story.comments = comments;
             }
-            
+
             // Handle Country Flags (default to Global if no flags selected)
             const countryFlags = [];
-            if (document.getElementById(`story-flag-global-${storyId}`)?.checked) countryFlags.push('Global');
-            if (document.getElementById(`story-flag-uk-${storyId}`)?.checked) countryFlags.push('UK');
-            if (document.getElementById(`story-flag-iceland-${storyId}`)?.checked) countryFlags.push('Iceland');
-            if (document.getElementById(`story-flag-hungary-${storyId}`)?.checked) countryFlags.push('Hungary');
-            if (document.getElementById(`story-flag-spain-${storyId}`)?.checked) countryFlags.push('Spain');
-            if (document.getElementById(`story-flag-italy-${storyId}`)?.checked) countryFlags.push('Italy');
-            if (document.getElementById(`story-flag-portugal-${storyId}`)?.checked) countryFlags.push('Portugal');
-            if (document.getElementById(`story-flag-czechia-${storyId}`)?.checked) countryFlags.push('Czechia');
-            if (document.getElementById(`story-flag-germany-${storyId}`)?.checked) countryFlags.push('Germany');
-            if (document.getElementById(`story-flag-slovakia-${storyId}`)?.checked) countryFlags.push('Slovakia');
-            if (document.getElementById(`story-flag-slovenia-${storyId}`)?.checked) countryFlags.push('Slovenia');
-            if (document.getElementById(`story-flag-croatia-${storyId}`)?.checked) countryFlags.push('Croatia');
-            if (document.getElementById(`story-flag-france-${storyId}`)?.checked) countryFlags.push('France');
+            if (document.getElementById(`story-flag-global-${storyId}`)?.checked)
+                countryFlags.push('Global');
+            if (document.getElementById(`story-flag-uk-${storyId}`)?.checked)
+                countryFlags.push('UK');
+            if (document.getElementById(`story-flag-iceland-${storyId}`)?.checked)
+                countryFlags.push('Iceland');
+            if (document.getElementById(`story-flag-hungary-${storyId}`)?.checked)
+                countryFlags.push('Hungary');
+            if (document.getElementById(`story-flag-spain-${storyId}`)?.checked)
+                countryFlags.push('Spain');
+            if (document.getElementById(`story-flag-italy-${storyId}`)?.checked)
+                countryFlags.push('Italy');
+            if (document.getElementById(`story-flag-portugal-${storyId}`)?.checked)
+                countryFlags.push('Portugal');
+            if (document.getElementById(`story-flag-czechia-${storyId}`)?.checked)
+                countryFlags.push('Czechia');
+            if (document.getElementById(`story-flag-germany-${storyId}`)?.checked)
+                countryFlags.push('Germany');
+            if (document.getElementById(`story-flag-slovakia-${storyId}`)?.checked)
+                countryFlags.push('Slovakia');
+            if (document.getElementById(`story-flag-slovenia-${storyId}`)?.checked)
+                countryFlags.push('Slovenia');
+            if (document.getElementById(`story-flag-croatia-${storyId}`)?.checked)
+                countryFlags.push('Croatia');
+            if (document.getElementById(`story-flag-france-${storyId}`)?.checked)
+                countryFlags.push('France');
             // Default to Global if no flags are selected
             if (countryFlags.length === 0) {
                 countryFlags.push('Global');
             }
             story.countryFlags = countryFlags;
-            
+
             // Handle Include in Product Roadmap
-            const includeInProductRoadmapEl = document.getElementById(`story-include-product-roadmap-${storyId}`);
-            story.includeInProductRoadmap = includeInProductRoadmapEl ? includeInProductRoadmapEl.checked : false;
-            
+            const includeInProductRoadmapEl = document.getElementById(
+                `story-include-product-roadmap-${storyId}`
+            );
+            story.includeInProductRoadmap = includeInProductRoadmapEl
+                ? includeInProductRoadmapEl.checked
+                : false;
+
             // Handle status flags
             const doneEl = document.getElementById(`story-done-${storyId}`);
             const cancelledEl = document.getElementById(`story-cancelled-${storyId}`);
@@ -2248,7 +2470,7 @@ export function init(_root) {
             const transferredOutEl = document.getElementById(`story-transferredout-${storyId}`);
             const transferredInEl = document.getElementById(`story-transferredin-${storyId}`);
             const proposedEl = document.getElementById(`story-proposed-${storyId}`);
-            
+
             story.isDone = doneEl ? doneEl.checked : false;
             story.isCancelled = cancelledEl ? cancelledEl.checked : false;
             story.isAtRisk = atRiskEl ? atRiskEl.checked : false;
@@ -2265,37 +2487,37 @@ export function init(_root) {
             } else {
                 delete story.hideFromSearch;
             }
-            
+
             // Collect done info (regardless of timeline changes checkbox)
             const doneDateEl = document.getElementById(`done-date-${storyId}`);
             const doneNotesEl = document.getElementById(`done-notes-${storyId}`);
             const doneDate = doneDateEl ? doneDateEl.value : '';
             const doneNotes = doneNotesEl ? doneNotesEl.value : '';
-            
-            // Collect cancel info (regardless of timeline changes checkbox)  
+
+            // Collect cancel info (regardless of timeline changes checkbox)
             const cancelDateEl = document.getElementById(`cancel-date-${storyId}`);
             const cancelNotesEl = document.getElementById(`cancel-notes-${storyId}`);
             const cancelDate = cancelDateEl ? cancelDateEl.value : '';
             const cancelNotes = cancelNotesEl ? cancelNotesEl.value : '';
-            
-            // Collect at risk info (regardless of timeline changes checkbox)  
+
+            // Collect at risk info (regardless of timeline changes checkbox)
             const atRiskDateEl = document.getElementById(`atrisk-date-${storyId}`);
             const atRiskNotesEl = document.getElementById(`atrisk-notes-${storyId}`);
             const atRiskDate = atRiskDateEl ? atRiskDateEl.value : '';
             const atRiskNotes = atRiskNotesEl ? atRiskNotesEl.value : '';
-            
-            // Collect new story info (regardless of timeline changes checkbox)  
+
+            // Collect new story info (regardless of timeline changes checkbox)
             const newStoryDateEl = document.getElementById(`newstory-date-${storyId}`);
             const newStoryNotesEl = document.getElementById(`newstory-notes-${storyId}`);
             const newStoryDate = newStoryDateEl ? newStoryDateEl.value : '';
             const newStoryNotes = newStoryNotesEl ? newStoryNotesEl.value : '';
-            
-            // Collect info info (regardless of timeline changes checkbox)  
+
+            // Collect info info (regardless of timeline changes checkbox)
             const infoEntries = [];
             const infoEntriesContainer = document.getElementById(`info-entries-${storyId}`);
             if (infoEntriesContainer) {
                 const entryElements = infoEntriesContainer.querySelectorAll('.info-entry');
-                entryElements.forEach(entry => {
+                entryElements.forEach((entry) => {
                     const entryId = entry.id;
                     const dateEl = document.getElementById(`info-date-${entryId}`);
                     const notesEl = document.getElementById(`info-notes-${entryId}`);
@@ -2303,57 +2525,73 @@ export function init(_root) {
                         // Include entry even if empty, but only if the entry exists
                         infoEntries.push({
                             date: dateEl.value || '',
-                            notes: notesEl.value || ''
+                            notes: notesEl.value || '',
                         });
                     }
                 });
             }
-            
+
             // Fallback: check for old single info fields
             if (infoEntries.length === 0) {
                 const oldInfoDateEl = document.getElementById(`info-date-${storyId}`);
                 const oldInfoNotesEl = document.getElementById(`info-notes-${storyId}`);
-                if (oldInfoDateEl && oldInfoNotesEl && (oldInfoDateEl.value || oldInfoNotesEl.value)) {
+                if (
+                    oldInfoDateEl &&
+                    oldInfoNotesEl &&
+                    (oldInfoDateEl.value || oldInfoNotesEl.value)
+                ) {
                     infoEntries.push({
                         date: oldInfoDateEl.value,
-                        notes: oldInfoNotesEl.value
+                        notes: oldInfoNotesEl.value,
                     });
                 }
             }
-            
-                        // Collect transferred out info (regardless of timeline changes checkbox)
+
+            // Collect transferred out info (regardless of timeline changes checkbox)
             const transferredOutDateEl = document.getElementById(`transferredout-date-${storyId}`);
-            const transferredOutNotesEl = document.getElementById(`transferredout-notes-${storyId}`);
+            const transferredOutNotesEl = document.getElementById(
+                `transferredout-notes-${storyId}`
+            );
             const transferredOutDate = transferredOutDateEl ? transferredOutDateEl.value : '';
             const transferredOutNotes = transferredOutNotesEl ? transferredOutNotesEl.value : '';
-            
+
             // Collect transferred in info (regardless of timeline changes checkbox)
             const transferredInDateEl = document.getElementById(`transferredin-date-${storyId}`);
             const transferredInNotesEl = document.getElementById(`transferredin-notes-${storyId}`);
             const transferredInDate = transferredInDateEl ? transferredInDateEl.value : '';
             const transferredInNotes = transferredInNotesEl ? transferredInNotesEl.value : '';
-            
+
             // Collect proposed info (regardless of timeline changes checkbox)
             const proposedDateEl = document.getElementById(`proposed-date-${storyId}`);
             const proposedNotesEl = document.getElementById(`proposed-notes-${storyId}`);
             const proposedDate = proposedDateEl ? proposedDateEl.value : '';
             const proposedNotes = proposedNotesEl ? proposedNotesEl.value : '';
-            
+
             // Check if we need to create roadmap changes for timeline changes, done, cancel, at risk, new story, or transferred out
             const timelineChangesEl = document.getElementById(`story-changes-${storyId}`);
             const hasTimelineChanges = timelineChangesEl ? timelineChangesEl.checked : false;
-            
+
             // FOR TEXT BOX WIDTH: Count only checked checkboxes (consistent with display logic)
-            const hasDoneInfo = (doneEl ? doneEl.checked : false);
-            const hasCancelInfo = (cancelledEl ? cancelledEl.checked : false);
-            const hasAtRiskInfo = (atRiskEl ? atRiskEl.checked : false);
-            const hasNewStoryInfo = (newStoryEl ? newStoryEl.checked : false);
-            const hasInfoInfo = (infoEl ? infoEl.checked : false);
-            const hasTransferredOutInfo = (transferredOutEl ? transferredOutEl.checked : false);
-            const hasTransferredInInfo = (transferredInEl ? transferredInEl.checked : false);
-            const hasProposedInfo = (proposedEl ? proposedEl.checked : false);
-            
-            if (hasTimelineChanges || hasDoneInfo || hasCancelInfo || hasAtRiskInfo || hasNewStoryInfo || hasInfoInfo || hasTransferredOutInfo || hasTransferredInInfo || hasProposedInfo) {
+            const hasDoneInfo = doneEl ? doneEl.checked : false;
+            const hasCancelInfo = cancelledEl ? cancelledEl.checked : false;
+            const hasAtRiskInfo = atRiskEl ? atRiskEl.checked : false;
+            const hasNewStoryInfo = newStoryEl ? newStoryEl.checked : false;
+            const hasInfoInfo = infoEl ? infoEl.checked : false;
+            const hasTransferredOutInfo = transferredOutEl ? transferredOutEl.checked : false;
+            const hasTransferredInInfo = transferredInEl ? transferredInEl.checked : false;
+            const hasProposedInfo = proposedEl ? proposedEl.checked : false;
+
+            if (
+                hasTimelineChanges ||
+                hasDoneInfo ||
+                hasCancelInfo ||
+                hasAtRiskInfo ||
+                hasNewStoryInfo ||
+                hasInfoInfo ||
+                hasTransferredOutInfo ||
+                hasTransferredInInfo ||
+                hasProposedInfo
+            ) {
                 story.hasRoadmapChanges = true;
                 story.roadmapChanges = {
                     changes: [],
@@ -2364,20 +2602,26 @@ export function init(_root) {
                     infoInfo: null,
                     transferredOutInfo: null,
                     transferredInInfo: null,
-                    proposedInfo: null
+                    proposedInfo: null,
                 };
-                
+
                 // Collect timeline changes (only if checkbox is checked)
                 if (hasTimelineChanges) {
                     // Find only the container divs (not the individual input fields)
-                    const changeContainers = document.querySelectorAll(`#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`);
+                    const changeContainers = document.querySelectorAll(
+                        `#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`
+                    );
 
                     changeContainers.forEach((changeEl) => {
                         // Use the full ID minus the "change-" prefix: "1-4-change-1750523789967"
                         const changeId = changeEl.id.replace('change-', ''); // Get: "1-4-change-1750523789967"
                         const date = document.getElementById(`change-date-${changeId}`)?.value;
-                        const prevStart = document.getElementById(`change-prevstart-${changeId}`)?.value;
-                        const newStart = document.getElementById(`change-newstart-${changeId}`)?.value;
+                        const prevStart = document.getElementById(
+                            `change-prevstart-${changeId}`
+                        )?.value;
+                        const newStart = document.getElementById(
+                            `change-newstart-${changeId}`
+                        )?.value;
                         const prevEnd = document.getElementById(`change-prev-${changeId}`)?.value;
                         const newEnd = document.getElementById(`change-new-${changeId}`)?.value;
                         const desc = document.getElementById(`change-desc-${changeId}`)?.value;
@@ -2389,7 +2633,7 @@ export function init(_root) {
                                 newStartDate: newStart ? ensureDateHasYear(newStart) : '',
                                 prevEndDate: ensureDateHasYear(prevEnd),
                                 newEndDate: ensureDateHasYear(newEnd),
-                                description: desc || 'Story timeline change'
+                                description: desc || 'Story timeline change',
                             });
                         }
                     });
@@ -2406,7 +2650,10 @@ export function init(_root) {
                         // Update start date if the most recent change records one
                         if (mostRecentChange && mostRecentChange.newStartDate) {
                             const newStartDate = mostRecentChange.newStartDate;
-                            if (newStartDate.includes('-') || newStartDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
+                            if (
+                                newStartDate.includes('-') ||
+                                newStartDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)
+                            ) {
                                 story.startDate = newStartDate;
                                 delete story.startMonth;
                                 const startEl = document.getElementById(`story-start-${storyId}`);
@@ -2424,7 +2671,10 @@ export function init(_root) {
                             const newEndDate = mostRecentChange.newEndDate;
 
                             // Determine if this is a date or month format and update accordingly
-                            if (newEndDate.includes('-') || newEndDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
+                            if (
+                                newEndDate.includes('-') ||
+                                newEndDate.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)
+                            ) {
                                 // It's a date format - update endDate and clear endMonth (already has year from ensureDateHasYear above)
                                 story.endDate = newEndDate;
                                 delete story.endMonth;
@@ -2444,144 +2694,168 @@ export function init(_root) {
                         }
                     }
                 }
-                
+
                 // FOR ROADMAP DATA: Only add if checkbox is checked (regardless of existing date/notes)
                 if (story.isDone) {
                     story.roadmapChanges.doneInfo = {
                         date: ensureDateHasYear(doneDate) || '',
-                        notes: doneNotes || ''
+                        notes: doneNotes || '',
                     };
                 }
-                
+
                 if (story.isCancelled) {
                     story.roadmapChanges.cancelInfo = {
                         date: ensureDateHasYear(cancelDate) || '',
-                        notes: cancelNotes || ''
+                        notes: cancelNotes || '',
                     };
                 }
-                
+
                 if (story.isAtRisk) {
                     story.roadmapChanges.atRiskInfo = {
                         date: ensureDateHasYear(atRiskDate) || '',
-                        notes: atRiskNotes || ''
+                        notes: atRiskNotes || '',
                     };
                 }
-                
+
                 if (story.isNewStory) {
                     story.roadmapChanges.newStoryInfo = {
                         date: ensureDateHasYear(newStoryDate) || '',
-                        notes: newStoryNotes || ''
+                        notes: newStoryNotes || '',
                     };
                 }
-                
+
                 if (story.isInfo) {
                     story.roadmapChanges.infoInfo = infoEntries.length > 0 ? infoEntries : [];
                 }
-                
+
                 if (story.isTransferredOut) {
                     story.roadmapChanges.transferredOutInfo = {
                         date: ensureDateHasYear(transferredOutDate) || '',
-                        notes: transferredOutNotes || ''
+                        notes: transferredOutNotes || '',
                     };
                 }
-                
+
                 if (story.isTransferredIn) {
                     story.roadmapChanges.transferredInInfo = {
                         date: ensureDateHasYear(transferredInDate) || '',
-                        notes: transferredInNotes || ''
+                        notes: transferredInNotes || '',
                     };
                 }
-                
+
                 if (story.isProposed) {
                     story.roadmapChanges.proposedInfo = {
                         date: ensureDateHasYear(proposedDate) || '',
-                        notes: proposedNotes || ''
+                        notes: proposedNotes || '',
                     };
                 }
             }
-            
+
             return story;
         }
-        
+
         function collectKTLOData() {
             const ktloTitleEl = document.getElementById('ktlo-title');
             const ktloBulletsEl = document.getElementById('ktlo-bullets');
             const ktloPositionEl = document.getElementById('ktlo-position-toggle');
-            
+
             const ktloTitle = ktloTitleEl ? ktloTitleEl.value || 'KTLO' : 'KTLO';
-            const ktloBulletsText = ktloBulletsEl ? ktloBulletsEl.value || 'Keep the Lights On\nOperational Excellence\nInfrastructure Maintenance' : 'Keep the Lights On\nOperational Excellence\nInfrastructure Maintenance';
-            const ktloBullets = ktloBulletsText.split('\n').filter(line => line.trim());
-            
+            const ktloBulletsText = ktloBulletsEl
+                ? ktloBulletsEl.value ||
+                  'Keep the Lights On\nOperational Excellence\nInfrastructure Maintenance'
+                : 'Keep the Lights On\nOperational Excellence\nInfrastructure Maintenance';
+            const ktloBullets = ktloBulletsText.split('\n').filter((line) => line.trim());
+
             // Preserve 'hidden' position if it was set via JSON, otherwise use checkbox state
             let ktloPosition;
             if (ktloPositionEl && ktloPositionEl.dataset.originalPosition === 'hidden') {
                 ktloPosition = 'hidden'; // Preserve hidden state
             } else {
-                ktloPosition = ktloPositionEl ? (ktloPositionEl.checked ? 'top' : 'bottom') : 'bottom';
+                ktloPosition = ktloPositionEl
+                    ? ktloPositionEl.checked
+                        ? 'top'
+                        : 'bottom'
+                    : 'bottom';
             }
-            
+
             // Save currently displayed month before collecting data
             saveCurrentKTLOData();
-            
-            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+            const months = [
+                'JAN',
+                'FEB',
+                'MAR',
+                'APR',
+                'MAY',
+                'JUN',
+                'JUL',
+                'AUG',
+                'SEP',
+                'OCT',
+                'NOV',
+                'DEC',
+            ];
             const monthlyData = [];
-            
-            months.forEach(month => {
+
+            months.forEach((month) => {
                 const monthLower = month.toLowerCase();
                 const data = ktloMonthlyData[monthLower];
-                
+
                 const number = data && data.number ? parseInt(data.number) || 0 : 0;
                 const percentageValue = data && data.percentage ? data.percentage : '';
-                
+
                 // Validate percentage before saving
                 if (percentageValue !== '' && !validateKTLOPercentage(percentageValue)) {
-                    throw new Error(`Invalid KTLO percentage for ${month}: "${percentageValue}". Must be blank or a multiple of 5 between 0 and 100.`);
+                    throw new Error(
+                        `Invalid KTLO percentage for ${month}: "${percentageValue}". Must be blank or a multiple of 5 between 0 and 100.`
+                    );
                 }
-                
+
                 const percentage = percentageValue !== '' ? parseInt(percentageValue) || 0 : 0;
                 const description = data && data.description ? data.description : '';
-                
+
                 monthlyData.push({
                     month: month,
                     number: number,
                     percentage: percentage,
-                    description: description
+                    description: description,
                 });
             });
-            
+
             return {
                 position: ktloPosition,
                 story: {
                     title: ktloTitle,
-                    bullets: ktloBullets
+                    bullets: ktloBullets,
                 },
-                monthlyData: monthlyData
+                monthlyData: monthlyData,
             };
         }
-        
+
         function collectBTLData() {
             const stories = [];
-            
+
             // Collect all BTL stories
-            const btlStoryElements = document.querySelectorAll('#btl-stories-container .story-section');
-            btlStoryElements.forEach(storyEl => {
+            const btlStoryElements = document.querySelectorAll(
+                '#btl-stories-container .story-section'
+            );
+            btlStoryElements.forEach((storyEl) => {
                 const storyId = storyEl.id.replace('story-', '');
-                
+
                 const titleEl = document.getElementById(`btl-title-${storyId}`);
                 const startEl = document.getElementById(`btl-start-${storyId}`);
                 const endEl = document.getElementById(`btl-end-${storyId}`);
                 const bulletsEl = document.getElementById(`btl-bullets-${storyId}`);
                 const dateAddedEl = document.getElementById(`btl-dateadded-${storyId}`);
                 const descriptionEl = document.getElementById(`btl-description-${storyId}`);
-                
+
                 const story = {
                     title: titleEl ? titleEl.value || '' : '',
                 };
-                
+
                 // Handle start/end dates
                 const start = startEl ? startEl.value : '';
                 const end = endEl ? endEl.value : '';
-                
+
                 // Determine if it's a month or date format
                 if (start) {
                     if (start.includes('-') || start.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
@@ -2592,7 +2866,7 @@ export function init(_root) {
                 } else {
                     story.startMonth = 'JAN';
                 }
-                
+
                 if (end) {
                     if (end.includes('-') || end.match(/^\d{1,2}[-/]\d{1,2}([-/]\d{2,4})?$/)) {
                         story.endDate = end;
@@ -2602,25 +2876,25 @@ export function init(_root) {
                 } else {
                     story.endMonth = 'MAR';
                 }
-                
+
                 // Handle bullets
                 const bullets = bulletsEl ? bulletsEl.value : '';
                 if (bullets) {
-                    story.bullets = bullets.split('\n').filter(line => line.trim());
+                    story.bullets = bullets.split('\n').filter((line) => line.trim());
                 }
-                
+
                 // Handle date added
                 const dateAdded = dateAddedEl ? dateAddedEl.value : '';
                 if (dateAdded) {
                     story.dateAdded = dateAdded;
                 }
-                
+
                 // Handle description
                 const description = descriptionEl ? descriptionEl.value : '';
                 if (description) {
                     story.dateAddedDescription = description;
                 }
-                
+
                 // Handle IMO
                 const imoEl = document.getElementById(`btl-imo-${storyId}`);
                 const imo = imoEl ? imoEl.value.trim() : '';
@@ -2641,24 +2915,25 @@ export function init(_root) {
                 if (comments) {
                     story.comments = comments;
                 }
-                
-                if (story.title) { // Only add stories with titles
+
+                if (story.title) {
+                    // Only add stories with titles
                     stories.push(story);
                 }
             });
-            
+
             return {
-                stories: stories
+                stories: stories,
             };
         }
-        
+
         /**
          * Update the filename display
          */
         function updateFilenameDisplay(filename) {
             const displayDiv = document.getElementById('currentFilenameDisplay');
             const filenameInput = document.getElementById('currentFilename');
-            
+
             if (filename) {
                 filenameInput.value = filename;
                 displayDiv.style.display = 'flex';
@@ -2667,26 +2942,26 @@ export function init(_root) {
                 displayDiv.style.display = 'none';
             }
         }
-        
+
         function newRoadmap() {
             // Set the current roadmap year as default in the modal
             const currentYear = getCurrentRoadmapYear();
             document.getElementById('newRoadmapYear').value = currentYear;
-            
+
             // Show the new roadmap modal
             document.getElementById('newRoadmapModal').style.display = 'flex';
-            
+
             // Focus on the year input
             setTimeout(() => {
                 document.getElementById('newRoadmapYear').focus();
                 document.getElementById('newRoadmapYear').select();
             }, 100);
         }
-        
+
         function closeNewRoadmapModal() {
             document.getElementById('newRoadmapModal').style.display = 'none';
         }
-        
+
         async function confirmNewRoadmap() {
             const selectedYear = parseInt(document.getElementById('newRoadmapYear').value);
             if (!selectedYear || selectedYear < 2020 || selectedYear > 2030) {
@@ -2726,35 +3001,37 @@ export function init(_root) {
 
             // Set flag to prevent KTLO data corruption during new roadmap creation
             window.isCreatingNewRoadmap = true;
-            
+
             // Set the selected roadmap year
             document.getElementById('roadmapYear').value = selectedYear;
-            
+
             // Clear team information
             document.getElementById('teamName').value = '';
             document.getElementById('directorVP').value = '';
             document.getElementById('em').value = '';
             document.getElementById('pm').value = '';
             document.getElementById('teamDescription').value = '';
-            
+
             // Set default filename for new roadmap
             const defaultFilename = `MyTeam.Teya-Roadmap.${selectedYear}.json`;
             updateFilenameDisplay(defaultFilename);
-            
+
             // Remove all epics
             const epics = document.querySelectorAll('.epic-section');
-            epics.forEach(epic => epic.remove());
+            epics.forEach((epic) => epic.remove());
             epicCounter = 0;
             storyCounters = {};
-            
+
             // Clear date picker initialization tracking to allow new date pickers
             clearAllTracking();
-            
+
             // Clear date picker initialization flags from any remaining elements
-            document.querySelectorAll('[data-date-picker-initialized="true"]').forEach(element => {
-                element.removeAttribute('data-date-picker-initialized');
-            });
-            
+            document
+                .querySelectorAll('[data-date-picker-initialized="true"]')
+                .forEach((element) => {
+                    element.removeAttribute('data-date-picker-initialized');
+                });
+
             // Clear BTL stories
             const btlContainer = document.getElementById('btl-stories-container');
             if (btlContainer) {
@@ -2762,7 +3039,7 @@ export function init(_root) {
             }
             btlStoryCounter = 0;
             updateBTLAddButton();
-            
+
             // Reset KTLO to defaults but keep it
             document.getElementById('ktlo-title').value = 'Keep the lights on';
             document.getElementById('ktlo-bullets').value = '';
@@ -2772,7 +3049,7 @@ export function init(_root) {
                 delete ktloToggle.dataset.originalPosition; // Clear any hidden state
             }
             showKTLOSection(); // Ensure KTLO section is visible in builder
-            
+
             // Set default KTLO monthly data (10 and 25 for each month)
             ktloMonthlyData = {
                 jan: { number: '10', percentage: '25', description: '' },
@@ -2786,36 +3063,36 @@ export function init(_root) {
                 sep: { number: '10', percentage: '25', description: '' },
                 oct: { number: '10', percentage: '25', description: '' },
                 nov: { number: '10', percentage: '25', description: '' },
-                dec: { number: '10', percentage: '25', description: '' }
+                dec: { number: '10', percentage: '25', description: '' },
             };
-            
+
             // Ensure the month selector is set to January and reload with defaults
             const selector = document.getElementById('ktlo-month-selector');
             if (selector) {
                 // DON'T save current data - that overwrites our new defaults!
-                
+
                 // Reset selector to January
                 selector.value = 'jan';
                 selector.setAttribute('data-previous-month', 'jan');
-                
+
                 // Load January with the new default data
                 loadKTLOMonth('jan');
-                
+
                 // Ensure form inputs show the default values
                 setTimeout(() => {
                     const numberInput = document.getElementById('ktlo-current-number');
                     const percentageInput = document.getElementById('ktlo-current-percentage');
                     const descriptionInput = document.getElementById('ktlo-current-description');
-                    
+
                     if (numberInput) numberInput.value = '10';
                     if (percentageInput) percentageInput.value = '25';
                     if (descriptionInput) descriptionInput.value = '';
                 }, 100);
             }
-            
+
             // Reset change counter (owned by ./timeline-changes.js)
             resetTimelineChangeCounter();
-            
+
             // Clear any pending timeline changes
             if (window.pendingTimelineChangesByIds) {
                 window.pendingTimelineChangesByIds = {};
@@ -2823,19 +3100,19 @@ export function init(_root) {
             if (window.pendingTimelineChangesByReference) {
                 window.pendingTimelineChangesByReference = {};
             }
-            
+
             // Update date picker ranges for the new year
             updateAllDatePickerRanges();
-            
+
             // Generate clean preview
             generatePreview();
-            
+
             // Clear the flag after preview generation is complete
             setTimeout(() => {
                 window.isCreatingNewRoadmap = false;
             }, 500);
         }
-        
+
         // Snapshot the form into the roadmap state and compute the filename
         // both save flows use. Returns the suggestedName for the caller.
         function prepareRoadmapForSave() {
@@ -2845,7 +3122,9 @@ export function init(_root) {
             roadmapState.setState(teamData);
             const currentFilename = document.getElementById('currentFilename').value.trim();
             return currentFilename
-                ? (currentFilename.endsWith('.json') ? currentFilename : `${currentFilename}.json`)
+                ? currentFilename.endsWith('.json')
+                    ? currentFilename
+                    : `${currentFilename}.json`
                 : `${teamData.teamName || 'MyTeam'}.Teya-Roadmap.${teamData.roadmapYear || 2025}.json`;
         }
 
@@ -2853,7 +3132,9 @@ export function init(_root) {
         // Chromium-only; fires an alert in other browsers.
         async function saveRoadmapInPlace() {
             if (!save.canSaveInBrowser()) {
-                window.alert('Saving in place is only supported in Chromium-based browsers (Chrome, Edge, Brave, Arc).\n\nUse "Download" to save a copy instead.');
+                window.alert(
+                    'Saving in place is only supported in Chromium-based browsers (Chrome, Edge, Brave, Arc).\n\nUse "Download" to save a copy instead.'
+                );
                 return;
             }
 
@@ -2872,10 +3153,13 @@ export function init(_root) {
 
             // Existing handle: confirm the overwrite before writing.
             const snap = directoryStore.get();
-            const targetLabel = snap && snap.type === 'file' && snap.name
-                ? snap.name
-                : suggestedName;
-            if (!window.confirm(`Save changes to ${targetLabel}?\n\nThis will overwrite the file on disk.`)) {
+            const targetLabel =
+                snap && snap.type === 'file' && snap.name ? snap.name : suggestedName;
+            if (
+                !window.confirm(
+                    `Save changes to ${targetLabel}?\n\nThis will overwrite the file on disk.`
+                )
+            ) {
                 return;
             }
             await save.save({ suggestedName });
@@ -2887,36 +3171,36 @@ export function init(_root) {
             const suggestedName = prepareRoadmapForSave();
             save.download({ suggestedName });
         }
-        
+
         // Load roadmap function - JSON only
         function loadRoadmap() {
             document.getElementById('roadmapLoadInput').click();
         }
-        
+
         // Handle roadmap file load (JSON only)
         function handleRoadmapLoad(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
+
             const fileName = file.name.toLowerCase();
-            
+
             if (fileName.endsWith('.json')) {
                 // Handle as JSON roadmap file
                 handleFileLoad(event);
             } else {
                 alert('Unsupported file format. Please select a JSON (.json) file.');
             }
-            
+
             // Reset the input value so the same file can be loaded again
             event.target.value = '';
         }
-        
+
         /**
          * Fix dates without years when loading roadmap
          */
         function fixDatesOnLoad(teamData) {
             const roadmapYear = teamData.roadmapYear || new Date().getFullYear();
-            
+
             // Helper function to fix a date string and normalize separator
             const fixDate = (dateStr) => {
                 if (!dateStr || typeof dateStr !== 'string') return dateStr;
@@ -2928,62 +3212,103 @@ export function init(_root) {
                 }
                 return dateStr;
             };
-            
+
             // Fix dates in all epics and stories
             if (teamData.epics) {
-                teamData.epics.forEach(epic => {
+                teamData.epics.forEach((epic) => {
                     if (epic.stories) {
-                        epic.stories.forEach(story => {
+                        epic.stories.forEach((story) => {
                             // Fix story start/end dates
                             if (story.startDate) story.startDate = fixDate(story.startDate);
                             if (story.endDate) story.endDate = fixDate(story.endDate);
-                            
+
                             // Fix timeline change dates
                             if (story.roadmapChanges && story.roadmapChanges.changes) {
-                                story.roadmapChanges.changes.forEach(change => {
+                                story.roadmapChanges.changes.forEach((change) => {
                                     if (change.date) change.date = fixDate(change.date);
-                                    if (change.prevStartDate) change.prevStartDate = fixDate(change.prevStartDate);
-                                    if (change.newStartDate) change.newStartDate = fixDate(change.newStartDate);
-                                    if (change.prevEndDate) change.prevEndDate = fixDate(change.prevEndDate);
-                                    if (change.newEndDate) change.newEndDate = fixDate(change.newEndDate);
+                                    if (change.prevStartDate)
+                                        change.prevStartDate = fixDate(change.prevStartDate);
+                                    if (change.newStartDate)
+                                        change.newStartDate = fixDate(change.newStartDate);
+                                    if (change.prevEndDate)
+                                        change.prevEndDate = fixDate(change.prevEndDate);
+                                    if (change.newEndDate)
+                                        change.newEndDate = fixDate(change.newEndDate);
                                 });
                             }
-                            
+
                             // Fix status info dates
                             if (story.roadmapChanges) {
-                                if (story.roadmapChanges.doneInfo && story.roadmapChanges.doneInfo.date) {
-                                    story.roadmapChanges.doneInfo.date = fixDate(story.roadmapChanges.doneInfo.date);
+                                if (
+                                    story.roadmapChanges.doneInfo &&
+                                    story.roadmapChanges.doneInfo.date
+                                ) {
+                                    story.roadmapChanges.doneInfo.date = fixDate(
+                                        story.roadmapChanges.doneInfo.date
+                                    );
                                 }
-                                if (story.roadmapChanges.cancelInfo && story.roadmapChanges.cancelInfo.date) {
-                                    story.roadmapChanges.cancelInfo.date = fixDate(story.roadmapChanges.cancelInfo.date);
+                                if (
+                                    story.roadmapChanges.cancelInfo &&
+                                    story.roadmapChanges.cancelInfo.date
+                                ) {
+                                    story.roadmapChanges.cancelInfo.date = fixDate(
+                                        story.roadmapChanges.cancelInfo.date
+                                    );
                                 }
-                                if (story.roadmapChanges.atRiskInfo && story.roadmapChanges.atRiskInfo.date) {
-                                    story.roadmapChanges.atRiskInfo.date = fixDate(story.roadmapChanges.atRiskInfo.date);
+                                if (
+                                    story.roadmapChanges.atRiskInfo &&
+                                    story.roadmapChanges.atRiskInfo.date
+                                ) {
+                                    story.roadmapChanges.atRiskInfo.date = fixDate(
+                                        story.roadmapChanges.atRiskInfo.date
+                                    );
                                 }
-                                if (story.roadmapChanges.newStoryInfo && story.roadmapChanges.newStoryInfo.date) {
-                                    story.roadmapChanges.newStoryInfo.date = fixDate(story.roadmapChanges.newStoryInfo.date);
+                                if (
+                                    story.roadmapChanges.newStoryInfo &&
+                                    story.roadmapChanges.newStoryInfo.date
+                                ) {
+                                    story.roadmapChanges.newStoryInfo.date = fixDate(
+                                        story.roadmapChanges.newStoryInfo.date
+                                    );
                                 }
                                 if (story.roadmapChanges.infoInfo) {
                                     if (Array.isArray(story.roadmapChanges.infoInfo)) {
                                         // Multiple info entries
-                                        story.roadmapChanges.infoInfo.forEach(entry => {
+                                        story.roadmapChanges.infoInfo.forEach((entry) => {
                                             if (entry && entry.date) {
                                                 entry.date = fixDate(entry.date);
                                             }
                                         });
                                     } else if (story.roadmapChanges.infoInfo.date) {
                                         // Single info entry (backward compatibility)
-                                    story.roadmapChanges.infoInfo.date = fixDate(story.roadmapChanges.infoInfo.date);
+                                        story.roadmapChanges.infoInfo.date = fixDate(
+                                            story.roadmapChanges.infoInfo.date
+                                        );
                                     }
                                 }
-                                if (story.roadmapChanges.transferredOutInfo && story.roadmapChanges.transferredOutInfo.date) {
-                                    story.roadmapChanges.transferredOutInfo.date = fixDate(story.roadmapChanges.transferredOutInfo.date);
+                                if (
+                                    story.roadmapChanges.transferredOutInfo &&
+                                    story.roadmapChanges.transferredOutInfo.date
+                                ) {
+                                    story.roadmapChanges.transferredOutInfo.date = fixDate(
+                                        story.roadmapChanges.transferredOutInfo.date
+                                    );
                                 }
-                                if (story.roadmapChanges.transferredInInfo && story.roadmapChanges.transferredInInfo.date) {
-                                    story.roadmapChanges.transferredInInfo.date = fixDate(story.roadmapChanges.transferredInInfo.date);
+                                if (
+                                    story.roadmapChanges.transferredInInfo &&
+                                    story.roadmapChanges.transferredInInfo.date
+                                ) {
+                                    story.roadmapChanges.transferredInInfo.date = fixDate(
+                                        story.roadmapChanges.transferredInInfo.date
+                                    );
                                 }
-                                if (story.roadmapChanges.proposedInfo && story.roadmapChanges.proposedInfo.date) {
-                                    story.roadmapChanges.proposedInfo.date = fixDate(story.roadmapChanges.proposedInfo.date);
+                                if (
+                                    story.roadmapChanges.proposedInfo &&
+                                    story.roadmapChanges.proposedInfo.date
+                                ) {
+                                    story.roadmapChanges.proposedInfo.date = fixDate(
+                                        story.roadmapChanges.proposedInfo.date
+                                    );
                                 }
                             }
                         });
@@ -3002,7 +3327,7 @@ export function init(_root) {
             save.setFileHandle(null);
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 try {
                     const data = JSON.parse(e.target.result);
 
@@ -3021,19 +3346,17 @@ export function init(_root) {
 
                     // Update filename display
                     updateFilenameDisplay(file.name);
-                    
+
                     // Add a longer delay to ensure all DOM elements are ready and stories are loaded, then auto-generate preview
                     setTimeout(() => {
                         // Refresh date pickers to sync with loaded data
                         refreshAllDatePickers();
                         generatePreview();
                     }, 500);
-                    
-
                 } catch (error) {
                     console.error('Error loading roadmap:', error);
                     let errorMessage = 'Error loading roadmap file.';
-                    
+
                     if (error.name === 'SyntaxError') {
                         errorMessage += ' The file is not valid JSON format.';
                     } else if (error.message.includes('Invalid roadmap data')) {
@@ -3041,24 +3364,24 @@ export function init(_root) {
                     } else {
                         errorMessage += ' Please check the file format and try again.';
                     }
-                    
+
                     alert(errorMessage + '\n\nError details: ' + error.message);
                 }
             };
             reader.readAsText(file);
-            
+
             // Reset the file input so the same file can be loaded again
             event.target.value = '';
         }
-        
+
         function updateIdCountersAfterImport() {
             // Update ID counters to avoid conflicts with imported IDs
             let maxEpicIdNumber = 0;
             let maxStoryIdNumber = 0;
-            
+
             // Scan all EPIC IDs to find the highest number
             const epicElements = document.querySelectorAll('.epic-section');
-            epicElements.forEach(epicEl => {
+            epicElements.forEach((epicEl) => {
                 const epicIdEl = epicEl.querySelector('input[id^="epic-id-"]');
                 if (epicIdEl && epicIdEl.value) {
                     const epicId = epicIdEl.value;
@@ -3071,10 +3394,10 @@ export function init(_root) {
                     }
                 }
             });
-            
+
             // Scan all Story IDs to find the highest number
             const storyElements = document.querySelectorAll('.story-section');
-            storyElements.forEach(storyEl => {
+            storyElements.forEach((storyEl) => {
                 const storyIdEl = storyEl.querySelector('input[id^="story-id-"]');
                 if (storyIdEl && storyIdEl.value) {
                     const storyId = storyIdEl.value;
@@ -3087,26 +3410,22 @@ export function init(_root) {
                     }
                 }
             });
-            
+
             // Update counters to match the maximum found (since we increment before use)
             epicIdCounter = maxEpicIdNumber;
             storyIdCounter = maxStoryIdNumber;
-            
-
         }
-        
-        
-        
+
         function loadTeamData(teamData) {
             // Clear existing EPICs first
             document.getElementById('epics-container').innerHTML = '';
             epicCounter = 0;
             storyCounters = {};
-            
+
             // Always clear BTL stories during JSON import
             document.getElementById('btl-stories-container').innerHTML = '';
             btlStoryCounter = 0;
-            
+
             // Reset sorting preferences and UI toggles on load
             try {
                 const startToggle = document.getElementById('story-sorting-toggle');
@@ -3124,50 +3443,51 @@ export function init(_root) {
                 ConfigUtility.setSortByEnd(false);
                 ConfigUtility.setForceTextBelow(false);
             } catch {}
-            
+
             // Load roadmap year
             document.getElementById('roadmapYear').value = teamData.roadmapYear || 2025;
-            
+
             // Load team information
             document.getElementById('teamName').value = teamData.teamName || 'My Team';
             document.getElementById('directorVP').value = teamData.directorVP || '';
             document.getElementById('em').value = teamData.em || 'Engineering Manager';
             document.getElementById('pm').value = teamData.pm || 'Product Manager';
-            
 
-            
             // Load description - handle both old array format and new string format for backward compatibility
             let descriptionValue = '';
             if (teamData.description) {
                 if (Array.isArray(teamData.description)) {
                     // Old format: convert array to multi-line string
-                    descriptionValue = teamData.description.filter(line => line && line.trim()).join('\n');
+                    descriptionValue = teamData.description
+                        .filter((line) => line && line.trim())
+                        .join('\n');
                 } else if (typeof teamData.description === 'string') {
                     // New format: use string directly
                     descriptionValue = teamData.description;
                 }
             }
             document.getElementById('teamDescription').value = descriptionValue;
-            
+
             // Load EPICs and stories
             let totalStoryLoadOperations = 0;
             let completedStoryLoadOperations = 0;
-            
+
             if (teamData.epics && Array.isArray(teamData.epics)) {
                 // Count total operations first
-                teamData.epics.forEach(epic => {
+                teamData.epics.forEach((epic) => {
                     if (epic.stories && Array.isArray(epic.stories)) {
                         totalStoryLoadOperations += epic.stories.length;
                     }
                 });
-                
+
                 teamData.epics.forEach((epic) => {
                     addEpic();
                     const currentEpicId = epicCounter;
-                    
+
                     // Set EPIC name
-                    document.getElementById(`epic-name-${currentEpicId}`).value = epic.name || `EPIC ${currentEpicId}`;
-                    
+                    document.getElementById(`epic-name-${currentEpicId}`).value =
+                        epic.name || `EPIC ${currentEpicId}`;
+
                     // Remove the default story that gets added
                     const defaultStoryId = `${currentEpicId}-1`;
                     const defaultStoryElement = document.getElementById(`story-${defaultStoryId}`);
@@ -3175,54 +3495,60 @@ export function init(_root) {
                         defaultStoryElement.remove();
                         storyCounters[currentEpicId] = 0;
                     }
-                    
+
                     // Load stories for this EPIC
                     if (epic.stories && Array.isArray(epic.stories)) {
                         epic.stories.forEach((story, storyIndex) => {
                             addStory(currentEpicId);
                             const currentStoryId = `${currentEpicId}-${storyCounters[currentEpicId]}`;
-                            
-                            // Add a small delay to ensure DOM elements are fully created before populating
-                            setTimeout(() => {
-                                loadStoryData(currentStoryId, story);
-                                
-                                // Track completion
-                                completedStoryLoadOperations++;
-                                
-                                // If all stories are loaded, generate preview
-                                if (completedStoryLoadOperations === totalStoryLoadOperations) {
-                                    setTimeout(() => {
-                                        // Store the loaded order as the "original" order for this session
-                                        const epicElements = document.querySelectorAll('.epic-section');
-                                        epicElements.forEach(epicEl => {
-                                            const epicId = epicEl.id.split('-')[1];
-                                            storeOriginalStoryOrder(epicId);
-                                        });
 
-                                        collapseAllSections();
-                                        // Refresh date pickers to sync with loaded data
-                                        refreshAllDatePickers();
-                                        generatePreview();
-                                        // Roadmap fully loaded and state synced. Signal the
-                                        // Slack notifier to (re)set its diff baseline here.
-                                        document.dispatchEvent(new CustomEvent('roadmap:loaded'));
-                                        // Update document title with loaded team name
-                                        updateDocumentTitle();
-                                        // Programmatic loads dispatch input events on
-                                        // many fields; reset the dirty tracker now
-                                        // that the form matches the loaded source.
-                                        save.markClean();
-                                    }, 100);
-                                }
-                            }, 10 + (storyIndex * 5)); // Stagger each story by 5ms
+                            // Add a small delay to ensure DOM elements are fully created before populating
+                            setTimeout(
+                                () => {
+                                    loadStoryData(currentStoryId, story);
+
+                                    // Track completion
+                                    completedStoryLoadOperations++;
+
+                                    // If all stories are loaded, generate preview
+                                    if (completedStoryLoadOperations === totalStoryLoadOperations) {
+                                        setTimeout(() => {
+                                            // Store the loaded order as the "original" order for this session
+                                            const epicElements =
+                                                document.querySelectorAll('.epic-section');
+                                            epicElements.forEach((epicEl) => {
+                                                const epicId = epicEl.id.split('-')[1];
+                                                storeOriginalStoryOrder(epicId);
+                                            });
+
+                                            collapseAllSections();
+                                            // Refresh date pickers to sync with loaded data
+                                            refreshAllDatePickers();
+                                            generatePreview();
+                                            // Roadmap fully loaded and state synced. Signal the
+                                            // Slack notifier to (re)set its diff baseline here.
+                                            document.dispatchEvent(
+                                                new CustomEvent('roadmap:loaded')
+                                            );
+                                            // Update document title with loaded team name
+                                            updateDocumentTitle();
+                                            // Programmatic loads dispatch input events on
+                                            // many fields; reset the dirty tracker now
+                                            // that the form matches the loaded source.
+                                            save.markClean();
+                                        }, 100);
+                                    }
+                                },
+                                10 + storyIndex * 5
+                            ); // Stagger each story by 5ms
                         });
                     }
                 });
             }
-            
+
             // Ensure KTLO forms are initialized before loading data
             initializeKTLOMonths();
-            
+
             // Load KTLO data if it exists, otherwise set default position
             if (teamData.ktloSwimlane) {
                 loadKTLOData(teamData.ktloSwimlane);
@@ -3237,12 +3563,12 @@ export function init(_root) {
                 }
                 showKTLOSection(); // Ensure KTLO section is visible in builder
             }
-            
+
             // Load BTL data if it exists
             if (teamData.btlSwimlane) {
                 loadBTLData(teamData.btlSwimlane);
             }
-            
+
             // Handle case where there are no stories to load
             if (totalStoryLoadOperations === 0) {
                 setTimeout(() => {
@@ -3259,7 +3585,7 @@ export function init(_root) {
                 }, 100);
             }
         }
-        
+
         // Helper function to round percentage to nearest multiple of 5
         function roundToNearestFive(percentage) {
             if (!percentage) return '';
@@ -3275,7 +3601,7 @@ export function init(_root) {
                 const positionToggle = document.getElementById('ktlo-position-toggle');
                 if (positionToggle) {
                     // Map position to checkbox (hidden is treated as bottom in UI)
-                    positionToggle.checked = (position === 'top');
+                    positionToggle.checked = position === 'top';
                     // Store the original position if it's hidden (to preserve when saving)
                     if (position === 'hidden') {
                         positionToggle.dataset.originalPosition = 'hidden';
@@ -3289,34 +3615,38 @@ export function init(_root) {
                     // Reposition the KTLO section in the builder based on loaded data
                     setTimeout(repositionKTLOSection, 50);
                 }
-                
+
                 // Load KTLO story info
                 if (ktloData.story) {
                     const titleEl = document.getElementById('ktlo-title');
                     if (titleEl) titleEl.value = ktloData.story.title || 'KTLO';
-                    
+
                     const bulletsEl = document.getElementById('ktlo-bullets');
-                    if (bulletsEl && ktloData.story.bullets && Array.isArray(ktloData.story.bullets)) {
+                    if (
+                        bulletsEl &&
+                        ktloData.story.bullets &&
+                        Array.isArray(ktloData.story.bullets)
+                    ) {
                         bulletsEl.value = ktloData.story.bullets.join('\n');
                     }
                 }
-                
+
                 // Load monthly data
                 if (ktloData.monthlyData && Array.isArray(ktloData.monthlyData)) {
-                    ktloData.monthlyData.forEach(monthData => {
+                    ktloData.monthlyData.forEach((monthData) => {
                         const monthLower = monthData.month.toLowerCase();
-                        
+
                         // Round percentage to nearest multiple of 5 (legacy data fix)
                         const roundedPercentage = roundToNearestFive(monthData.percentage);
-                        
+
                         // Store in the in-memory data structure
                         ktloMonthlyData[monthLower] = {
                             number: monthData.number || '',
                             percentage: roundedPercentage,
-                            description: monthData.description || ''
+                            description: monthData.description || '',
                         };
                     });
-                    
+
                     // Refresh the currently displayed month
                     const selector = document.getElementById('ktlo-month-selector');
                     if (selector) {
@@ -3327,13 +3657,13 @@ export function init(_root) {
                 // Don't throw the error, just continue so loading can complete
             }
         }
-        
+
         function loadBTLData(btlData) {
             try {
                 // Clear existing BTL stories
                 document.getElementById('btl-stories-container').innerHTML = '';
                 btlStoryCounter = 0;
-                
+
                 let loadedBTLCount = 0;
 
                 // Load BTL stories if they exist
@@ -3341,36 +3671,41 @@ export function init(_root) {
                     btlData.stories.forEach((story) => {
                         // Only load first 3 BTL stories, ignore the rest
                         if (loadedBTLCount >= 3) {
-        
                             return;
                         }
-                        
+
                         addBTLStory();
                         loadedBTLCount++;
                         const currentStoryId = `btl-${btlStoryCounter}`;
-                        
+
                         // Set story data
                         const titleEl = document.getElementById(`btl-title-${currentStoryId}`);
                         const startEl = document.getElementById(`btl-start-${currentStoryId}`);
                         const endEl = document.getElementById(`btl-end-${currentStoryId}`);
                         const bulletsEl = document.getElementById(`btl-bullets-${currentStoryId}`);
-                        const dateAddedEl = document.getElementById(`btl-dateadded-${currentStoryId}`);
-                        const descriptionEl = document.getElementById(`btl-description-${currentStoryId}`);
-                        
+                        const dateAddedEl = document.getElementById(
+                            `btl-dateadded-${currentStoryId}`
+                        );
+                        const descriptionEl = document.getElementById(
+                            `btl-description-${currentStoryId}`
+                        );
+
                         if (titleEl) {
                             titleEl.value = story.title || '';
                             // Update the BTL story header to show title when collapsed
                             updateStoryHeaderTitle(currentStoryId, true);
                         }
-                        
+
                         if (startEl) {
                             if (story.startDate) {
                                 startEl.value = story.startDate;
                             } else if (story.startMonth) {
-                                startEl.value = DateUtility.convertMonthToStartDate(story.startMonth);
+                                startEl.value = DateUtility.convertMonthToStartDate(
+                                    story.startMonth
+                                );
                             }
                         }
-                        
+
                         if (endEl) {
                             if (story.endDate) {
                                 endEl.value = story.endDate;
@@ -3381,19 +3716,19 @@ export function init(_root) {
                             endEl.style.borderColor = '';
                             endEl.style.backgroundColor = '';
                         }
-                        
+
                         if (bulletsEl && story.bullets && Array.isArray(story.bullets)) {
                             bulletsEl.value = story.bullets.join('\n');
                         }
-                        
+
                         if (dateAddedEl) {
                             dateAddedEl.value = story.dateAdded || '';
                         }
-                        
+
                         if (descriptionEl) {
                             descriptionEl.value = story.dateAddedDescription || '';
                         }
-                        
+
                         // Set IMO field
                         const imoEl = document.getElementById(`btl-imo-${currentStoryId}`);
                         if (imoEl) {
@@ -3401,35 +3736,39 @@ export function init(_root) {
                         }
 
                         // Set Priority field
-                        const priorityEl = document.getElementById(`btl-priority-${currentStoryId}`);
+                        const priorityEl = document.getElementById(
+                            `btl-priority-${currentStoryId}`
+                        );
                         if (priorityEl) {
                             priorityEl.value = story.priority || '';
                         }
 
                         // Set Comments field
-                        const commentsEl = document.getElementById(`btl-comments-${currentStoryId}`);
+                        const commentsEl = document.getElementById(
+                            `btl-comments-${currentStoryId}`
+                        );
                         if (commentsEl) {
                             commentsEl.value = story.comments || '';
                         }
                     });
                 }
-                
+
                 // Notify user if some BTL stories were skipped
                 if (btlData.stories && btlData.stories.length > loadedBTLCount) {
                     const skippedCount = btlData.stories.length - loadedBTLCount;
-    
+
                     if (skippedCount > 0) {
-                        alert(`Note: ${skippedCount} BTL ${skippedCount === 1 ? 'story was' : 'stories were'} skipped during import due to the 3-story maximum limit.`);
+                        alert(
+                            `Note: ${skippedCount} BTL ${skippedCount === 1 ? 'story was' : 'stories were'} skipped during import due to the 3-story maximum limit.`
+                        );
                     }
                 }
-                
+
                 updateBTLAddButton(); // Update button state after loading from JSON
             } catch {
                 // Don't throw the error, just continue so loading can complete
             }
         }
-        
-
 
         function loadStoryData(storyId, story) {
             try {
@@ -3442,7 +3781,7 @@ export function init(_root) {
                 } else {
                     console.error(`Title element not found for story ${storyId}`);
                 }
-                
+
                 // Load start/end dates with error checking and month conversion
                 const startEl = document.getElementById(`story-start-${storyId}`);
                 if (startEl) {
@@ -3452,7 +3791,7 @@ export function init(_root) {
                         startEl.value = DateUtility.convertMonthToStartDate(story.startMonth);
                     }
                 }
-                
+
                 const endEl = document.getElementById(`story-end-${storyId}`);
                 if (endEl) {
                     if (story.endDate) {
@@ -3464,37 +3803,37 @@ export function init(_root) {
                     endEl.style.borderColor = '';
                     endEl.style.backgroundColor = '';
                 }
-                
+
                 // Load bullets with error checking
                 if (story.bullets && Array.isArray(story.bullets)) {
                     const bulletsEl = document.getElementById(`story-bullets-${storyId}`);
                     if (bulletsEl) bulletsEl.value = story.bullets.join('\n');
                 }
-                
+
                 // Load Director/VP ID field with error checking
                 const directorVPIdEl = document.getElementById(`story-director-vp-id-${storyId}`);
                 if (directorVPIdEl) {
                     directorVPIdEl.value = story.directorVPId || '';
                 }
-                
+
                 // Load IMO field with error checking
                 const imoEl = document.getElementById(`story-imo-${storyId}`);
                 if (imoEl) {
                     imoEl.value = story.imo || '';
                 }
-                
+
                 // Load Priority field with error checking
                 const priorityEl = document.getElementById(`story-priority-${storyId}`);
                 if (priorityEl) {
                     priorityEl.value = story.priority || '';
                 }
-                
+
                 // Load Comments field
                 const commentsEl = document.getElementById(`story-comments-${storyId}`);
                 if (commentsEl) {
                     commentsEl.value = story.comments || '';
                 }
-                
+
                 // Load Country Flags (Global is checked by default if no flags are saved)
                 const flags = story.countryFlags || [];
                 const hasNoSavedFlags = flags.length === 0;
@@ -3511,7 +3850,8 @@ export function init(_root) {
                 const flagSloveniaEl = document.getElementById(`story-flag-slovenia-${storyId}`);
                 const flagCroatiaEl = document.getElementById(`story-flag-croatia-${storyId}`);
                 const flagFranceEl = document.getElementById(`story-flag-france-${storyId}`);
-                if (flagGlobalEl) flagGlobalEl.checked = hasNoSavedFlags || flags.includes('Global');
+                if (flagGlobalEl)
+                    flagGlobalEl.checked = hasNoSavedFlags || flags.includes('Global');
                 if (flagUKEl) flagUKEl.checked = flags.includes('UK');
                 if (flagIcelandEl) flagIcelandEl.checked = flags.includes('Iceland');
                 if (flagHungaryEl) flagHungaryEl.checked = flags.includes('Hungary');
@@ -3524,11 +3864,14 @@ export function init(_root) {
                 if (flagSloveniaEl) flagSloveniaEl.checked = flags.includes('Slovenia');
                 if (flagCroatiaEl) flagCroatiaEl.checked = flags.includes('Croatia');
                 if (flagFranceEl) flagFranceEl.checked = flags.includes('France');
-                
+
                 // Load Include in Product Roadmap flag
-                const includeInProductRoadmapEl = document.getElementById(`story-include-product-roadmap-${storyId}`);
-                if (includeInProductRoadmapEl) includeInProductRoadmapEl.checked = story.includeInProductRoadmap || false;
-                
+                const includeInProductRoadmapEl = document.getElementById(
+                    `story-include-product-roadmap-${storyId}`
+                );
+                if (includeInProductRoadmapEl)
+                    includeInProductRoadmapEl.checked = story.includeInProductRoadmap || false;
+
                 // Load status flags with error checking
                 const doneEl = document.getElementById(`story-done-${storyId}`);
                 const cancelledEl = document.getElementById(`story-cancelled-${storyId}`);
@@ -3544,50 +3887,80 @@ export function init(_root) {
                 if (newStoryEl) newStoryEl.checked = story.isNewStory || false;
                 if (infoEl) infoEl.checked = story.isInfo || false;
                 // Backward compatibility: map old isHandedOver to new isTransferredOut property
-                if (transferredOutEl) transferredOutEl.checked = story.isTransferredOut || story.isHandedOver || false;
+                if (transferredOutEl)
+                    transferredOutEl.checked =
+                        story.isTransferredOut || story.isHandedOver || false;
                 if (transferredInEl) transferredInEl.checked = story.isTransferredIn || false;
                 if (proposedEl) proposedEl.checked = story.isProposed || false;
 
-                const hideFromSearchEl = document.getElementById(`story-hide-from-search-${storyId}`);
+                const hideFromSearchEl = document.getElementById(
+                    `story-hide-from-search-${storyId}`
+                );
                 if (hideFromSearchEl) hideFromSearchEl.checked = story.hideFromSearch === true;
 
                 // Load timeline changes with error checking
                 if (story.hasRoadmapChanges && story.roadmapChanges) {
                     // Load timeline changes if they exist
-                    if (story.roadmapChanges.changes && Array.isArray(story.roadmapChanges.changes) && story.roadmapChanges.changes.length > 0) {
+                    if (
+                        story.roadmapChanges.changes &&
+                        Array.isArray(story.roadmapChanges.changes) &&
+                        story.roadmapChanges.changes.length > 0
+                    ) {
                         const changesCheckbox = document.getElementById(`story-changes-${storyId}`);
-                        const changesSection = document.getElementById(`changes-section-${storyId}`);
-                        
+                        const changesSection = document.getElementById(
+                            `changes-section-${storyId}`
+                        );
+
                         if (changesCheckbox && changesSection) {
                             // Manually show the timeline changes section without triggering toggleChanges
                             changesSection.style.display = 'block';
-                            
+
                             // Wait a moment for DOM elements to be created, then load the changes
                             setTimeout(() => {
                                 story.roadmapChanges.changes.forEach((change, index) => {
                                     addChange(storyId);
-                                    
+
                                     // Find the most recently added change element (container)
-                                    const changeContainers = document.querySelectorAll(`#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`);
-                                    const latestContainer = changeContainers[changeContainers.length - 1];
+                                    const changeContainers = document.querySelectorAll(
+                                        `#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`
+                                    );
+                                    const latestContainer =
+                                        changeContainers[changeContainers.length - 1];
                                     if (latestContainer) {
                                         // Use the full ID pattern that matches collection logic: "1-4-change-1750523457266"
-                                        const fullChangeId = latestContainer.id.replace('change-', '');
-                                        
-                                        const dateEl = document.getElementById(`change-date-${fullChangeId}`);
-                                        const prevStartEl = document.getElementById(`change-prevstart-${fullChangeId}`);
-                                        const newStartEl = document.getElementById(`change-newstart-${fullChangeId}`);
-                                        const prevEl = document.getElementById(`change-prev-${fullChangeId}`);
-                                        const newEl = document.getElementById(`change-new-${fullChangeId}`);
-                                        const descEl = document.getElementById(`change-desc-${fullChangeId}`);
+                                        const fullChangeId = latestContainer.id.replace(
+                                            'change-',
+                                            ''
+                                        );
+
+                                        const dateEl = document.getElementById(
+                                            `change-date-${fullChangeId}`
+                                        );
+                                        const prevStartEl = document.getElementById(
+                                            `change-prevstart-${fullChangeId}`
+                                        );
+                                        const newStartEl = document.getElementById(
+                                            `change-newstart-${fullChangeId}`
+                                        );
+                                        const prevEl = document.getElementById(
+                                            `change-prev-${fullChangeId}`
+                                        );
+                                        const newEl = document.getElementById(
+                                            `change-new-${fullChangeId}`
+                                        );
+                                        const descEl = document.getElementById(
+                                            `change-desc-${fullChangeId}`
+                                        );
 
                                         if (dateEl) dateEl.value = change.date || '';
-                                        if (prevStartEl) prevStartEl.value = change.prevStartDate || '';
-                                        if (newStartEl) newStartEl.value = change.newStartDate || '';
+                                        if (prevStartEl)
+                                            prevStartEl.value = change.prevStartDate || '';
+                                        if (newStartEl)
+                                            newStartEl.value = change.newStartDate || '';
                                         if (prevEl) prevEl.value = change.prevEndDate || '';
                                         if (newEl) newEl.value = change.newEndDate || '';
                                         if (descEl) descEl.value = change.description || '';
-                                        
+
                                         // Update the header to show the correct number
                                         const header = latestContainer.querySelector('strong');
                                         if (header) {
@@ -3595,83 +3968,106 @@ export function init(_root) {
                                         }
                                     }
                                 });
-                                
+
                                 // Update button state after loading all changes
                                 updateChangeButton(storyId);
-                                
+
                                 // Only AFTER loading all the changes, set the checkbox to checked
                                 changesCheckbox.checked = true;
                             }, 50);
                         }
                     }
-                    
+
                     // Load done info and show done section if needed
                     if (story.roadmapChanges.doneInfo) {
                         const doneDateEl = document.getElementById(`done-date-${storyId}`);
                         const doneNotesEl = document.getElementById(`done-notes-${storyId}`);
                         if (doneDateEl) doneDateEl.value = story.roadmapChanges.doneInfo.date || '';
-                        if (doneNotesEl) doneNotesEl.value = story.roadmapChanges.doneInfo.notes || '';
-                        
+                        if (doneNotesEl)
+                            doneNotesEl.value = story.roadmapChanges.doneInfo.notes || '';
+
                         // Show the done section if there's done info
                         if (story.isDone) {
-                            const doneSectionEl = document.getElementById(`done-section-${storyId}`);
+                            const doneSectionEl = document.getElementById(
+                                `done-section-${storyId}`
+                            );
                             if (doneSectionEl) doneSectionEl.style.display = 'block';
                         }
                     }
-                    
+
                     // Load cancel info and show cancelled section if needed
                     if (story.roadmapChanges.cancelInfo) {
                         const cancelDateEl = document.getElementById(`cancel-date-${storyId}`);
                         const cancelNotesEl = document.getElementById(`cancel-notes-${storyId}`);
-                        if (cancelDateEl) cancelDateEl.value = story.roadmapChanges.cancelInfo.date || '';
-                        if (cancelNotesEl) cancelNotesEl.value = story.roadmapChanges.cancelInfo.notes || '';
-                        
+                        if (cancelDateEl)
+                            cancelDateEl.value = story.roadmapChanges.cancelInfo.date || '';
+                        if (cancelNotesEl)
+                            cancelNotesEl.value = story.roadmapChanges.cancelInfo.notes || '';
+
                         // Show the cancelled section if there's cancel info
                         if (story.isCancelled) {
-                            const cancelSectionEl = document.getElementById(`cancelled-section-${storyId}`);
+                            const cancelSectionEl = document.getElementById(
+                                `cancelled-section-${storyId}`
+                            );
                             if (cancelSectionEl) cancelSectionEl.style.display = 'block';
                         }
                     }
-                    
+
                     // Load at risk info and show at risk section if needed
                     if (story.roadmapChanges.atRiskInfo) {
                         const atRiskDateEl = document.getElementById(`atrisk-date-${storyId}`);
                         const atRiskNotesEl = document.getElementById(`atrisk-notes-${storyId}`);
-                        if (atRiskDateEl) atRiskDateEl.value = story.roadmapChanges.atRiskInfo.date || '';
-                        if (atRiskNotesEl) atRiskNotesEl.value = story.roadmapChanges.atRiskInfo.notes || '';
-                        
+                        if (atRiskDateEl)
+                            atRiskDateEl.value = story.roadmapChanges.atRiskInfo.date || '';
+                        if (atRiskNotesEl)
+                            atRiskNotesEl.value = story.roadmapChanges.atRiskInfo.notes || '';
+
                         // Show the at risk section if there's at risk info (regardless of checkbox state)
-                        const atRiskSectionEl = document.getElementById(`atrisk-section-${storyId}`);
+                        const atRiskSectionEl = document.getElementById(
+                            `atrisk-section-${storyId}`
+                        );
                         if (atRiskSectionEl) atRiskSectionEl.style.display = 'block';
-                        
+
                         // Also ensure the checkbox is checked if there's data
                         const atRiskCheckbox = document.getElementById(`story-atrisk-${storyId}`);
-                        if (atRiskCheckbox && (story.roadmapChanges.atRiskInfo.date || story.roadmapChanges.atRiskInfo.notes)) {
+                        if (
+                            atRiskCheckbox &&
+                            (story.roadmapChanges.atRiskInfo.date ||
+                                story.roadmapChanges.atRiskInfo.notes)
+                        ) {
                             atRiskCheckbox.checked = true;
                         }
                     }
-                    
+
                     // Load new story info and show new story section if needed
                     if (story.roadmapChanges.newStoryInfo) {
                         const newStoryDateEl = document.getElementById(`newstory-date-${storyId}`);
-                        const newStoryNotesEl = document.getElementById(`newstory-notes-${storyId}`);
-                        if (newStoryDateEl) newStoryDateEl.value = story.roadmapChanges.newStoryInfo.date || '';
-                        if (newStoryNotesEl) newStoryNotesEl.value = story.roadmapChanges.newStoryInfo.notes || '';
-                        
+                        const newStoryNotesEl = document.getElementById(
+                            `newstory-notes-${storyId}`
+                        );
+                        if (newStoryDateEl)
+                            newStoryDateEl.value = story.roadmapChanges.newStoryInfo.date || '';
+                        if (newStoryNotesEl)
+                            newStoryNotesEl.value = story.roadmapChanges.newStoryInfo.notes || '';
+
                         // Show the new story section if there's new story info
                         if (story.isNewStory) {
-                            const newStorySectionEl = document.getElementById(`newstory-section-${storyId}`);
+                            const newStorySectionEl = document.getElementById(
+                                `newstory-section-${storyId}`
+                            );
                             if (newStorySectionEl) newStorySectionEl.style.display = 'block';
                         }
                     }
-                    
+
                     // Load info info and show info section if needed
                     if (story.roadmapChanges.infoInfo) {
-                        const infoEntriesContainer = document.getElementById(`info-entries-${storyId}`);
+                        const infoEntriesContainer = document.getElementById(
+                            `info-entries-${storyId}`
+                        );
                         if (infoEntriesContainer) {
                             // Clear existing entries
                             infoEntriesContainer.innerHTML = '';
-                            
+
                             if (Array.isArray(story.roadmapChanges.infoInfo)) {
                                 // Multiple info entries
                                 story.roadmapChanges.infoInfo.forEach((entry, index) => {
@@ -3695,12 +4091,22 @@ export function init(_root) {
                                         </div>
                                     `;
                                     infoEntriesContainer.insertAdjacentHTML('beforeend', entryHtml);
-                                    
+
                                     // Add auto-update listeners
-                                    const dateInput = document.getElementById(`info-date-${entryId}`);
-                                    const notesInput = document.getElementById(`info-notes-${entryId}`);
-                                    if (dateInput) dateInput.addEventListener('input', () => generatePreview());
-                                    if (notesInput) notesInput.addEventListener('input', () => generatePreview());
+                                    const dateInput = document.getElementById(
+                                        `info-date-${entryId}`
+                                    );
+                                    const notesInput = document.getElementById(
+                                        `info-notes-${entryId}`
+                                    );
+                                    if (dateInput)
+                                        dateInput.addEventListener('input', () =>
+                                            generatePreview()
+                                        );
+                                    if (notesInput)
+                                        notesInput.addEventListener('input', () =>
+                                            generatePreview()
+                                        );
                                 });
                             } else {
                                 // Single info entry (backward compatibility)
@@ -3724,68 +4130,102 @@ export function init(_root) {
                                     </div>
                                 `;
                                 infoEntriesContainer.insertAdjacentHTML('beforeend', entryHtml);
-                                
+
                                 // Add auto-update listeners
                                 const dateInput = document.getElementById(`info-date-${entryId}`);
                                 const notesInput = document.getElementById(`info-notes-${entryId}`);
-                                if (dateInput) dateInput.addEventListener('input', () => generatePreview());
-                                if (notesInput) notesInput.addEventListener('input', () => generatePreview());
-                                
+                                if (dateInput)
+                                    dateInput.addEventListener('input', () => generatePreview());
+                                if (notesInput)
+                                    notesInput.addEventListener('input', () => generatePreview());
+
                                 // Convert the data structure from old single format to new multiple format
-                                story.roadmapChanges.infoInfo = [{
-                                    date: story.roadmapChanges.infoInfo.date,
-                                    notes: story.roadmapChanges.infoInfo.notes
-                                }];
+                                story.roadmapChanges.infoInfo = [
+                                    {
+                                        date: story.roadmapChanges.infoInfo.date,
+                                        notes: story.roadmapChanges.infoInfo.notes,
+                                    },
+                                ];
                             }
                         }
-                        
+
                         // Show the info section if there's info info
                         if (story.isInfo) {
-                            const infoSectionEl = document.getElementById(`info-section-${storyId}`);
+                            const infoSectionEl = document.getElementById(
+                                `info-section-${storyId}`
+                            );
                             if (infoSectionEl) infoSectionEl.style.display = 'block';
                         }
                     }
-                    
+
                     // Load transferred out info and show transferred out section if needed
                     // Backward compatibility: check both old handedOverInfo and new transferredOutInfo
-                    const transferredOutData = story.roadmapChanges.transferredOutInfo || story.roadmapChanges.handedOverInfo;
+                    const transferredOutData =
+                        story.roadmapChanges.transferredOutInfo ||
+                        story.roadmapChanges.handedOverInfo;
                     if (transferredOutData) {
-                        const transferredOutDateEl = document.getElementById(`transferredout-date-${storyId}`);
-                        const transferredOutNotesEl = document.getElementById(`transferredout-notes-${storyId}`);
-                        if (transferredOutDateEl) transferredOutDateEl.value = transferredOutData.date || '';
-                        if (transferredOutNotesEl) transferredOutNotesEl.value = transferredOutData.notes || '';
-                        
+                        const transferredOutDateEl = document.getElementById(
+                            `transferredout-date-${storyId}`
+                        );
+                        const transferredOutNotesEl = document.getElementById(
+                            `transferredout-notes-${storyId}`
+                        );
+                        if (transferredOutDateEl)
+                            transferredOutDateEl.value = transferredOutData.date || '';
+                        if (transferredOutNotesEl)
+                            transferredOutNotesEl.value = transferredOutData.notes || '';
+
                         // Show the transferred out section if there's transferred out info
                         if (story.isTransferredOut) {
-                            const transferredOutSectionEl = document.getElementById(`transferredout-section-${storyId}`);
-                            if (transferredOutSectionEl) transferredOutSectionEl.style.display = 'block';
+                            const transferredOutSectionEl = document.getElementById(
+                                `transferredout-section-${storyId}`
+                            );
+                            if (transferredOutSectionEl)
+                                transferredOutSectionEl.style.display = 'block';
                         }
                     }
-                    
+
                     // Load transferred in info and show transferred in section if needed
                     if (story.roadmapChanges.transferredInInfo) {
-                        const transferredInDateEl = document.getElementById(`transferredin-date-${storyId}`);
-                        const transferredInNotesEl = document.getElementById(`transferredin-notes-${storyId}`);
-                        if (transferredInDateEl) transferredInDateEl.value = story.roadmapChanges.transferredInInfo.date || '';
-                        if (transferredInNotesEl) transferredInNotesEl.value = story.roadmapChanges.transferredInInfo.notes || '';
-                        
+                        const transferredInDateEl = document.getElementById(
+                            `transferredin-date-${storyId}`
+                        );
+                        const transferredInNotesEl = document.getElementById(
+                            `transferredin-notes-${storyId}`
+                        );
+                        if (transferredInDateEl)
+                            transferredInDateEl.value =
+                                story.roadmapChanges.transferredInInfo.date || '';
+                        if (transferredInNotesEl)
+                            transferredInNotesEl.value =
+                                story.roadmapChanges.transferredInInfo.notes || '';
+
                         // Show the transferred in section if there's transferred in info
                         if (story.isTransferredIn) {
-                            const transferredInSectionEl = document.getElementById(`transferredin-section-${storyId}`);
-                            if (transferredInSectionEl) transferredInSectionEl.style.display = 'block';
+                            const transferredInSectionEl = document.getElementById(
+                                `transferredin-section-${storyId}`
+                            );
+                            if (transferredInSectionEl)
+                                transferredInSectionEl.style.display = 'block';
                         }
                     }
-                    
+
                     // Load proposed info and show proposed section if needed
                     if (story.roadmapChanges.proposedInfo) {
                         const proposedDateEl = document.getElementById(`proposed-date-${storyId}`);
-                        const proposedNotesEl = document.getElementById(`proposed-notes-${storyId}`);
-                        if (proposedDateEl) proposedDateEl.value = story.roadmapChanges.proposedInfo.date || '';
-                        if (proposedNotesEl) proposedNotesEl.value = story.roadmapChanges.proposedInfo.notes || '';
-                        
+                        const proposedNotesEl = document.getElementById(
+                            `proposed-notes-${storyId}`
+                        );
+                        if (proposedDateEl)
+                            proposedDateEl.value = story.roadmapChanges.proposedInfo.date || '';
+                        if (proposedNotesEl)
+                            proposedNotesEl.value = story.roadmapChanges.proposedInfo.notes || '';
+
                         // Show the proposed section if there's proposed info
                         if (story.isProposed) {
-                            const proposedSectionEl = document.getElementById(`proposed-section-${storyId}`);
+                            const proposedSectionEl = document.getElementById(
+                                `proposed-section-${storyId}`
+                            );
                             if (proposedSectionEl) proposedSectionEl.style.display = 'block';
                         }
                     }
@@ -3794,17 +4234,17 @@ export function init(_root) {
                 // Continue loading other stories even if this one fails
             }
         }
-        
+
         // Keyboard shortcuts
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
             // Check if user is currently typing in an editable element
             const activeElement = document.activeElement;
-            const isEditable = activeElement && (
-                activeElement.tagName === 'INPUT' ||
-                activeElement.tagName === 'TEXTAREA' ||
-                activeElement.contentEditable === 'true'
-            );
-            
+            const isEditable =
+                activeElement &&
+                (activeElement.tagName === 'INPUT' ||
+                    activeElement.tagName === 'TEXTAREA' ||
+                    activeElement.contentEditable === 'true');
+
             // Always allow Escape key to work (to close modals)
             if (event.key === 'Escape') {
                 hideFullscreen();
@@ -3813,30 +4253,30 @@ export function init(_root) {
                 closeNewRoadmapModal();
                 return;
             }
-            
+
             // Don't handle other shortcuts when user is typing in an editable field
             if (isEditable) {
                 return;
             }
-            
+
             // Shift-B to toggle builder
             if (event.shiftKey && event.key === 'B') {
                 event.preventDefault();
                 toggleBuilderCollapse();
             }
-            
+
             // Shift-F to toggle file explorer
             if (event.shiftKey && event.key === 'F') {
                 event.preventDefault();
                 toggleFileBrowser();
             }
-            
+
             // Shift-S to open stats dialog
             if (event.shiftKey && event.key === 'S') {
                 event.preventDefault();
                 openStatsModal();
             }
-            
+
             // Cmd-S (Mac) or Ctrl-S (Windows/Linux) to save roadmap.
             // Saves in place when available; falls back to a download
             // otherwise so the shortcut works in every browser.
@@ -3845,7 +4285,7 @@ export function init(_root) {
                 if (save.canSaveInBrowser()) saveRoadmapInPlace();
                 else downloadRoadmap();
             }
-            
+
             // Cmd-L (Mac) or Ctrl-L (Windows/Linux) to load roadmap
             if ((event.metaKey || event.ctrlKey) && event.key === 'l') {
                 event.preventDefault();
@@ -3862,22 +4302,36 @@ export function init(_root) {
 
         function openEditStoryModal(storyData) {
             currentEditingStory = storyData;
-            
+
             // Find the actual story data in the form
-            const foundStory = findStoryInForm(storyData.epicName, storyData.storyTitle, storyData.storyIndex);
+            const foundStory = findStoryInForm(
+                storyData.epicName,
+                storyData.storyTitle,
+                storyData.storyIndex
+            );
             if (!foundStory) {
-                alert('Could not find story data in form. Epic: "' + storyData.epicName + '", Story: "' + storyData.storyTitle + '", Index: ' + storyData.storyIndex + '. Please try editing from the main form instead.');
+                alert(
+                    'Could not find story data in form. Epic: "' +
+                        storyData.epicName +
+                        '", Story: "' +
+                        storyData.storyTitle +
+                        '", Index: ' +
+                        storyData.storyIndex +
+                        '. Please try editing from the main form instead.'
+                );
                 return;
             }
-            
+
             // Set modal title
-            document.getElementById('editStoryTitle').textContent = `Edit Story: ${storyData.storyTitle}`;
-            
+            document.getElementById('editStoryTitle').textContent =
+                `Edit Story: ${storyData.storyTitle}`;
+
             // Populate form fields
             document.getElementById('editTitle').value = foundStory.title || '';
-            
+
             // Handle both startDate/startMonth and start property formats
-            const startValue = foundStory.startDate || foundStory.startMonth || foundStory.start || '';
+            const startValue =
+                foundStory.startDate || foundStory.startMonth || foundStory.start || '';
             const endValue = foundStory.endDate || foundStory.endMonth || foundStory.end || '';
             document.getElementById('editStart').value = startValue;
             const editEndField = document.getElementById('editEnd');
@@ -3885,17 +4339,18 @@ export function init(_root) {
             // Clear any previous error styling when loading data
             editEndField.style.borderColor = '';
             editEndField.style.backgroundColor = '';
-            
+
             document.getElementById('editBullets').value = foundStory.bullets || '';
             document.getElementById('editDirectorVPId').value = foundStory.directorVPId || '';
             document.getElementById('editIMO').value = foundStory.imo || '';
             document.getElementById('editPriority').value = foundStory.priority || '';
             document.getElementById('editComments').value = foundStory.comments || '';
-            
+
             // Load Country Flags (Global is checked by default if no flags are saved)
             const flags = foundStory.countryFlags || [];
             const hasNoSavedFlags = flags.length === 0;
-            document.getElementById('editFlagGlobal').checked = hasNoSavedFlags || flags.includes('Global');
+            document.getElementById('editFlagGlobal').checked =
+                hasNoSavedFlags || flags.includes('Global');
             document.getElementById('editFlagUK').checked = flags.includes('UK');
             document.getElementById('editFlagIceland').checked = flags.includes('Iceland');
             document.getElementById('editFlagHungary').checked = flags.includes('Hungary');
@@ -3908,66 +4363,82 @@ export function init(_root) {
             document.getElementById('editFlagSlovenia').checked = flags.includes('Slovenia');
             document.getElementById('editFlagCroatia').checked = flags.includes('Croatia');
             document.getElementById('editFlagFrance').checked = flags.includes('France');
-            
+
             // Load Include in Product Roadmap flag
-            document.getElementById('editIncludeInProductRoadmap').checked = foundStory.includeInProductRoadmap || false;
-            
+            document.getElementById('editIncludeInProductRoadmap').checked =
+                foundStory.includeInProductRoadmap || false;
+
             // Special handling for KTLO and BTL - disable fields that don't apply
             const isKTLO = storyData.epicName === 'KTLO';
             const isBTL = storyData.epicName === 'Below the Line';
-            
+
             // Show/hide KTLO position toggle
-            document.getElementById('editKTLOPositionGroup').style.display = isKTLO ? 'block' : 'none';
+            document.getElementById('editKTLOPositionGroup').style.display = isKTLO
+                ? 'block'
+                : 'none';
             if (isKTLO && foundStory.position !== undefined) {
                 document.getElementById('editKTLOPosition').checked = foundStory.position;
             }
-            
+
             // Show/hide KTLO monthly data section
-            document.getElementById('editKTLOMonthlySection').style.display = isKTLO ? 'block' : 'none';
+            document.getElementById('editKTLOMonthlySection').style.display = isKTLO
+                ? 'block'
+                : 'none';
             if (isKTLO) {
                 initializeEditKTLOMonths();
             }
-            
+
             // Show/hide BTL Date Added section
-            document.getElementById('editBTLDateAddedGroup').style.display = isBTL ? 'block' : 'none';
-            document.getElementById('editBTLDescriptionGroup').style.display = isBTL ? 'block' : 'none';
+            document.getElementById('editBTLDateAddedGroup').style.display = isBTL
+                ? 'block'
+                : 'none';
+            document.getElementById('editBTLDescriptionGroup').style.display = isBTL
+                ? 'block'
+                : 'none';
             if (isBTL) {
                 document.getElementById('editBTLDateAdded').value = foundStory.dateAdded || '';
-                document.getElementById('editBTLDescription').value = foundStory.dateAddedDescription || '';
+                document.getElementById('editBTLDescription').value =
+                    foundStory.dateAddedDescription || '';
             }
-            
+
             // Disable start/end dates for KTLO (it spans full year)
             document.getElementById('editStart').disabled = isKTLO;
             document.getElementById('editEnd').disabled = isKTLO;
-            
+
             // Hide status checkboxes for KTLO and BTL
             const statusCheckboxes = document.querySelectorAll('#editStoryModal .checkbox-group');
-            statusCheckboxes.forEach(checkboxGroup => {
-                checkboxGroup.style.display = (isKTLO || isBTL) ? 'none' : 'flex';
+            statusCheckboxes.forEach((checkboxGroup) => {
+                checkboxGroup.style.display = isKTLO || isBTL ? 'none' : 'flex';
             });
-            
+
             // Hide status fields for KTLO and BTL
-            document.getElementById('editStatusFields').style.display = (isKTLO || isBTL) ? 'none' : 'block';
-            document.getElementById('editTimelineChangesSection').style.display = (isKTLO || isBTL) ? 'none' : 'block';
-            
+            document.getElementById('editStatusFields').style.display =
+                isKTLO || isBTL ? 'none' : 'block';
+            document.getElementById('editTimelineChangesSection').style.display =
+                isKTLO || isBTL ? 'none' : 'block';
+
             // Hide move buttons for KTLO (it can't be reordered) but show for BTL
             const moveButtons = document.querySelectorAll('button[onclick*="moveCurrentStory"]');
-            moveButtons.forEach(button => {
+            moveButtons.forEach((button) => {
                 button.style.display = isKTLO ? 'none' : 'inline-block';
             });
-            
+
             // Set checkboxes
             document.getElementById('editDone').checked = foundStory.isDone || false;
             document.getElementById('editCancelled').checked = foundStory.isCancelled || false;
             document.getElementById('editAtRisk').checked = foundStory.isAtRisk || false;
             document.getElementById('editNewStory').checked = foundStory.isNewStory || false;
             document.getElementById('editInfo').checked = foundStory.isInfo || false;
-            document.getElementById('editTransferredOut').checked = foundStory.isTransferredOut || false;
-            document.getElementById('editTransferredIn').checked = foundStory.isTransferredIn || false;
+            document.getElementById('editTransferredOut').checked =
+                foundStory.isTransferredOut || false;
+            document.getElementById('editTransferredIn').checked =
+                foundStory.isTransferredIn || false;
             document.getElementById('editProposed').checked = foundStory.isProposed || false;
-            document.getElementById('editTimelineChanges').checked = foundStory.hasTimelineChanges || false;
-            document.getElementById('editHideFromSearch').checked = foundStory.hideFromSearch === true;
-            
+            document.getElementById('editTimelineChanges').checked =
+                foundStory.hasTimelineChanges || false;
+            document.getElementById('editHideFromSearch').checked =
+                foundStory.hideFromSearch === true;
+
             // Set status information
             document.getElementById('editDoneDate').value = foundStory.doneDate || '';
             document.getElementById('editDoneNotes').value = foundStory.doneNotes || '';
@@ -3983,7 +4454,7 @@ export function init(_root) {
                 // Clear existing entries
                 editInfoEntriesContainer.innerHTML = '';
                 editInfoEntryCounter = 0;
-                
+
                 if (foundStory.roadmapChanges && foundStory.roadmapChanges.infoInfo) {
                     if (Array.isArray(foundStory.roadmapChanges.infoInfo)) {
                         // Multiple info entries
@@ -4031,32 +4502,37 @@ export function init(_root) {
                             </div>
                         `;
                         editInfoEntriesContainer.insertAdjacentHTML('beforeend', entryHtml);
-                        
+
                         // Convert the data structure from old single format to new multiple format
-                        foundStory.roadmapChanges.infoInfo = [{
-                            date: foundStory.roadmapChanges.infoInfo.date,
-                            notes: foundStory.roadmapChanges.infoInfo.notes
-                        }];
+                        foundStory.roadmapChanges.infoInfo = [
+                            {
+                                date: foundStory.roadmapChanges.infoInfo.date,
+                                notes: foundStory.roadmapChanges.infoInfo.notes,
+                            },
+                        ];
                     }
                 } else {
                     // Check if data has been converted in the main form
                     const mainFormInfoEntries = [];
-                    const mainFormInfoContainer = document.getElementById(`info-entries-${foundStory.storyId}`);
+                    const mainFormInfoContainer = document.getElementById(
+                        `info-entries-${foundStory.storyId}`
+                    );
                     if (mainFormInfoContainer) {
-                        const mainFormEntries = mainFormInfoContainer.querySelectorAll('.info-entry');
-                        mainFormEntries.forEach(entry => {
+                        const mainFormEntries =
+                            mainFormInfoContainer.querySelectorAll('.info-entry');
+                        mainFormEntries.forEach((entry) => {
                             const entryId = entry.id;
                             const dateEl = document.getElementById(`info-date-${entryId}`);
                             const notesEl = document.getElementById(`info-notes-${entryId}`);
                             if (dateEl && notesEl && (dateEl.value || notesEl.value)) {
                                 mainFormInfoEntries.push({
                                     date: dateEl.value,
-                                    notes: notesEl.value
+                                    notes: notesEl.value,
                                 });
                             }
                         });
                     }
-                    
+
                     if (mainFormInfoEntries.length > 0) {
                         // Use converted data from main form
                         mainFormInfoEntries.forEach((entry, index) => {
@@ -4107,55 +4583,73 @@ export function init(_root) {
                 }
             }
             // Backward compatibility: handle both old handedOver and new transferredOut properties
-            document.getElementById('editTransferredOutDate').value = foundStory.transferredOutDate || foundStory.handedOverDate || '';
-            document.getElementById('editTransferredOutNotes').value = foundStory.transferredOutNotes || foundStory.handedOverNotes || '';
-            document.getElementById('editTransferredInDate').value = foundStory.transferredInDate || '';
-            document.getElementById('editTransferredInNotes').value = foundStory.transferredInNotes || '';
+            document.getElementById('editTransferredOutDate').value =
+                foundStory.transferredOutDate || foundStory.handedOverDate || '';
+            document.getElementById('editTransferredOutNotes').value =
+                foundStory.transferredOutNotes || foundStory.handedOverNotes || '';
+            document.getElementById('editTransferredInDate').value =
+                foundStory.transferredInDate || '';
+            document.getElementById('editTransferredInNotes').value =
+                foundStory.transferredInNotes || '';
             document.getElementById('editProposedDate').value = foundStory.proposedDate || '';
             document.getElementById('editProposedNotes').value = foundStory.proposedNotes || '';
-            
+
             // Load existing timeline changes FIRST (before calling toggle functions)
-            if (foundStory.hasTimelineChanges && foundStory.timelineChanges && foundStory.timelineChanges.length > 0) {
+            if (
+                foundStory.hasTimelineChanges &&
+                foundStory.timelineChanges &&
+                foundStory.timelineChanges.length > 0
+            ) {
                 // Clear existing changes first
                 document.getElementById('editChangesContainer').innerHTML = '';
                 // Reset the edit-change counter (now owned by ./timeline-changes.js)
                 resetEditChangeCounter();
                 // Sort timeline changes by date before displaying in modal
-                const sortedTimelineChanges = sortTimelineChangesByDate([...foundStory.timelineChanges]);
-                
+                const sortedTimelineChanges = sortTimelineChangesByDate([
+                    ...foundStory.timelineChanges,
+                ]);
+
                 // Add each timeline change in chronological order
-                sortedTimelineChanges.forEach(change => {
+                sortedTimelineChanges.forEach((change) => {
                     const changeId = addEditChange();
                     document.getElementById(`${changeId}-date`).value = change.date || '';
                     document.getElementById(`${changeId}-desc`).value = change.description || '';
-                    document.getElementById(`${changeId}-prevstart`).value = change.prevStartDate || '';
-                    document.getElementById(`${changeId}-newstart`).value = change.newStartDate || '';
+                    document.getElementById(`${changeId}-prevstart`).value =
+                        change.prevStartDate || '';
+                    document.getElementById(`${changeId}-newstart`).value =
+                        change.newStartDate || '';
                     document.getElementById(`${changeId}-prev`).value = change.prevEndDate || '';
                     document.getElementById(`${changeId}-new`).value = change.newEndDate || '';
                 });
-                
+
                 // Update button state after loading all changes
                 updateEditChangeButton();
             } else {
                 // Clear any existing changes
                 document.getElementById('editChangesContainer').innerHTML = '';
                 resetEditChangeCounter();
-                
+
                 // Update button state after clearing changes
                 updateEditChangeButton();
             }
-            
+
             // Show/hide appropriate status fields (after timeline changes are loaded)
             toggleEditStatusFields();
             toggleEditTimelineChanges();
-            
+
             // Clear date picker initialization flags to allow re-initialization
             const modalDateFields = [
-                'editStart', 'editEnd', 'editDoneDate', 'editCancelDate', 
-                'editAtRiskDate', 'editNewStoryDate', 'editTransferredOutDate', 'editBTLDateAdded'
+                'editStart',
+                'editEnd',
+                'editDoneDate',
+                'editCancelDate',
+                'editAtRiskDate',
+                'editNewStoryDate',
+                'editTransferredOutDate',
+                'editBTLDateAdded',
             ];
-            
-            modalDateFields.forEach(fieldId => {
+
+            modalDateFields.forEach((fieldId) => {
                 const element = document.getElementById(fieldId);
                 if (element) {
                     element.dataset.datePickerInitialized = 'false';
@@ -4164,7 +4658,7 @@ export function init(_root) {
                     }
                 }
             });
-            
+
             // Initialize date pickers for modal fields immediately (no setTimeout needed)
             const initializeModalDatePickers = () => {
                 // Main modal date fields
@@ -4175,65 +4669,69 @@ export function init(_root) {
                 initializeDatePicker(document.getElementById('editAtRiskDate'), false);
                 initializeDatePicker(document.getElementById('editNewStoryDate'), false);
                 initializeDatePicker(document.getElementById('editTransferredOutDate'), false);
-                
+
                 // BTL date added field
                 initializeDatePicker(document.getElementById('editBTLDateAdded'), false);
-                
+
                 // Timeline change date fields in modal
-                document.querySelectorAll('#editChangesContainer input[id*="-date"], #editChangesContainer input[id*="-prev"], #editChangesContainer input[id*="-new"]').forEach(input => {
-                    input.dataset.datePickerInitialized = 'false';
-                    if (input.id) {
-                        untrackDatePicker(input.id);
-                    }
-                    initializeDatePicker(input, false);
-                });
+                document
+                    .querySelectorAll(
+                        '#editChangesContainer input[id*="-date"], #editChangesContainer input[id*="-prev"], #editChangesContainer input[id*="-new"]'
+                    )
+                    .forEach((input) => {
+                        input.dataset.datePickerInitialized = 'false';
+                        if (input.id) {
+                            untrackDatePicker(input.id);
+                        }
+                        initializeDatePicker(input, false);
+                    });
             };
-            
+
             // Initialize immediately and again after a small delay for any dynamic fields
             initializeModalDatePickers();
             setTimeout(initializeModalDatePickers, 100);
-            
+
             // Initialize BTL date picker if this is a BTL story
             if (isBTL) {
                 setTimeout(() => {
                     initializeDatePicker(document.getElementById('editBTLDateAdded'), false);
                 }, 150);
             }
-            
+
             // Show modal
             document.getElementById('editStoryModal').style.display = 'flex';
-            
+
             // Remove focus from any element
             if (document.activeElement) {
                 document.activeElement.blur();
             }
-            
+
             // Set up focus trap
             setupModalFocusTrap('editStoryModal');
-            
+
             // Add Enter key listener for Save Changes
             const editStoryModal = document.getElementById('editStoryModal');
             const handleEnterKey = (event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                     // Check if user is currently typing in an editable element
                     const activeElement = document.activeElement;
-                    const isEditable = activeElement && (
-                        activeElement.tagName === 'INPUT' ||
-                        activeElement.tagName === 'TEXTAREA' ||
-                        activeElement.contentEditable === 'true'
-                    );
-                    
+                    const isEditable =
+                        activeElement &&
+                        (activeElement.tagName === 'INPUT' ||
+                            activeElement.tagName === 'TEXTAREA' ||
+                            activeElement.contentEditable === 'true');
+
                     // Don't trigger save when user is typing in a form field
                     if (isEditable) {
                         return;
                     }
-                    
+
                     event.preventDefault();
                     saveStoryChanges();
                 }
             };
             editStoryModal.addEventListener('keydown', handleEnterKey);
-            
+
             // Store the handler so we can remove it later
             editStoryModal._enterKeyHandler = handleEnterKey;
         }
@@ -4242,16 +4740,16 @@ export function init(_root) {
             const editStoryModal = document.getElementById('editStoryModal');
             editStoryModal.style.display = 'none';
             currentEditingStory = null;
-            
+
             // Remove Enter key listener
             if (editStoryModal._enterKeyHandler) {
                 editStoryModal.removeEventListener('keydown', editStoryModal._enterKeyHandler);
                 delete editStoryModal._enterKeyHandler;
             }
-            
+
             // Remove focus trap
             removeModalFocusTrap();
-            
+
             // Reset form fields to their enabled/visible state for next use
             document.getElementById('editStart').disabled = false;
             document.getElementById('editEnd').disabled = false;
@@ -4259,23 +4757,23 @@ export function init(_root) {
             document.getElementById('editKTLOMonthlySection').style.display = 'none';
             document.getElementById('editBTLDateAddedGroup').style.display = 'none';
             document.getElementById('editBTLDescriptionGroup').style.display = 'none';
-            
+
             // Reset monthly KTLO data visibility
             const monthlyContainer = document.getElementById('editKTLOMonthsContainer');
             if (monthlyContainer) {
                 monthlyContainer.style.display = 'block';
             }
-            
+
             const statusCheckboxes = document.querySelector('#editStoryModal .checkbox-group');
             if (statusCheckboxes) {
                 statusCheckboxes.style.display = 'flex';
             }
-            
+
             document.getElementById('editStatusFields').style.display = 'block';
             document.getElementById('editTimelineChangesSection').style.display = 'block';
-            
+
             const moveButtons = document.querySelectorAll('button[onclick*="moveCurrentStory"]');
-            moveButtons.forEach(button => {
+            moveButtons.forEach((button) => {
                 button.style.display = 'inline-block';
             });
         }
@@ -4289,28 +4787,50 @@ export function init(_root) {
             const transferredOutChecked = document.getElementById('editTransferredOut').checked;
             const transferredInChecked = document.getElementById('editTransferredIn').checked;
             const proposedChecked = document.getElementById('editProposed').checked;
-            
-            document.getElementById('editDoneFields').style.display = doneChecked ? 'block' : 'none';
-            document.getElementById('editCancelFields').style.display = cancelledChecked ? 'block' : 'none';
-            document.getElementById('editAtRiskFields').style.display = atRiskChecked ? 'block' : 'none';
-            document.getElementById('editNewStoryFields').style.display = newStoryChecked ? 'block' : 'none';
-            document.getElementById('editInfoFields').style.display = infoChecked ? 'block' : 'none';
-            document.getElementById('editTransferredOutFields').style.display = transferredOutChecked ? 'block' : 'none';
-            document.getElementById('editTransferredInFields').style.display = transferredInChecked ? 'block' : 'none';
-            document.getElementById('editProposedFields').style.display = proposedChecked ? 'block' : 'none';
-            
+
+            document.getElementById('editDoneFields').style.display = doneChecked
+                ? 'block'
+                : 'none';
+            document.getElementById('editCancelFields').style.display = cancelledChecked
+                ? 'block'
+                : 'none';
+            document.getElementById('editAtRiskFields').style.display = atRiskChecked
+                ? 'block'
+                : 'none';
+            document.getElementById('editNewStoryFields').style.display = newStoryChecked
+                ? 'block'
+                : 'none';
+            document.getElementById('editInfoFields').style.display = infoChecked
+                ? 'block'
+                : 'none';
+            document.getElementById('editTransferredOutFields').style.display =
+                transferredOutChecked ? 'block' : 'none';
+            document.getElementById('editTransferredInFields').style.display = transferredInChecked
+                ? 'block'
+                : 'none';
+            document.getElementById('editProposedFields').style.display = proposedChecked
+                ? 'block'
+                : 'none';
+
             // Reinitialize date pickers for newly visible fields
             setTimeout(() => {
-                if (doneChecked) initializeDatePicker(document.getElementById('editDoneDate'), false);
-                if (cancelledChecked) initializeDatePicker(document.getElementById('editCancelDate'), false);
-                if (atRiskChecked) initializeDatePicker(document.getElementById('editAtRiskDate'), false);
-                if (newStoryChecked) initializeDatePicker(document.getElementById('editNewStoryDate'), false);
+                if (doneChecked)
+                    initializeDatePicker(document.getElementById('editDoneDate'), false);
+                if (cancelledChecked)
+                    initializeDatePicker(document.getElementById('editCancelDate'), false);
+                if (atRiskChecked)
+                    initializeDatePicker(document.getElementById('editAtRiskDate'), false);
+                if (newStoryChecked)
+                    initializeDatePicker(document.getElementById('editNewStoryDate'), false);
                 // Info entries are handled dynamically, no single date picker needed
-                if (transferredOutChecked) initializeDatePicker(document.getElementById('editTransferredOutDate'), false);
-                if (transferredInChecked) initializeDatePicker(document.getElementById('editTransferredInDate'), false);
-                if (proposedChecked) initializeDatePicker(document.getElementById('editProposedDate'), false);
+                if (transferredOutChecked)
+                    initializeDatePicker(document.getElementById('editTransferredOutDate'), false);
+                if (transferredInChecked)
+                    initializeDatePicker(document.getElementById('editTransferredInDate'), false);
+                if (proposedChecked)
+                    initializeDatePicker(document.getElementById('editProposedDate'), false);
             }, 10);
-            
+
             // Auto-fill today's date if fields are empty and checkboxes are checked
             if (doneChecked) {
                 const doneDateField = document.getElementById('editDoneDate');
@@ -4318,56 +4838,57 @@ export function init(_root) {
                     doneDateField.value = getTodaysDateEuropean();
                 }
             }
-            
+
             if (cancelledChecked) {
                 const cancelDateField = document.getElementById('editCancelDate');
                 if (cancelDateField && !cancelDateField.value) {
                     cancelDateField.value = getTodaysDateEuropean();
                 }
             }
-            
+
             if (atRiskChecked) {
                 const atRiskDateField = document.getElementById('editAtRiskDate');
                 if (atRiskDateField && !atRiskDateField.value) {
                     atRiskDateField.value = getTodaysDateEuropean();
                 }
             }
-            
+
             if (newStoryChecked) {
                 const newStoryDateField = document.getElementById('editNewStoryDate');
                 if (newStoryDateField && !newStoryDateField.value) {
                     newStoryDateField.value = getTodaysDateEuropean();
                 }
             }
-            
+
             // Info entries are handled dynamically with addEditInfoEntry function
             if (infoChecked) {
                 // Auto-create first info entry if none exist
                 setTimeout(() => {
                     const editInfoEntriesContainer = document.getElementById('editInfoEntries');
                     if (editInfoEntriesContainer) {
-                        const existingEntries = editInfoEntriesContainer.querySelectorAll('.info-entry');
+                        const existingEntries =
+                            editInfoEntriesContainer.querySelectorAll('.info-entry');
                         if (existingEntries.length === 0) {
                             addEditInfoEntry();
                         }
                     }
                 }, 100);
             }
-            
+
             if (transferredOutChecked) {
                 const transferredOutDateField = document.getElementById('editTransferredOutDate');
                 if (transferredOutDateField && !transferredOutDateField.value) {
                     transferredOutDateField.value = getTodaysDateEuropean();
                 }
             }
-            
+
             if (transferredInChecked) {
                 const transferredInDateField = document.getElementById('editTransferredInDate');
                 if (transferredInDateField && !transferredInDateField.value) {
                     transferredInDateField.value = getTodaysDateEuropean();
                 }
             }
-            
+
             if (proposedChecked) {
                 const proposedDateField = document.getElementById('editProposedDate');
                 if (proposedDateField && !proposedDateField.value) {
@@ -4383,9 +4904,6 @@ export function init(_root) {
         // Edit-modal timeline-change handlers are now in ./timeline-changes.js
         // (createEditTimelineChangeHandlers). Wired at the top of init().
 
-
-
-
         function initializeEditKTLOMonths() {
             // Initialize the modal month selector to January and load its data
             const selector = document.getElementById('edit-ktlo-month-selector');
@@ -4395,39 +4913,40 @@ export function init(_root) {
                 loadEditKTLOMonth('jan');
             }
         }
-        
+
         function switchEditKTLOMonth() {
             // Save current month's data before switching
             const modalSelector = document.getElementById('edit-ktlo-month-selector');
             if (modalSelector) {
                 // Get the OLD month value (before the dropdown changes)
-                const oldMonth = modalSelector.getAttribute('data-previous-month') || modalSelector.value;
+                const oldMonth =
+                    modalSelector.getAttribute('data-previous-month') || modalSelector.value;
                 const modalNumberEl = document.getElementById('edit-ktlo-current-number');
                 const modalPercentageEl = document.getElementById('edit-ktlo-current-percentage');
                 const modalDescriptionEl = document.getElementById('edit-ktlo-current-description');
-                
+
                 // Save current modal data to main data store
                 ktloMonthlyData[oldMonth] = {
                     number: modalNumberEl ? modalNumberEl.value : '',
                     percentage: modalPercentageEl ? modalPercentageEl.value : '',
-                    description: modalDescriptionEl ? modalDescriptionEl.value : ''
+                    description: modalDescriptionEl ? modalDescriptionEl.value : '',
                 };
-                
+
                 // Store the new month as the "previous" for next time
                 modalSelector.setAttribute('data-previous-month', modalSelector.value);
             }
-            
+
             const selector = document.getElementById('edit-ktlo-month-selector');
             const selectedMonth = selector.value;
             loadEditKTLOMonth(selectedMonth);
         }
-        
+
         function loadEditKTLOMonth(month) {
             const data = ktloMonthlyData[month];
             const numberInput = document.getElementById('edit-ktlo-current-number');
             const percentageInput = document.getElementById('edit-ktlo-current-percentage');
             const descriptionInput = document.getElementById('edit-ktlo-current-description');
-            
+
             if (numberInput) numberInput.value = data.number;
             if (percentageInput) percentageInput.value = data.percentage;
             if (descriptionInput) descriptionInput.value = data.description;
@@ -4435,62 +4954,63 @@ export function init(_root) {
 
         // Monthly KTLO Edit Modal Functions
         let currentEditingMonth = null;
-        
+
         function openEditMonthlyKTLOModal(month) {
             currentEditingMonth = month;
-            
+
             // Update modal title
             const monthName = month.charAt(0).toUpperCase() + month.slice(1);
             document.getElementById('editMonthlyKTLOTitle').textContent = `Edit ${monthName} KTLO`;
-            
+
             // Set month dropdown
             document.getElementById('editMonthlyKTLOMonth').value = month;
-            
+
             // Load current data for this month
             const monthData = ktloMonthlyData[month];
             document.getElementById('editMonthlyKTLONumber').value = monthData.number || '';
             document.getElementById('editMonthlyKTLOPercentage').value = monthData.percentage || '';
-            document.getElementById('editMonthlyKTLODescription').value = monthData.description || '';
-            
+            document.getElementById('editMonthlyKTLODescription').value =
+                monthData.description || '';
+
             // Show modal
             document.getElementById('editMonthlyKTLOModal').style.display = 'flex';
-            
+
             // Set up focus trap
             setupModalFocusTrap('editMonthlyKTLOModal');
-            
+
             // Add Enter key listener for Save Changes
             const editMonthlyKTLOModal = document.getElementById('editMonthlyKTLOModal');
             const handleEnterKey = (event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                     // Check if user is currently typing in an editable element
                     const activeElement = document.activeElement;
-                    const isEditable = activeElement && (
-                        activeElement.tagName === 'INPUT' ||
-                        activeElement.tagName === 'TEXTAREA' ||
-                        activeElement.contentEditable === 'true'
-                    );
-                    
+                    const isEditable =
+                        activeElement &&
+                        (activeElement.tagName === 'INPUT' ||
+                            activeElement.tagName === 'TEXTAREA' ||
+                            activeElement.contentEditable === 'true');
+
                     // Don't trigger save when user is typing in a form field
                     if (isEditable) {
                         return;
                     }
-                    
+
                     event.preventDefault();
                     saveMonthlyKTLOChanges();
                 }
             };
             editMonthlyKTLOModal.addEventListener('keydown', handleEnterKey);
-            
+
             // Store the handler so we can remove it later
             editMonthlyKTLOModal._enterKeyHandler = handleEnterKey;
         }
-        
+
         function closeEditMonthlyKTLOModal() {
             try {
                 const modal = document.getElementById('editMonthlyKTLOModal');
                 if (modal) {
                     modal.style.display = 'none';
-                    
+
                     // Remove Enter key listener
                     if (modal._enterKeyHandler) {
                         modal.removeEventListener('keydown', modal._enterKeyHandler);
@@ -4498,7 +5018,7 @@ export function init(_root) {
                     }
                 }
                 currentEditingMonth = null;
-                
+
                 // Remove focus trap
                 removeModalFocusTrap();
             } catch (error) {
@@ -4508,32 +5028,32 @@ export function init(_root) {
                 if (modal) {
                     modal.style.display = 'none';
                 }
-                
+
                 // Remove focus trap
                 removeModalFocusTrap();
             }
         }
-        
+
         function saveMonthlyKTLOChanges() {
             if (!currentEditingMonth) return;
-            
+
             // Get values from modal
             const number = document.getElementById('editMonthlyKTLONumber').value;
             const percentage = document.getElementById('editMonthlyKTLOPercentage').value;
             const description = document.getElementById('editMonthlyKTLODescription').value;
-            
+
             // Validate percentage directly - don't save if invalid
             if (percentage !== '' && !validateKTLOPercentage(percentage)) {
                 return; // Prevent saving when percentage is invalid
             }
-            
+
             // Save to main data store
             ktloMonthlyData[currentEditingMonth] = {
                 number: number,
                 percentage: percentage,
-                description: description
+                description: description,
             };
-            
+
             // Update the main form if currently viewing this month
             const mainSelector = document.getElementById('ktlo-month-selector');
             if (mainSelector && mainSelector.value === currentEditingMonth) {
@@ -4541,7 +5061,7 @@ export function init(_root) {
                 document.getElementById('ktlo-current-percentage').value = percentage;
                 document.getElementById('ktlo-current-description').value = description;
             }
-            
+
             // Update the modal form if currently editing this month
             const modalSelector = document.getElementById('edit-ktlo-month-selector');
             if (modalSelector && modalSelector.value === currentEditingMonth) {
@@ -4549,10 +5069,10 @@ export function init(_root) {
                 document.getElementById('edit-ktlo-current-percentage').value = percentage;
                 document.getElementById('edit-ktlo-current-description').value = description;
             }
-            
+
             // Close modal
             closeEditMonthlyKTLOModal();
-            
+
             // Regenerate preview to show changes
             generatePreview();
         }
@@ -4564,7 +5084,7 @@ export function init(_root) {
                     const titleEl = document.getElementById('ktlo-title');
                     const bulletsEl = document.getElementById('ktlo-bullets');
                     const positionEl = document.getElementById('ktlo-position-toggle');
-                    
+
                     return {
                         storyId: 'ktlo', // Special ID for KTLO
                         title: titleEl ? titleEl.value : '',
@@ -4591,19 +5111,21 @@ export function init(_root) {
                         proposedDate: '',
                         proposedNotes: '',
                         hasTimelineChanges: false,
-                        timelineChanges: []
+                        timelineChanges: [],
                     };
                 }
 
                 // Special handling for BTL (Below the Line) stories
                 if (epicName === 'Below the Line') {
-                    const btlStoryElements = document.querySelectorAll('#btl-stories-container .story-section');
+                    const btlStoryElements = document.querySelectorAll(
+                        '#btl-stories-container .story-section'
+                    );
                     const targetStoryIndex = parseInt(storyIndex);
-                    
+
                     if (targetStoryIndex >= 0 && targetStoryIndex < btlStoryElements.length) {
                         const storyEl = btlStoryElements[targetStoryIndex];
                         const storyId = storyEl.id.replace('story-', '');
-                        
+
                         // Extract BTL story data
                         const titleEl = document.getElementById(`btl-title-${storyId}`);
                         const startEl = document.getElementById(`btl-start-${storyId}`);
@@ -4613,7 +5135,7 @@ export function init(_root) {
                         const descriptionEl = document.getElementById(`btl-description-${storyId}`);
                         const imoEl = document.getElementById(`btl-imo-${storyId}`);
                         const commentsEl = document.getElementById(`btl-comments-${storyId}`);
-                        
+
                         return {
                             storyId: storyId,
                             title: titleEl ? titleEl.value : '',
@@ -4623,7 +5145,8 @@ export function init(_root) {
                             dateAdded: dateAddedEl ? dateAddedEl.value : '',
                             dateAddedDescription: descriptionEl ? descriptionEl.value : '',
                             imo: imoEl ? imoEl.value : '',
-                            priority: document.getElementById(`btl-priority-${storyId}`)?.value || '',
+                            priority:
+                                document.getElementById(`btl-priority-${storyId}`)?.value || '',
                             comments: commentsEl ? commentsEl.value : '',
                             isDone: false, // BTL stories don't have status flags
                             isCancelled: false,
@@ -4647,19 +5170,18 @@ export function init(_root) {
                             proposedDate: '',
                             proposedNotes: '',
                             hasTimelineChanges: false,
-                            timelineChanges: []
+                            timelineChanges: [],
                         };
                     }
-                    
+
                     return null;
                 }
 
-                
                 // Find the EPIC by name
                 const epicElements = document.querySelectorAll('.epic-section');
 
                 let targetEpic = null;
-                
+
                 for (const epicEl of epicElements) {
                     const epicId = epicEl.id.split('-')[1];
                     const epicNameEl = document.getElementById(`epic-name-${epicId}`);
@@ -4668,24 +5190,26 @@ export function init(_root) {
                         break;
                     }
                 }
-                
+
                 if (!targetEpic) {
                     return null;
                 }
-                
+
                 // Find the story within the EPIC
                 const storyElements = targetEpic.querySelectorAll('.story-section');
                 const targetStoryIndex = parseInt(storyIndex);
                 if (targetStoryIndex >= 0 && targetStoryIndex < storyElements.length) {
                     const storyEl = storyElements[targetStoryIndex];
                     const storyId = storyEl.id.replace('story-', '');
-                    
+
                     // Extract story data
                     const titleEl = document.getElementById(`story-title-${storyId}`);
                     const startEl = document.getElementById(`story-start-${storyId}`);
                     const endEl = document.getElementById(`story-end-${storyId}`);
                     const bulletsEl = document.getElementById(`story-bullets-${storyId}`);
-                    const directorVPIdEl = document.getElementById(`story-director-vp-id-${storyId}`);
+                    const directorVPIdEl = document.getElementById(
+                        `story-director-vp-id-${storyId}`
+                    );
                     const imoEl = document.getElementById(`story-imo-${storyId}`);
 
                     const doneEl = document.getElementById(`story-done-${storyId}`);
@@ -4693,10 +5217,14 @@ export function init(_root) {
                     const atRiskEl = document.getElementById(`story-atrisk-${storyId}`);
                     const newStoryEl = document.getElementById(`story-newstory-${storyId}`);
                     const infoEl = document.getElementById(`story-info-${storyId}`);
-                    const transferredOutEl = document.getElementById(`story-transferredout-${storyId}`);
-                    const transferredInEl = document.getElementById(`story-transferredin-${storyId}`);
+                    const transferredOutEl = document.getElementById(
+                        `story-transferredout-${storyId}`
+                    );
+                    const transferredInEl = document.getElementById(
+                        `story-transferredin-${storyId}`
+                    );
                     const proposedEl = document.getElementById(`story-proposed-${storyId}`);
-                    
+
                     const doneDateEl = document.getElementById(`done-date-${storyId}`);
                     const doneNotesEl = document.getElementById(`done-notes-${storyId}`);
                     const cancelDateEl = document.getElementById(`cancel-date-${storyId}`);
@@ -4707,22 +5235,32 @@ export function init(_root) {
                     const newStoryNotesEl = document.getElementById(`newstory-notes-${storyId}`);
                     const infoDateEl = document.getElementById(`info-date-${storyId}`);
                     const infoNotesEl = document.getElementById(`info-notes-${storyId}`);
-                    const transferredOutDateEl = document.getElementById(`transferredout-date-${storyId}`);
-                    const transferredOutNotesEl = document.getElementById(`transferredout-notes-${storyId}`);
-                    const transferredInDateEl = document.getElementById(`transferredin-date-${storyId}`);
-                    const transferredInNotesEl = document.getElementById(`transferredin-notes-${storyId}`);
+                    const transferredOutDateEl = document.getElementById(
+                        `transferredout-date-${storyId}`
+                    );
+                    const transferredOutNotesEl = document.getElementById(
+                        `transferredout-notes-${storyId}`
+                    );
+                    const transferredInDateEl = document.getElementById(
+                        `transferredin-date-${storyId}`
+                    );
+                    const transferredInNotesEl = document.getElementById(
+                        `transferredin-notes-${storyId}`
+                    );
                     const proposedDateEl = document.getElementById(`proposed-date-${storyId}`);
                     const proposedNotesEl = document.getElementById(`proposed-notes-${storyId}`);
-                    
+
                     // Get timeline changes - check both checkbox state AND actual DOM elements
                     const timelineChangesEl = document.getElementById(`story-changes-${storyId}`);
                     const checkboxChecked = timelineChangesEl ? timelineChangesEl.checked : false;
-                    
+
                     // Always check for existing timeline change elements
-                    const changeContainers = document.querySelectorAll(`#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`);
+                    const changeContainers = document.querySelectorAll(
+                        `#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`
+                    );
                     const timelineChanges = [];
-                    
-                    changeContainers.forEach(changeEl => {
+
+                    changeContainers.forEach((changeEl) => {
                         const changeId = changeEl.id.replace('change-', '');
                         const dateEl = document.getElementById(`change-date-${changeId}`);
                         const prevStartEl = document.getElementById(`change-prevstart-${changeId}`);
@@ -4738,46 +5276,63 @@ export function init(_root) {
                                 newStartDate: newStartEl ? newStartEl.value || '' : '',
                                 prevEndDate: prevEl.value || '',
                                 newEndDate: newEl.value || '',
-                                description: descEl ? descEl.value || '' : ''
+                                description: descEl ? descEl.value || '' : '',
                             });
                         }
                     });
-                    
+
                     // Sort timeline changes by date (chronological order)
                     sortTimelineChangesByDate(timelineChanges);
-                    
+
                     // hasTimelineChanges should be true if either checkbox is checked OR timeline changes exist
                     const hasTimelineChanges = checkboxChecked || timelineChanges.length > 0;
-                    
+
                     // Collect country flags (default to Global if no flags selected)
                     const storyCountryFlags = [];
-                    if (document.getElementById(`story-flag-global-${storyId}`)?.checked) storyCountryFlags.push('Global');
-                    if (document.getElementById(`story-flag-uk-${storyId}`)?.checked) storyCountryFlags.push('UK');
-                    if (document.getElementById(`story-flag-iceland-${storyId}`)?.checked) storyCountryFlags.push('Iceland');
-                    if (document.getElementById(`story-flag-hungary-${storyId}`)?.checked) storyCountryFlags.push('Hungary');
-                    if (document.getElementById(`story-flag-spain-${storyId}`)?.checked) storyCountryFlags.push('Spain');
-                    if (document.getElementById(`story-flag-italy-${storyId}`)?.checked) storyCountryFlags.push('Italy');
-                    if (document.getElementById(`story-flag-portugal-${storyId}`)?.checked) storyCountryFlags.push('Portugal');
-                    if (document.getElementById(`story-flag-czechia-${storyId}`)?.checked) storyCountryFlags.push('Czechia');
-                    if (document.getElementById(`story-flag-slovakia-${storyId}`)?.checked) storyCountryFlags.push('Slovakia');
-                    if (document.getElementById(`story-flag-slovenia-${storyId}`)?.checked) storyCountryFlags.push('Slovenia');
-                    if (document.getElementById(`story-flag-croatia-${storyId}`)?.checked) storyCountryFlags.push('Croatia');
-                    if (document.getElementById(`story-flag-germany-${storyId}`)?.checked) storyCountryFlags.push('Germany');
-                    if (document.getElementById(`story-flag-france-${storyId}`)?.checked) storyCountryFlags.push('France');
+                    if (document.getElementById(`story-flag-global-${storyId}`)?.checked)
+                        storyCountryFlags.push('Global');
+                    if (document.getElementById(`story-flag-uk-${storyId}`)?.checked)
+                        storyCountryFlags.push('UK');
+                    if (document.getElementById(`story-flag-iceland-${storyId}`)?.checked)
+                        storyCountryFlags.push('Iceland');
+                    if (document.getElementById(`story-flag-hungary-${storyId}`)?.checked)
+                        storyCountryFlags.push('Hungary');
+                    if (document.getElementById(`story-flag-spain-${storyId}`)?.checked)
+                        storyCountryFlags.push('Spain');
+                    if (document.getElementById(`story-flag-italy-${storyId}`)?.checked)
+                        storyCountryFlags.push('Italy');
+                    if (document.getElementById(`story-flag-portugal-${storyId}`)?.checked)
+                        storyCountryFlags.push('Portugal');
+                    if (document.getElementById(`story-flag-czechia-${storyId}`)?.checked)
+                        storyCountryFlags.push('Czechia');
+                    if (document.getElementById(`story-flag-slovakia-${storyId}`)?.checked)
+                        storyCountryFlags.push('Slovakia');
+                    if (document.getElementById(`story-flag-slovenia-${storyId}`)?.checked)
+                        storyCountryFlags.push('Slovenia');
+                    if (document.getElementById(`story-flag-croatia-${storyId}`)?.checked)
+                        storyCountryFlags.push('Croatia');
+                    if (document.getElementById(`story-flag-germany-${storyId}`)?.checked)
+                        storyCountryFlags.push('Germany');
+                    if (document.getElementById(`story-flag-france-${storyId}`)?.checked)
+                        storyCountryFlags.push('France');
                     // Default to Global if no flags are selected
                     if (storyCountryFlags.length === 0) {
                         storyCountryFlags.push('Global');
                     }
-                    
+
                     // Get Include in Product Roadmap flag
-                    const includeInProductRoadmapEl = document.getElementById(`story-include-product-roadmap-${storyId}`);
+                    const includeInProductRoadmapEl = document.getElementById(
+                        `story-include-product-roadmap-${storyId}`
+                    );
 
                     // Get Hide From Cross-Team Search flag
-                    const hideFromSearchEl = document.getElementById(`story-hide-from-search-${storyId}`);
+                    const hideFromSearchEl = document.getElementById(
+                        `story-hide-from-search-${storyId}`
+                    );
 
                     // Get Comments field
                     const commentsEl = document.getElementById(`story-comments-${storyId}`);
-                    
+
                     return {
                         storyId: storyId,
                         title: titleEl ? titleEl.value : '',
@@ -4789,7 +5344,9 @@ export function init(_root) {
                         priority: document.getElementById(`story-priority-${storyId}`)?.value || '',
                         comments: commentsEl ? commentsEl.value : '',
                         countryFlags: storyCountryFlags.length > 0 ? storyCountryFlags : undefined,
-                        includeInProductRoadmap: includeInProductRoadmapEl ? includeInProductRoadmapEl.checked : false,
+                        includeInProductRoadmap: includeInProductRoadmapEl
+                            ? includeInProductRoadmapEl.checked
+                            : false,
                         hideFromSearch: hideFromSearchEl ? hideFromSearchEl.checked : false,
                         isDone: doneEl ? doneEl.checked : false,
                         isCancelled: cancelledEl ? cancelledEl.checked : false,
@@ -4810,19 +5367,19 @@ export function init(_root) {
                         infoDate: infoDateEl ? infoDateEl.value : '',
                         infoNotes: infoNotesEl ? infoNotesEl.value : '',
                         transferredOutDate: transferredOutDateEl ? transferredOutDateEl.value : '',
-                        transferredOutNotes: transferredOutNotesEl ? transferredOutNotesEl.value : '',
+                        transferredOutNotes: transferredOutNotesEl
+                            ? transferredOutNotesEl.value
+                            : '',
                         transferredInDate: transferredInDateEl ? transferredInDateEl.value : '',
                         transferredInNotes: transferredInNotesEl ? transferredInNotesEl.value : '',
                         proposedDate: proposedDateEl ? proposedDateEl.value : '',
                         proposedNotes: proposedNotesEl ? proposedNotesEl.value : '',
                         hasTimelineChanges: hasTimelineChanges,
-                        timelineChanges: timelineChanges
+                        timelineChanges: timelineChanges,
                     };
                 }
-                
 
                 return null;
-                
             } catch {
                 return null;
             }
@@ -4834,68 +5391,76 @@ export function init(_root) {
                 return;
             }
 
-            try{
+            try {
                 // Find the story in the form
-                const foundStory = findStoryInForm(currentEditingStory.epicName, currentEditingStory.storyTitle, currentEditingStory.storyIndex);
+                const foundStory = findStoryInForm(
+                    currentEditingStory.epicName,
+                    currentEditingStory.storyTitle,
+                    currentEditingStory.storyIndex
+                );
                 if (!foundStory) {
                     alert('Could not find story in form to update.');
                     return;
                 }
-                
+
                 const storyId = foundStory.storyId;
-                
+
                 // Special handling for KTLO
                 if (currentEditingStory.epicName === 'KTLO') {
                     // Update KTLO form fields
                     const titleEl = document.getElementById('ktlo-title');
                     const bulletsEl = document.getElementById('ktlo-bullets');
                     const positionEl = document.getElementById('ktlo-position-toggle');
-                    
+
                     if (titleEl) titleEl.value = document.getElementById('editTitle').value;
                     if (bulletsEl) bulletsEl.value = document.getElementById('editBullets').value;
-                    
+
                     // Update KTLO position if it changed
                     const newPosition = document.getElementById('editKTLOPosition').checked;
                     if (positionEl && positionEl.checked !== newPosition) {
                         positionEl.checked = newPosition;
-                        
+
                         // Trigger the repositioning logic
                         repositionKTLOSection();
                     }
-                    
+
                     // Update KTLO monthly data from modal back to main data store
                     // First, save the currently displayed month in the modal
                     const modalSelector = document.getElementById('edit-ktlo-month-selector');
                     if (modalSelector) {
                         const currentModalMonth = modalSelector.value;
                         const modalNumberEl = document.getElementById('edit-ktlo-current-number');
-                        const modalPercentageEl = document.getElementById('edit-ktlo-current-percentage');
-                        const modalDescriptionEl = document.getElementById('edit-ktlo-current-description');
-                        
+                        const modalPercentageEl = document.getElementById(
+                            'edit-ktlo-current-percentage'
+                        );
+                        const modalDescriptionEl = document.getElementById(
+                            'edit-ktlo-current-description'
+                        );
+
                         if (modalNumberEl || modalPercentageEl || modalDescriptionEl) {
                             ktloMonthlyData[currentModalMonth] = {
                                 number: modalNumberEl ? modalNumberEl.value : '',
                                 percentage: modalPercentageEl ? modalPercentageEl.value : '',
-                                description: modalDescriptionEl ? modalDescriptionEl.value : ''
+                                description: modalDescriptionEl ? modalDescriptionEl.value : '',
                             };
                         }
                     }
-                    
+
                     // Refresh the main form to show the updated values
                     const mainSelector = document.getElementById('ktlo-month-selector');
                     if (mainSelector) {
                         loadKTLOMonth(mainSelector.value);
                     }
-                    
+
                     // Close modal and regenerate preview
                     closeEditModal();
-                    
+
                     setTimeout(() => {
                         generatePreview();
                     }, 100);
                     return;
                 }
-                
+
                 // Special handling for BTL stories
                 if (currentEditingStory.epicName === 'Below the Line') {
                     // Update BTL form fields
@@ -4906,32 +5471,36 @@ export function init(_root) {
                     const dateAddedEl = document.getElementById(`btl-dateadded-${storyId}`);
                     const descriptionEl = document.getElementById(`btl-description-${storyId}`);
                     const imoEl = document.getElementById(`btl-imo-${storyId}`);
-                    
+
                     if (titleEl) titleEl.value = document.getElementById('editTitle').value;
                     if (startEl) startEl.value = document.getElementById('editStart').value;
                     if (endEl) endEl.value = document.getElementById('editEnd').value;
                     if (bulletsEl) bulletsEl.value = document.getElementById('editBullets').value;
-                    if (dateAddedEl) dateAddedEl.value = document.getElementById('editBTLDateAdded').value;
-                    if (descriptionEl) descriptionEl.value = document.getElementById('editBTLDescription').value;
+                    if (dateAddedEl)
+                        dateAddedEl.value = document.getElementById('editBTLDateAdded').value;
+                    if (descriptionEl)
+                        descriptionEl.value = document.getElementById('editBTLDescription').value;
                     if (imoEl) imoEl.value = document.getElementById('editIMO').value;
 
                     // Update Priority
                     const priorityEl = document.getElementById(`btl-priority-${storyId}`);
-                    if (priorityEl) priorityEl.value = document.getElementById('editPriority').value;
+                    if (priorityEl)
+                        priorityEl.value = document.getElementById('editPriority').value;
 
                     // Update Comments
                     const commentsEl = document.getElementById(`btl-comments-${storyId}`);
-                    if (commentsEl) commentsEl.value = document.getElementById('editComments').value;
-                    
+                    if (commentsEl)
+                        commentsEl.value = document.getElementById('editComments').value;
+
                     // Close modal and regenerate preview
                     closeEditModal();
-                    
+
                     setTimeout(() => {
                         generatePreview();
                     }, 100);
                     return;
                 }
-                
+
                 // Update form fields with modal values (for regular stories)
                 const titleEl = document.getElementById(`story-title-${storyId}`);
                 const startEl = document.getElementById(`story-start-${storyId}`);
@@ -4939,12 +5508,13 @@ export function init(_root) {
                 const bulletsEl = document.getElementById(`story-bullets-${storyId}`);
                 const directorVPIdEl = document.getElementById(`story-director-vp-id-${storyId}`);
                 const imoEl = document.getElementById(`story-imo-${storyId}`);
-                
+
                 if (titleEl) titleEl.value = document.getElementById('editTitle').value;
                 if (startEl) startEl.value = document.getElementById('editStart').value;
                 if (endEl) endEl.value = document.getElementById('editEnd').value;
                 if (bulletsEl) bulletsEl.value = document.getElementById('editBullets').value;
-                if (directorVPIdEl) directorVPIdEl.value = document.getElementById('editDirectorVPId').value;
+                if (directorVPIdEl)
+                    directorVPIdEl.value = document.getElementById('editDirectorVPId').value;
                 if (imoEl) imoEl.value = document.getElementById('editIMO').value;
 
                 // Update Priority
@@ -4954,7 +5524,7 @@ export function init(_root) {
                 // Update Comments
                 const commentsEl = document.getElementById(`story-comments-${storyId}`);
                 if (commentsEl) commentsEl.value = document.getElementById('editComments').value;
-                
+
                 // Update Country Flags
                 const flagGlobalEl = document.getElementById(`story-flag-global-${storyId}`);
                 const flagUKEl = document.getElementById(`story-flag-uk-${storyId}`);
@@ -4969,28 +5539,49 @@ export function init(_root) {
                 const flagSloveniaEl = document.getElementById(`story-flag-slovenia-${storyId}`);
                 const flagCroatiaEl = document.getElementById(`story-flag-croatia-${storyId}`);
                 const flagFranceEl = document.getElementById(`story-flag-france-${storyId}`);
-                if (flagGlobalEl) flagGlobalEl.checked = document.getElementById('editFlagGlobal').checked;
+                if (flagGlobalEl)
+                    flagGlobalEl.checked = document.getElementById('editFlagGlobal').checked;
                 if (flagUKEl) flagUKEl.checked = document.getElementById('editFlagUK').checked;
-                if (flagIcelandEl) flagIcelandEl.checked = document.getElementById('editFlagIceland').checked;
-                if (flagHungaryEl) flagHungaryEl.checked = document.getElementById('editFlagHungary').checked;
-                if (flagSpainEl) flagSpainEl.checked = document.getElementById('editFlagSpain').checked;
-                if (flagItalyEl) flagItalyEl.checked = document.getElementById('editFlagItaly').checked;
-                if (flagPortugalEl) flagPortugalEl.checked = document.getElementById('editFlagPortugal').checked;
-                if (flagCzechiaEl) flagCzechiaEl.checked = document.getElementById('editFlagCzechia').checked;
-                if (flagGermanyEl) flagGermanyEl.checked = document.getElementById('editFlagGermany').checked;
-                if (flagSlovakiaEl) flagSlovakiaEl.checked = document.getElementById('editFlagSlovakia').checked;
-                if (flagSloveniaEl) flagSloveniaEl.checked = document.getElementById('editFlagSlovenia').checked;
-                if (flagCroatiaEl) flagCroatiaEl.checked = document.getElementById('editFlagCroatia').checked;
-                if (flagFranceEl) flagFranceEl.checked = document.getElementById('editFlagFrance').checked;
-                
+                if (flagIcelandEl)
+                    flagIcelandEl.checked = document.getElementById('editFlagIceland').checked;
+                if (flagHungaryEl)
+                    flagHungaryEl.checked = document.getElementById('editFlagHungary').checked;
+                if (flagSpainEl)
+                    flagSpainEl.checked = document.getElementById('editFlagSpain').checked;
+                if (flagItalyEl)
+                    flagItalyEl.checked = document.getElementById('editFlagItaly').checked;
+                if (flagPortugalEl)
+                    flagPortugalEl.checked = document.getElementById('editFlagPortugal').checked;
+                if (flagCzechiaEl)
+                    flagCzechiaEl.checked = document.getElementById('editFlagCzechia').checked;
+                if (flagGermanyEl)
+                    flagGermanyEl.checked = document.getElementById('editFlagGermany').checked;
+                if (flagSlovakiaEl)
+                    flagSlovakiaEl.checked = document.getElementById('editFlagSlovakia').checked;
+                if (flagSloveniaEl)
+                    flagSloveniaEl.checked = document.getElementById('editFlagSlovenia').checked;
+                if (flagCroatiaEl)
+                    flagCroatiaEl.checked = document.getElementById('editFlagCroatia').checked;
+                if (flagFranceEl)
+                    flagFranceEl.checked = document.getElementById('editFlagFrance').checked;
+
                 // Update Include in Product Roadmap
-                const includeInProductRoadmapEl = document.getElementById(`story-include-product-roadmap-${storyId}`);
-                if (includeInProductRoadmapEl) includeInProductRoadmapEl.checked = document.getElementById('editIncludeInProductRoadmap').checked;
+                const includeInProductRoadmapEl = document.getElementById(
+                    `story-include-product-roadmap-${storyId}`
+                );
+                if (includeInProductRoadmapEl)
+                    includeInProductRoadmapEl.checked = document.getElementById(
+                        'editIncludeInProductRoadmap'
+                    ).checked;
 
                 // Update Hide From Cross-Team Search
-                const hideFromSearchEl = document.getElementById(`story-hide-from-search-${storyId}`);
-                if (hideFromSearchEl) hideFromSearchEl.checked = document.getElementById('editHideFromSearch').checked;
-                
+                const hideFromSearchEl = document.getElementById(
+                    `story-hide-from-search-${storyId}`
+                );
+                if (hideFromSearchEl)
+                    hideFromSearchEl.checked =
+                        document.getElementById('editHideFromSearch').checked;
+
                 // Update checkboxes
                 const doneEl = document.getElementById(`story-done-${storyId}`);
                 const cancelledEl = document.getElementById(`story-cancelled-${storyId}`);
@@ -5000,7 +5591,7 @@ export function init(_root) {
                 const transferredOutEl = document.getElementById(`story-transferredout-${storyId}`);
                 const transferredInEl = document.getElementById(`story-transferredin-${storyId}`);
                 const proposedEl = document.getElementById(`story-proposed-${storyId}`);
-                
+
                 const doneChecked = document.getElementById('editDone').checked;
                 const cancelledChecked = document.getElementById('editCancelled').checked;
                 const atRiskChecked = document.getElementById('editAtRisk').checked;
@@ -5009,8 +5600,9 @@ export function init(_root) {
                 const transferredOutChecked = document.getElementById('editTransferredOut').checked;
                 const transferredInChecked = document.getElementById('editTransferredIn').checked;
                 const proposedChecked = document.getElementById('editProposed').checked;
-                const timelineChangesChecked = document.getElementById('editTimelineChanges').checked;
-                
+                const timelineChangesChecked =
+                    document.getElementById('editTimelineChanges').checked;
+
                 if (doneEl) {
                     doneEl.checked = doneChecked;
                     handleDoneChange(storyId); // Show/hide done section
@@ -5043,14 +5635,14 @@ export function init(_root) {
                     proposedEl.checked = proposedChecked;
                     handleProposedChange(storyId); // Show/hide proposed section
                 }
-                
+
                 // Update timeline changes checkbox
                 const timelineChangesEl = document.getElementById(`story-changes-${storyId}`);
                 if (timelineChangesEl) {
                     timelineChangesEl.checked = timelineChangesChecked;
                     toggleChanges(storyId); // Show/hide timeline changes section
                 }
-                
+
                 // Update status information
                 setTimeout(() => {
                     const doneDateEl = document.getElementById(`done-date-${storyId}`);
@@ -5061,34 +5653,52 @@ export function init(_root) {
                     const atRiskNotesEl = document.getElementById(`atrisk-notes-${storyId}`);
                     const newStoryDateEl = document.getElementById(`newstory-date-${storyId}`);
                     const newStoryNotesEl = document.getElementById(`newstory-notes-${storyId}`);
-                    const transferredOutDateEl = document.getElementById(`transferredout-date-${storyId}`);
-                    const transferredOutNotesEl = document.getElementById(`transferredout-notes-${storyId}`);
-                    const transferredInDateEl = document.getElementById(`transferredin-date-${storyId}`);
-                    const transferredInNotesEl = document.getElementById(`transferredin-notes-${storyId}`);
+                    const transferredOutDateEl = document.getElementById(
+                        `transferredout-date-${storyId}`
+                    );
+                    const transferredOutNotesEl = document.getElementById(
+                        `transferredout-notes-${storyId}`
+                    );
+                    const transferredInDateEl = document.getElementById(
+                        `transferredin-date-${storyId}`
+                    );
+                    const transferredInNotesEl = document.getElementById(
+                        `transferredin-notes-${storyId}`
+                    );
                     const proposedDateEl = document.getElementById(`proposed-date-${storyId}`);
                     const proposedNotesEl = document.getElementById(`proposed-notes-${storyId}`);
-                    
-                    if (doneDateEl) doneDateEl.value = document.getElementById('editDoneDate').value;
-                    if (doneNotesEl) doneNotesEl.value = document.getElementById('editDoneNotes').value;
-                    if (cancelDateEl) cancelDateEl.value = document.getElementById('editCancelDate').value;
-                    if (cancelNotesEl) cancelNotesEl.value = document.getElementById('editCancelNotes').value;
-                    if (atRiskDateEl) atRiskDateEl.value = document.getElementById('editAtRiskDate').value;
-                    if (atRiskNotesEl) atRiskNotesEl.value = document.getElementById('editAtRiskNotes').value;
-                    if (newStoryDateEl) newStoryDateEl.value = document.getElementById('editNewStoryDate').value;
-                    if (newStoryNotesEl) newStoryNotesEl.value = document.getElementById('editNewStoryNotes').value;
+
+                    if (doneDateEl)
+                        doneDateEl.value = document.getElementById('editDoneDate').value;
+                    if (doneNotesEl)
+                        doneNotesEl.value = document.getElementById('editDoneNotes').value;
+                    if (cancelDateEl)
+                        cancelDateEl.value = document.getElementById('editCancelDate').value;
+                    if (cancelNotesEl)
+                        cancelNotesEl.value = document.getElementById('editCancelNotes').value;
+                    if (atRiskDateEl)
+                        atRiskDateEl.value = document.getElementById('editAtRiskDate').value;
+                    if (atRiskNotesEl)
+                        atRiskNotesEl.value = document.getElementById('editAtRiskNotes').value;
+                    if (newStoryDateEl)
+                        newStoryDateEl.value = document.getElementById('editNewStoryDate').value;
+                    if (newStoryNotesEl)
+                        newStoryNotesEl.value = document.getElementById('editNewStoryNotes').value;
                     // Handle multiple info entries
                     const infoEntriesContainer = document.getElementById(`info-entries-${storyId}`);
                     if (infoEntriesContainer) {
                         // Clear existing entries
                         infoEntriesContainer.innerHTML = '';
-                        
+
                         // Collect info entries from modal
-                        const editInfoEntries = document.querySelectorAll('#editInfoEntries > div[id^="edit-info-entry-"]');
+                        const editInfoEntries = document.querySelectorAll(
+                            '#editInfoEntries > div[id^="edit-info-entry-"]'
+                        );
                         editInfoEntries.forEach((editEntryEl, index) => {
                             const entryId = editEntryEl.id;
                             const dateEl = document.getElementById(`edit-info-date-${entryId}`);
                             const notesEl = document.getElementById(`edit-info-notes-${entryId}`);
-                            
+
                             if (dateEl && notesEl && (dateEl.value || notesEl.value)) {
                                 // Create new entry in the main form
                                 const newEntryId = `info-entry-${storyId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -5112,70 +5722,113 @@ export function init(_root) {
                                     </div>
                                 `;
                                 infoEntriesContainer.insertAdjacentHTML('beforeend', entryHtml);
-                                
+
                                 // Add auto-update listeners
-                                const dateInput = document.getElementById(`info-date-${newEntryId}`);
-                                const notesInput = document.getElementById(`info-notes-${newEntryId}`);
-                                if (dateInput) dateInput.addEventListener('input', () => generatePreview());
-                                if (notesInput) notesInput.addEventListener('input', () => generatePreview());
+                                const dateInput = document.getElementById(
+                                    `info-date-${newEntryId}`
+                                );
+                                const notesInput = document.getElementById(
+                                    `info-notes-${newEntryId}`
+                                );
+                                if (dateInput)
+                                    dateInput.addEventListener('input', () => generatePreview());
+                                if (notesInput)
+                                    notesInput.addEventListener('input', () => generatePreview());
                             }
                         });
                     }
-                    if (transferredOutDateEl) transferredOutDateEl.value = document.getElementById('editTransferredOutDate').value;
-                    if (transferredOutNotesEl) transferredOutNotesEl.value = document.getElementById('editTransferredOutNotes').value;
-                    if (transferredInDateEl) transferredInDateEl.value = document.getElementById('editTransferredInDate').value;
-                    if (transferredInNotesEl) transferredInNotesEl.value = document.getElementById('editTransferredInNotes').value;
-                    if (proposedDateEl) proposedDateEl.value = document.getElementById('editProposedDate').value;
-                    if (proposedNotesEl) proposedNotesEl.value = document.getElementById('editProposedNotes').value;
-                    
+                    if (transferredOutDateEl)
+                        transferredOutDateEl.value =
+                            document.getElementById('editTransferredOutDate').value;
+                    if (transferredOutNotesEl)
+                        transferredOutNotesEl.value =
+                            document.getElementById('editTransferredOutNotes').value;
+                    if (transferredInDateEl)
+                        transferredInDateEl.value =
+                            document.getElementById('editTransferredInDate').value;
+                    if (transferredInNotesEl)
+                        transferredInNotesEl.value =
+                            document.getElementById('editTransferredInNotes').value;
+                    if (proposedDateEl)
+                        proposedDateEl.value = document.getElementById('editProposedDate').value;
+                    if (proposedNotesEl)
+                        proposedNotesEl.value = document.getElementById('editProposedNotes').value;
+
                     // Handle timeline changes
                     if (timelineChangesChecked) {
                         // Clear existing timeline changes first
-                        const existingChanges = document.querySelectorAll(`#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`);
-                        existingChanges.forEach(changeEl => changeEl.remove());
-                        
+                        const existingChanges = document.querySelectorAll(
+                            `#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`
+                        );
+                        existingChanges.forEach((changeEl) => changeEl.remove());
+
                         // Collect timeline changes from modal and sort by date
-                        const editChanges = document.querySelectorAll('#editChangesContainer > div[id^="edit-change-"]');
+                        const editChanges = document.querySelectorAll(
+                            '#editChangesContainer > div[id^="edit-change-"]'
+                        );
                         const modalTimelineChanges = [];
-                        
+
                         editChanges.forEach((editChangeEl) => {
                             const editChangeId = editChangeEl.id;
                             const dateValue = document.getElementById(`${editChangeId}-date`).value;
                             const descValue = document.getElementById(`${editChangeId}-desc`).value;
-                            const prevStartValue = document.getElementById(`${editChangeId}-prevstart`).value;
-                            const newStartValue = document.getElementById(`${editChangeId}-newstart`).value;
+                            const prevStartValue = document.getElementById(
+                                `${editChangeId}-prevstart`
+                            ).value;
+                            const newStartValue = document.getElementById(
+                                `${editChangeId}-newstart`
+                            ).value;
                             const prevValue = document.getElementById(`${editChangeId}-prev`).value;
                             const newValue = document.getElementById(`${editChangeId}-new`).value;
 
-                            if (dateValue || descValue || prevStartValue || newStartValue || prevValue || newValue) {
+                            if (
+                                dateValue ||
+                                descValue ||
+                                prevStartValue ||
+                                newStartValue ||
+                                prevValue ||
+                                newValue
+                            ) {
                                 modalTimelineChanges.push({
                                     date: dateValue,
                                     description: descValue,
                                     prevStartDate: prevStartValue,
                                     newStartDate: newStartValue,
                                     prevEndDate: prevValue,
-                                    newEndDate: newValue
+                                    newEndDate: newValue,
                                 });
                             }
                         });
-                        
+
                         // Sort timeline changes by date
                         sortTimelineChangesByDate(modalTimelineChanges);
-                        
+
                         // Add sorted timeline changes to the main form
                         modalTimelineChanges.forEach((change) => {
                             addChange(storyId);
-                            
+
                             // IMMEDIATE population without setTimeout to avoid race conditions
-                            const changeContainers = document.querySelectorAll(`#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`);
+                            const changeContainers = document.querySelectorAll(
+                                `#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`
+                            );
                             const latestContainer = changeContainers[changeContainers.length - 1];
                             if (latestContainer) {
                                 const fullChangeId = latestContainer.id.replace('change-', '');
-                                const dateEl = document.getElementById(`change-date-${fullChangeId}`);
-                                const descEl = document.getElementById(`change-desc-${fullChangeId}`);
-                                const prevStartEl = document.getElementById(`change-prevstart-${fullChangeId}`);
-                                const newStartEl = document.getElementById(`change-newstart-${fullChangeId}`);
-                                const prevEl = document.getElementById(`change-prev-${fullChangeId}`);
+                                const dateEl = document.getElementById(
+                                    `change-date-${fullChangeId}`
+                                );
+                                const descEl = document.getElementById(
+                                    `change-desc-${fullChangeId}`
+                                );
+                                const prevStartEl = document.getElementById(
+                                    `change-prevstart-${fullChangeId}`
+                                );
+                                const newStartEl = document.getElementById(
+                                    `change-newstart-${fullChangeId}`
+                                );
+                                const prevEl = document.getElementById(
+                                    `change-prev-${fullChangeId}`
+                                );
                                 const newEl = document.getElementById(`change-new-${fullChangeId}`);
 
                                 if (dateEl) dateEl.value = change.date;
@@ -5186,11 +5839,12 @@ export function init(_root) {
                                 if (newEl) newEl.value = change.newEndDate;
                             }
                         });
-                        
+
                         // Update story's actual start/end dates to reflect the most recent timeline change from modal
                         if (modalTimelineChanges.length > 0) {
                             // modalTimelineChanges is already sorted, so the last entry is the most recent
-                            const mostRecentChange = modalTimelineChanges[modalTimelineChanges.length - 1];
+                            const mostRecentChange =
+                                modalTimelineChanges[modalTimelineChanges.length - 1];
 
                             if (mostRecentChange && mostRecentChange.newStartDate) {
                                 const newStartDate = mostRecentChange.newStartDate;
@@ -5224,22 +5878,23 @@ export function init(_root) {
                         }
                     } else {
                         // Clear all existing timeline changes if unchecked
-                        const existingChanges = document.querySelectorAll(`#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`);
-                        existingChanges.forEach(changeEl => changeEl.remove());
+                        const existingChanges = document.querySelectorAll(
+                            `#changes-container-${storyId} > div[id^="change-${storyId}-change-"]`
+                        );
+                        existingChanges.forEach((changeEl) => changeEl.remove());
                     }
-                    
+
                     // Update button state after loading/clearing changes
                     updateChangeButton(storyId);
-                    
+
                     // Close modal
                     closeEditModal();
-                    
+
                     // Regenerate preview to show changes - add a longer delay to ensure all DOM updates are complete
                     setTimeout(() => {
                         generatePreview();
                     }, 200);
                 }, 100);
-                
             } catch (error) {
                 alert('Error saving changes: ' + error.message);
             }
@@ -5251,39 +5906,42 @@ export function init(_root) {
                 alert('No story selected for editing.');
                 return;
             }
-            
+
             // Use the existing function with epic name and story index
             moveStoryUpByEpic(currentEditingStory.epicName, currentEditingStory.storyIndex);
-            
+
             // Update the currentEditingStory index since the story moved up
             if (currentEditingStory.storyIndex > 0) {
                 currentEditingStory.storyIndex--;
             }
         }
-        
+
         function moveCurrentStoryDown() {
             if (!currentEditingStory) {
                 alert('No story selected for editing.');
                 return;
             }
-            
+
             // Find the EPIC to check if this is the last story
             const epicElements = document.querySelectorAll('.epic-section');
             let targetEpicElement = null;
-            
-            epicElements.forEach(epicEl => {
+
+            epicElements.forEach((epicEl) => {
                 const epicId = epicEl.id.split('-')[1];
                 const epicNameEl = document.getElementById(`epic-name-${epicId}`);
                 if (epicNameEl && epicNameEl.value.trim() === currentEditingStory.epicName) {
                     targetEpicElement = epicEl;
                 }
             });
-            
+
             if (targetEpicElement) {
                 const storyElements = targetEpicElement.querySelectorAll('.story-section');
                 // Only move if not the last story
                 if (currentEditingStory.storyIndex < storyElements.length - 1) {
-                    moveStoryDownByEpic(currentEditingStory.epicName, currentEditingStory.storyIndex);
+                    moveStoryDownByEpic(
+                        currentEditingStory.epicName,
+                        currentEditingStory.storyIndex
+                    );
                     currentEditingStory.storyIndex++;
                 }
             }
@@ -5294,23 +5952,26 @@ export function init(_root) {
                 alert('No story selected for editing.');
                 return;
             }
-            
+
             // Handle BTL (Below the Line) stories differently
             if (currentEditingStory.epicName === 'Below the Line') {
                 // BTL stories are stored in btl-stories-container
                 const btlContainer = document.getElementById('btl-stories-container');
                 const btlStories = btlContainer.querySelectorAll('.story-section');
-                
-                if (currentEditingStory.storyIndex >= 0 && currentEditingStory.storyIndex < btlStories.length) {
+
+                if (
+                    currentEditingStory.storyIndex >= 0 &&
+                    currentEditingStory.storyIndex < btlStories.length
+                ) {
                     const storyToDelete = btlStories[currentEditingStory.storyIndex];
                     storyToDelete.remove();
-                    
+
                     // Update BTL add button state
                     updateBTLAddButton();
-                    
+
                     // Close the modal
                     closeEditModal();
-                    
+
                     // Refresh the roadmap preview
                     generatePreview();
                 } else {
@@ -5318,31 +5979,34 @@ export function init(_root) {
                 }
                 return;
             }
-            
+
             // Handle regular EPIC stories
             const epicElements = document.querySelectorAll('.epic-section');
             let targetEpicElement = null;
-            
-            epicElements.forEach(epicEl => {
+
+            epicElements.forEach((epicEl) => {
                 const epicId = epicEl.id.split('-')[1];
                 const epicNameEl = document.getElementById(`epic-name-${epicId}`);
                 if (epicNameEl && epicNameEl.value.trim() === currentEditingStory.epicName) {
                     targetEpicElement = epicEl;
                 }
             });
-            
+
             if (targetEpicElement) {
                 const storyElements = targetEpicElement.querySelectorAll('.story-section');
-                if (currentEditingStory.storyIndex >= 0 && currentEditingStory.storyIndex < storyElements.length) {
+                if (
+                    currentEditingStory.storyIndex >= 0 &&
+                    currentEditingStory.storyIndex < storyElements.length
+                ) {
                     const storyToDelete = storyElements[currentEditingStory.storyIndex];
                     storyToDelete.remove();
-                    
+
                     // Update story numbers in the EPIC
                     updateStoryNumbers(targetEpicElement);
-                    
+
                     // Close the modal
                     closeEditModal();
-                    
+
                     // Refresh the roadmap preview
                     generatePreview();
                 } else {
@@ -5353,30 +6017,30 @@ export function init(_root) {
             }
         }
         // Close modal when clicking outside
-        document.addEventListener('click', function(event) {
+        document.addEventListener('click', function (event) {
             const modal = document.getElementById('editStoryModal');
             if (event.target === modal) {
                 closeEditModal();
             }
-            
+
             const monthlyKTLOModal = document.getElementById('editMonthlyKTLOModal');
             if (event.target === monthlyKTLOModal) {
                 closeEditMonthlyKTLOModal();
             }
         });
-        
+
         // Prevent form submission in modal to avoid page jumping
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const modalForm = document.getElementById('editStoryForm');
             if (modalForm) {
-                modalForm.addEventListener('submit', function(event) {
+                modalForm.addEventListener('submit', function (event) {
                     event.preventDefault();
                     return false;
                 });
             }
         });
 
-                // Enable hover for all monthly boxes including January/December
+        // Enable hover for all monthly boxes including January/December
         function setupMonthlyBoxPriming(doc) {
             // Override the embedded CSS to allow January/December hover
             const style = doc.createElement('style');
@@ -5445,49 +6109,47 @@ export function init(_root) {
         function updateDocumentTitle() {
             const teamNameInput = document.getElementById('teamName');
             const teamName = teamNameInput ? teamNameInput.value.trim() : '';
-            
+
             // Use same format as filename: fallback to 'MyTeam' if no team name
-                            const roadmapYear = document.getElementById('roadmapYear').value || '2025';
-                document.title = `${teamName || 'MyTeam'}.Teya-Roadmap.${roadmapYear}.html`;
+            const roadmapYear = document.getElementById('roadmapYear').value || '2025';
+            document.title = `${teamName || 'MyTeam'}.Teya-Roadmap.${roadmapYear}.html`;
         }
-        
+
         // Initialize title update when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const teamNameInput = document.getElementById('teamName');
             if (teamNameInput) {
                 // Update title when team name changes
                 teamNameInput.addEventListener('input', updateDocumentTitle);
                 teamNameInput.addEventListener('blur', updateDocumentTitle);
-                
+
                 // Update title on initial load
                 updateDocumentTitle();
             }
         });
-    
-;
 
         // File Browser functionality. Directory selection is owned by the
         // shared directory store (see /app/directory-store.js) - we just read
         // from it and re-render the file list when it changes.
 
         // Toggle file browser collapse
-        
+
         // Update file browser button visibility based on panel state
-        
+
         // Delegates to the shared folder picker in the top nav. Kept for any
         // legacy callers that still invoke selectDirectory() directly.
-        
+
         // Load and display files from selected directory
-        
+
         // Open roadmap file - handle both JSON and Excel files
-        
+
         // Process Excel workbook directly without localStorage
-        
+
         // Check for loaded data from URL parameters
         function checkForLoadedData() {
             const urlParams = new URLSearchParams(window.location.search);
             const loadDataKey = urlParams.get('loadData');
-            
+
             if (loadDataKey) {
                 // Set flag to prevent default template loading
                 window.loadingExternalData = true;
@@ -5495,14 +6157,14 @@ export function init(_root) {
                     const dataStr = localStorage.getItem(loadDataKey);
                     if (dataStr) {
                         const loadedData = JSON.parse(dataStr);
-                        
+
                         if (loadedData._fileType === 'excel') {
                             // Excel handling removed
                         } else {
                             // Handle JSON data
                             const teamData = loadedData.teamData || loadedData;
                             loadTeamData(teamData);
-                            
+
                             // Ensure KTLO month data is displayed after JSON loading
                             setTimeout(() => {
                                 const selector = document.getElementById('ktlo-month-selector');
@@ -5512,7 +6174,7 @@ export function init(_root) {
                                 }
                             }, 100);
                         }
-                        
+
                         // Collapse the builder if requested
                         if (loadedData._collapseBuilder) {
                             setTimeout(() => {
@@ -5521,20 +6183,20 @@ export function init(_root) {
                                 }
                             }, 100);
                         }
-                        
+
                         // Clean up localStorage
                         localStorage.removeItem(loadDataKey);
-                        
+
                         // Remove the parameter from URL for cleaner appearance
                         const newUrl = window.location.href.split('?')[0];
                         window.history.replaceState({}, document.title, newUrl);
-                        
+
                         return true; // Indicate that external data was loaded
                     }
                 } catch (error) {
                     console.error('Error loading roadmap data:', error);
                     alert('Error loading roadmap data: ' + error.message);
-                    
+
                     // Clear the flag since loading failed
                     window.loadingExternalData = false;
                     return false; // Indicate that external data loading failed
@@ -5543,18 +6205,19 @@ export function init(_root) {
                 return false; // No external data found
             }
         }
-        
+
         // Check if File System Access API is supported and show warning if not
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', async function () {
             // Check for loaded data first - this must happen before default template loading
             checkForLoadedData();
-            
+
             // Initialize sorting checkboxes from saved prefs
             const sortingToggle = document.getElementById('story-sorting-toggle');
             const endToggle = document.getElementById('story-sorting-end-toggle');
             const textBelowToggle = document.getElementById('force-text-below-toggle');
             if (sortingToggle) {
-                const byStart = ConfigUtility.shouldSortByStart() || ConfigUtility.shouldSortStories();
+                const byStart =
+                    ConfigUtility.shouldSortByStart() || ConfigUtility.shouldSortStories();
                 sortingToggle.checked = !!byStart;
             }
             if (endToggle) {
@@ -5564,98 +6227,139 @@ export function init(_root) {
             if (textBelowToggle) {
                 textBelowToggle.checked = false;
             }
-            
+
             // The shared directory store drives the file list. Subscribe once
             // and re-render whenever the selected folder (or its permission)
             // changes. Works for the initial state too since the store emits
             // synchronously on subscribe.
         });
-        
-    
+
         // === END legacy script body ===
 
         // Inline event attributes resolve their handlers against window.
         // toggleShareDropdown, closeShareDropdown, toggleShareDropdownBottom,
         // closeShareDropdownBottom, exportJPG, exportPDF are exposed at the top
         // of init() via Object.assign(window, share, exportLib).
-if (typeof createEpicId === 'function') window.createEpicId = createEpicId;
-if (typeof createStoryId === 'function') window.createStoryId = createStoryId;
-if (typeof loadDefaultTemplate === 'function') window.loadDefaultTemplate = loadDefaultTemplate;
-if (typeof initializeBasicTemplate === 'function') window.initializeBasicTemplate = initializeBasicTemplate;
-if (typeof attemptInitialization === 'function') window.attemptInitialization = attemptInitialization;
-if (typeof initializeKTLOMonths === 'function') window.initializeKTLOMonths = initializeKTLOMonths;
-if (typeof switchKTLOMonth === 'function') window.switchKTLOMonth = switchKTLOMonth;
-if (typeof loadKTLOMonth === 'function') window.loadKTLOMonth = loadKTLOMonth;
-if (typeof saveCurrentKTLOData === 'function') window.saveCurrentKTLOData = saveCurrentKTLOData;
-if (typeof addEpic === 'function') window.addEpic = addEpic;
-if (typeof removeEpic === 'function') window.removeEpic = removeEpic;
-if (typeof toggleEpicCollapse === 'function') window.toggleEpicCollapse = toggleEpicCollapse;
-if (typeof toggleBTLCollapse === 'function') window.toggleBTLCollapse = toggleBTLCollapse;
-if (typeof toggleStoryCollapse === 'function') window.toggleStoryCollapse = toggleStoryCollapse;
-if (typeof updateStoryHeaderTitle === 'function') window.updateStoryHeaderTitle = updateStoryHeaderTitle;
-if (typeof debouncedGeneratePreview === 'function') window.debouncedGeneratePreview = debouncedGeneratePreview;
-if (typeof handleForceTextBelowToggle === 'function') window.handleForceTextBelowToggle = handleForceTextBelowToggle;
-if (typeof addAutoUpdateListeners === 'function') window.addAutoUpdateListeners = addAutoUpdateListeners;
-if (typeof addListenersToExistingElements === 'function') window.addListenersToExistingElements = addListenersToExistingElements;
-if (typeof addListenersToElement === 'function') window.addListenersToElement = addListenersToElement;
-if (typeof addStory === 'function') window.addStory = addStory;
-if (typeof removeStory === 'function') window.removeStory = removeStory;
-if (typeof addBTLStory === 'function') window.addBTLStory = addBTLStory;
-if (typeof updateBTLAddButton === 'function') window.updateBTLAddButton = updateBTLAddButton;
-if (typeof getTodaysDateEuropean === 'function') window.getTodaysDateEuropean = getTodaysDateEuropean;
-if (typeof getCurrentRoadmapYear === 'function') window.getCurrentRoadmapYear = getCurrentRoadmapYear;
-// addInfoEntry/removeInfoEntry/convertSingleInfoToMultiple come from the
-// info-entries factory and are exposed via Object.assign at the top of init().
-if (typeof addEditInfoEntry === 'function') window.addEditInfoEntry = addEditInfoEntry;
-if (typeof removeEditInfoEntry === 'function') window.removeEditInfoEntry = removeEditInfoEntry;
-if (typeof updateStoryNumbers === 'function') window.updateStoryNumbers = updateStoryNumbers;
-if (typeof generatePreview === 'function') window.generatePreview = generatePreview;
-if (typeof initializeIframeInteraction === 'function') window.initializeIframeInteraction = initializeIframeInteraction;
-if (typeof addAlignmentGuide === 'function') window.addAlignmentGuide = addAlignmentGuide;
-if (typeof collectFormData === 'function') window.collectFormData = collectFormData;
-if (typeof collectStoryData === 'function') window.collectStoryData = collectStoryData;
-if (typeof collectKTLOData === 'function') window.collectKTLOData = collectKTLOData;
-if (typeof collectBTLData === 'function') window.collectBTLData = collectBTLData;
-if (typeof updateFilenameDisplay === 'function') window.updateFilenameDisplay = updateFilenameDisplay;
-if (typeof newRoadmap === 'function') window.newRoadmap = newRoadmap;
-if (typeof closeNewRoadmapModal === 'function') window.closeNewRoadmapModal = closeNewRoadmapModal;
-if (typeof confirmNewRoadmap === 'function') window.confirmNewRoadmap = confirmNewRoadmap;
-if (typeof saveRoadmapInPlace === 'function') window.saveRoadmapInPlace = saveRoadmapInPlace;
-if (typeof prepareRoadmapForSave === 'function') window.prepareRoadmapForSave = prepareRoadmapForSave;
-if (typeof downloadRoadmap === 'function') window.downloadRoadmap = downloadRoadmap;
-if (typeof loadRoadmap === 'function') window.loadRoadmap = loadRoadmap;
-if (typeof handleRoadmapLoad === 'function') window.handleRoadmapLoad = handleRoadmapLoad;
-if (typeof fixDatesOnLoad === 'function') window.fixDatesOnLoad = fixDatesOnLoad;
-if (typeof handleFileLoad === 'function') window.handleFileLoad = handleFileLoad;
-// Stats functions are exposed via Object.assign at the top of init().
-if (typeof updateIdCountersAfterImport === 'function') window.updateIdCountersAfterImport = updateIdCountersAfterImport;
-if (typeof loadTeamData === 'function') window.loadTeamData = loadTeamData;
-if (typeof roundToNearestFive === 'function') window.roundToNearestFive = roundToNearestFive;
-if (typeof loadKTLOData === 'function') window.loadKTLOData = loadKTLOData;
-if (typeof loadBTLData === 'function') window.loadBTLData = loadBTLData;
-if (typeof loadStoryData === 'function') window.loadStoryData = loadStoryData;
-if (typeof openEditStoryModal === 'function') window.openEditStoryModal = openEditStoryModal;
-if (typeof closeEditModal === 'function') window.closeEditModal = closeEditModal;
-if (typeof toggleEditStatusFields === 'function') window.toggleEditStatusFields = toggleEditStatusFields;
-if (typeof initializeEditKTLOMonths === 'function') window.initializeEditKTLOMonths = initializeEditKTLOMonths;
-if (typeof switchEditKTLOMonth === 'function') window.switchEditKTLOMonth = switchEditKTLOMonth;
-if (typeof loadEditKTLOMonth === 'function') window.loadEditKTLOMonth = loadEditKTLOMonth;
-if (typeof openEditMonthlyKTLOModal === 'function') window.openEditMonthlyKTLOModal = openEditMonthlyKTLOModal;
-if (typeof closeEditMonthlyKTLOModal === 'function') window.closeEditMonthlyKTLOModal = closeEditMonthlyKTLOModal;
-if (typeof saveMonthlyKTLOChanges === 'function') window.saveMonthlyKTLOChanges = saveMonthlyKTLOChanges;
-if (typeof findStoryInForm === 'function') window.findStoryInForm = findStoryInForm;
-if (typeof saveStoryChanges === 'function') window.saveStoryChanges = saveStoryChanges;
-if (typeof moveCurrentStoryUp === 'function') window.moveCurrentStoryUp = moveCurrentStoryUp;
-if (typeof moveCurrentStoryDown === 'function') window.moveCurrentStoryDown = moveCurrentStoryDown;
-if (typeof deleteCurrentStory === 'function') window.deleteCurrentStory = deleteCurrentStory;
-if (typeof setupMonthlyBoxPriming === 'function') window.setupMonthlyBoxPriming = setupMonthlyBoxPriming;
-if (typeof updateDocumentTitle === 'function') window.updateDocumentTitle = updateDocumentTitle;
-if (typeof checkForLoadedData === 'function') window.checkForLoadedData = checkForLoadedData;
+        if (typeof createEpicId === 'function') window.createEpicId = createEpicId;
+        if (typeof createStoryId === 'function') window.createStoryId = createStoryId;
+        if (typeof loadDefaultTemplate === 'function')
+            window.loadDefaultTemplate = loadDefaultTemplate;
+        if (typeof initializeBasicTemplate === 'function')
+            window.initializeBasicTemplate = initializeBasicTemplate;
+        if (typeof attemptInitialization === 'function')
+            window.attemptInitialization = attemptInitialization;
+        if (typeof initializeKTLOMonths === 'function')
+            window.initializeKTLOMonths = initializeKTLOMonths;
+        if (typeof switchKTLOMonth === 'function') window.switchKTLOMonth = switchKTLOMonth;
+        if (typeof loadKTLOMonth === 'function') window.loadKTLOMonth = loadKTLOMonth;
+        if (typeof saveCurrentKTLOData === 'function')
+            window.saveCurrentKTLOData = saveCurrentKTLOData;
+        if (typeof addEpic === 'function') window.addEpic = addEpic;
+        if (typeof removeEpic === 'function') window.removeEpic = removeEpic;
+        if (typeof toggleEpicCollapse === 'function')
+            window.toggleEpicCollapse = toggleEpicCollapse;
+        if (typeof toggleBTLCollapse === 'function') window.toggleBTLCollapse = toggleBTLCollapse;
+        if (typeof toggleStoryCollapse === 'function')
+            window.toggleStoryCollapse = toggleStoryCollapse;
+        if (typeof updateStoryHeaderTitle === 'function')
+            window.updateStoryHeaderTitle = updateStoryHeaderTitle;
+        if (typeof debouncedGeneratePreview === 'function')
+            window.debouncedGeneratePreview = debouncedGeneratePreview;
+        if (typeof handleForceTextBelowToggle === 'function')
+            window.handleForceTextBelowToggle = handleForceTextBelowToggle;
+        if (typeof addAutoUpdateListeners === 'function')
+            window.addAutoUpdateListeners = addAutoUpdateListeners;
+        if (typeof addListenersToExistingElements === 'function')
+            window.addListenersToExistingElements = addListenersToExistingElements;
+        if (typeof addListenersToElement === 'function')
+            window.addListenersToElement = addListenersToElement;
+        if (typeof addStory === 'function') window.addStory = addStory;
+        if (typeof removeStory === 'function') window.removeStory = removeStory;
+        if (typeof addBTLStory === 'function') window.addBTLStory = addBTLStory;
+        if (typeof updateBTLAddButton === 'function')
+            window.updateBTLAddButton = updateBTLAddButton;
+        if (typeof getTodaysDateEuropean === 'function')
+            window.getTodaysDateEuropean = getTodaysDateEuropean;
+        if (typeof getCurrentRoadmapYear === 'function')
+            window.getCurrentRoadmapYear = getCurrentRoadmapYear;
+        // addInfoEntry/removeInfoEntry/convertSingleInfoToMultiple come from the
+        // info-entries factory and are exposed via Object.assign at the top of init().
+        if (typeof addEditInfoEntry === 'function') window.addEditInfoEntry = addEditInfoEntry;
+        if (typeof removeEditInfoEntry === 'function')
+            window.removeEditInfoEntry = removeEditInfoEntry;
+        if (typeof updateStoryNumbers === 'function')
+            window.updateStoryNumbers = updateStoryNumbers;
+        if (typeof generatePreview === 'function') window.generatePreview = generatePreview;
+        if (typeof initializeIframeInteraction === 'function')
+            window.initializeIframeInteraction = initializeIframeInteraction;
+        if (typeof addAlignmentGuide === 'function') window.addAlignmentGuide = addAlignmentGuide;
+        if (typeof collectFormData === 'function') window.collectFormData = collectFormData;
+        if (typeof collectStoryData === 'function') window.collectStoryData = collectStoryData;
+        if (typeof collectKTLOData === 'function') window.collectKTLOData = collectKTLOData;
+        if (typeof collectBTLData === 'function') window.collectBTLData = collectBTLData;
+        if (typeof updateFilenameDisplay === 'function')
+            window.updateFilenameDisplay = updateFilenameDisplay;
+        if (typeof newRoadmap === 'function') window.newRoadmap = newRoadmap;
+        if (typeof closeNewRoadmapModal === 'function')
+            window.closeNewRoadmapModal = closeNewRoadmapModal;
+        if (typeof confirmNewRoadmap === 'function') window.confirmNewRoadmap = confirmNewRoadmap;
+        if (typeof saveRoadmapInPlace === 'function')
+            window.saveRoadmapInPlace = saveRoadmapInPlace;
+        if (typeof prepareRoadmapForSave === 'function')
+            window.prepareRoadmapForSave = prepareRoadmapForSave;
+        if (typeof downloadRoadmap === 'function') window.downloadRoadmap = downloadRoadmap;
+        if (typeof loadRoadmap === 'function') window.loadRoadmap = loadRoadmap;
+        if (typeof handleRoadmapLoad === 'function') window.handleRoadmapLoad = handleRoadmapLoad;
+        if (typeof fixDatesOnLoad === 'function') window.fixDatesOnLoad = fixDatesOnLoad;
+        if (typeof handleFileLoad === 'function') window.handleFileLoad = handleFileLoad;
+        // Stats functions are exposed via Object.assign at the top of init().
+        if (typeof updateIdCountersAfterImport === 'function')
+            window.updateIdCountersAfterImport = updateIdCountersAfterImport;
+        if (typeof loadTeamData === 'function') window.loadTeamData = loadTeamData;
+        if (typeof roundToNearestFive === 'function')
+            window.roundToNearestFive = roundToNearestFive;
+        if (typeof loadKTLOData === 'function') window.loadKTLOData = loadKTLOData;
+        if (typeof loadBTLData === 'function') window.loadBTLData = loadBTLData;
+        if (typeof loadStoryData === 'function') window.loadStoryData = loadStoryData;
+        if (typeof openEditStoryModal === 'function')
+            window.openEditStoryModal = openEditStoryModal;
+        if (typeof closeEditModal === 'function') window.closeEditModal = closeEditModal;
+        if (typeof toggleEditStatusFields === 'function')
+            window.toggleEditStatusFields = toggleEditStatusFields;
+        if (typeof initializeEditKTLOMonths === 'function')
+            window.initializeEditKTLOMonths = initializeEditKTLOMonths;
+        if (typeof switchEditKTLOMonth === 'function')
+            window.switchEditKTLOMonth = switchEditKTLOMonth;
+        if (typeof loadEditKTLOMonth === 'function') window.loadEditKTLOMonth = loadEditKTLOMonth;
+        if (typeof openEditMonthlyKTLOModal === 'function')
+            window.openEditMonthlyKTLOModal = openEditMonthlyKTLOModal;
+        if (typeof closeEditMonthlyKTLOModal === 'function')
+            window.closeEditMonthlyKTLOModal = closeEditMonthlyKTLOModal;
+        if (typeof saveMonthlyKTLOChanges === 'function')
+            window.saveMonthlyKTLOChanges = saveMonthlyKTLOChanges;
+        if (typeof findStoryInForm === 'function') window.findStoryInForm = findStoryInForm;
+        if (typeof saveStoryChanges === 'function') window.saveStoryChanges = saveStoryChanges;
+        if (typeof moveCurrentStoryUp === 'function')
+            window.moveCurrentStoryUp = moveCurrentStoryUp;
+        if (typeof moveCurrentStoryDown === 'function')
+            window.moveCurrentStoryDown = moveCurrentStoryDown;
+        if (typeof deleteCurrentStory === 'function')
+            window.deleteCurrentStory = deleteCurrentStory;
+        if (typeof setupMonthlyBoxPriming === 'function')
+            window.setupMonthlyBoxPriming = setupMonthlyBoxPriming;
+        if (typeof updateDocumentTitle === 'function')
+            window.updateDocumentTitle = updateDocumentTitle;
+        if (typeof checkForLoadedData === 'function')
+            window.checkForLoadedData = checkForLoadedData;
     } finally {
         document.addEventListener = __origAdd;
     }
     for (const fn of __viewReady) {
-        try { fn.call(document, new Event('DOMContentLoaded')); } catch (e) { console.error(e); }
+        try {
+            fn.call(document, new Event('DOMContentLoaded'));
+        } catch (e) {
+            console.error(e);
+        }
     }
     return cleanupDirectorySubscription;
 }

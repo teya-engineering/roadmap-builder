@@ -4,61 +4,78 @@
    consistent with the builder in light and dark modes. */
 
 :root {
-    --rm-bg:            #f5f5f5;
-    --rm-surface:       #ffffff;
-    --rm-surface-muted: #f0f0f0;
-    --rm-border-strong: #333333;
-    --rm-border:        #999999;
-    --rm-grid-line:     #cccccc;
-    --rm-grid-major:    #666666;
-    --rm-separator:     #666666;
-    --rm-text:          #333333;
-    --rm-text-strong:   #222222;
-    --rm-text-muted:    #555555;
-    --rm-text-subtle:   #666666;
-    --rm-text-faint:    #888888;
-    --rm-text-faintest: #aaaaaa;
-    --rm-surface-disabled: #f5f5f5;
-    --rm-surface-proposed: #f8f8f8;
-    --rm-border-disabled:  #cccccc;
-    --rm-month-gutter:     #f5f5f5;
-    --rm-continuation-glow: rgba(255, 255, 255, 0.8);
-    --rm-text-shadow: 1px 1px 2px var(--rm-continuation-glow);
-    --rm-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    --rm-container-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    /* Swimlane alternating bands. UIUtility's getAlternatingBackgroundColor
-       returns these var() names so dark mode can override without touching
-       the renderer. */
-    --rm-swimlane-even: #f4ffdd; /* lime */
-    --rm-swimlane-odd:  #f5e6d3; /* brown */
+    --rm-bg: #f6f8fa;
+    --rm-surface: #ffffff;
+    --rm-surface-muted: #f8fafc;
+    --rm-border-strong: #334155;
+    --rm-border: #e2e8f0;
+    --rm-grid-line: #e3e8db;
+    --rm-grid-line-odd: #ece1d2;
+    --rm-grid-major: #b3bcc9;
+    --rm-separator: #334155;
+    --rm-text: #334155;
+    --rm-text-strong: #0f172a;
+    --rm-text-muted: #475569;
+    --rm-text-subtle: #64748b;
+    --rm-text-faint: #94a3b8;
+    --rm-text-faintest: #b6c2d3;
+    --rm-surface-disabled: #f8fafc;
+    --rm-surface-proposed: #f8fafc;
+    --rm-border-disabled: #cbd5e1;
+    --rm-status-done: #059669;
+    --rm-status-cancel: #dc2626;
+    --rm-status-risk: #d97706;
+    --rm-status-info: #0284c7;
+    --rm-status-new: #7c3aed;
+    --rm-status-transfer: #64748b;
+    --rm-status-proposed: #005a8b;
+    --rm-shadow-xs: 0 1px 2px rgb(15 23 42 / 0.06);
+    --rm-shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.06);
+    --rm-hover-shadow: 0 4px 8px rgb(15 23 42 / 0.18);
+    --rm-container-shadow: var(--rm-shadow-md);
+    --rm-swimlane-even: #f6faea;
+    --rm-swimlane-odd: #f9f1e6;
 }
 
-:root[data-theme="dark"] {
-    --rm-bg:            #0f172a;
-    --rm-surface:       #1e293b;
+:root[data-band-palette='classic'] {
+    --rm-swimlane-even: #f4ffdd;
+    --rm-swimlane-odd: #f5e6d3;
+    --rm-grid-line: #dce8c9;
+    --rm-grid-line-odd: #e8d7c4;
+}
+
+:root[data-band-palette='neutral'] {
+    --rm-swimlane-even: #f8fafc;
+    --rm-swimlane-odd: #eef2f7;
+    --rm-grid-line: #e2e8f0;
+    --rm-grid-line-odd: #dce3eb;
+}
+
+:root[data-theme='dark'] {
+    --rm-bg: #0f172a;
+    --rm-surface: #1e293b;
     --rm-surface-muted: #273449;
     --rm-border-strong: #cbd5e1;
-    --rm-border:        #64748b;
-    --rm-grid-line:     #334155;
-    --rm-grid-major:    #64748b;
-    --rm-separator:     #64748b;
-    --rm-text:          #e2e8f0;
-    --rm-text-strong:   #f8fafc;
-    --rm-text-muted:    #cbd5e1;
-    --rm-text-subtle:   #b6c2d3;
-    --rm-text-faint:    #94a3b8;
+    --rm-border: #64748b;
+    --rm-grid-line: #334155;
+    --rm-grid-major: #64748b;
+    --rm-separator: #64748b;
+    --rm-text: #e2e8f0;
+    --rm-text-strong: #f8fafc;
+    --rm-text-muted: #cbd5e1;
+    --rm-text-subtle: #b6c2d3;
+    --rm-text-faint: #94a3b8;
     --rm-text-faintest: #64748b;
     --rm-surface-disabled: #172033;
     --rm-surface-proposed: #172033;
-    --rm-border-disabled:  #475569;
-    --rm-month-gutter:     #0f172a;
-    --rm-continuation-glow: rgba(0, 0, 0, 0.6);
+    --rm-border-disabled: #475569;
     --rm-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
-    --rm-container-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-    /* Dark variants of the swimlane bands - tinted just enough to read
-       the alternation against the container surface. */
-    --rm-swimlane-even: #1d2716;
-    --rm-swimlane-odd:  #2a1f15;
+    --rm-container-shadow: 0 4px 8px rgba(0, 0, 0, 0.45);
+    --rm-swimlane-even: #1c2719;
+    --rm-swimlane-odd: #2a2118;
+    --rm-grid-line: #34412d;
+    --rm-grid-line-odd: #493a2d;
+    --rm-grid-major: #64748b;
 }
 
 /* Base Styles */
@@ -71,37 +88,55 @@ body {
 
 /* Header Section */
 .header {
-    margin-bottom: 15px;
-    padding: 20px;
-    background-color: var(--rm-bg);
+    margin-bottom: 14px;
+    padding: 16px 20px;
+    background-color: var(--rm-surface);
     color: var(--rm-text);
-    border-radius: 8px;
-    box-shadow: var(--rm-container-shadow);
+    border: 1px solid var(--rm-border);
+    border-radius: 10px;
+    box-shadow: var(--rm-shadow-xs);
     position: relative;
+    min-height: 78px;
 }
 
 .teya-logo {
     position: absolute;
-    top: 15px;
+    top: 50%;
     right: 20px;
-    height: 60px;
+    height: 44px;
     width: auto;
+    transform: translateY(-50%);
+}
+
+.team-heading-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding-right: 100px;
+    flex-wrap: wrap;
 }
 
 .team-name {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 3px;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
 }
 
 .team-members {
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--rm-text-muted);
+}
+
+.team-member-role {
+    color: var(--rm-text-faint);
+    font-weight: 500;
 }
 
 .team-description {
-    margin-top: 5px;
-    font-size: 14px;
+    margin-top: 2px;
+    padding-right: 100px;
+    font-size: 13px;
     font-weight: normal;
     line-height: 1.4;
     color: var(--rm-text-muted);
@@ -113,10 +148,10 @@ body {
 
 /* Main Container */
 .roadmap-container {
-    border: 3px solid var(--rm-border-strong);
+    border: 1px solid #94a3b8;
     background-color: var(--rm-surface);
     color: var(--rm-text);
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 0;
     box-shadow: var(--rm-container-shadow);
     margin-left: 30px;
@@ -125,70 +160,55 @@ body {
     position: relative;
 }
 
-/* Right-side gutter overlay: hides separator lines that would otherwise
-   extend past the right border of the roadmap container. */
-.roadmap-container::after {
-    content: '';
-    position: absolute;
-    top: -3px;
-    right: -10px;
-    bottom: -3px;
-    width: 13px;
-    background-color: var(--rm-month-gutter);
-    z-index: 50;
-    pointer-events: none;
-}
-
-.roadmap-container::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    right: 0;
-    bottom: -3px;
-    width: 3px;
-    background-color: var(--rm-border-strong);
-    z-index: 51;
-    border-radius: 0 8px 8px 0;
-    pointer-events: none;
-}
-
 /* Timeline Header */
 .timeline-header {
     display: flex;
     flex-direction: column;
+    background: var(--rm-surface-muted);
 }
 
 .sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
 }
 
-.quarters-row, .months-row {
+.quarters-row,
+.months-row {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    gap: 2px;
+    gap: 0;
 }
 
-
-.quarter-header, .month-header {
+.quarter-header,
+.month-header {
     text-align: center;
-    background-color: var(--rm-bg);
-    color: var(--rm-text);
-    font-weight: bold;
+    color: var(--rm-text-strong);
 }
 
 .quarter-header {
-    padding: 8px 10px 5px 10px;
-    font-size: 16px;
+    padding: 8px 10px 2px;
+    border-right: 1px solid var(--rm-border);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.quarter-header:last-child {
+    border-right: 0;
 }
 
 .month-header {
-    padding: 5px 10px 8px 10px;
+    padding: 1px 10px 7px;
+    color: var(--rm-text-subtle);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
 }
 
 .timeline-separator {
-    height: 3px;
+    height: 2px;
     background-color: var(--rm-separator);
     margin: 0;
 }
@@ -212,9 +232,9 @@ body {
 }
 
 .swimlane-separator-dashed {
-    height: 6px;
+    height: 0;
     background-color: var(--rm-surface);
-    border-top: 3px dashed var(--rm-separator);
+    border-top: 2px dashed #94a3b8;
     margin-top: 8px;
     margin-bottom: -1px;
     margin-left: 6px;
@@ -232,12 +252,18 @@ body {
     justify-content: center;
     transform: rotate(-90deg);
     transform-origin: center center;
-    font-weight: 900;
-    font-size: 18px;
-    color: var(--rm-text);
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    color: var(--rm-text-muted);
     white-space: nowrap;
     width: 200px;
     text-align: center;
+}
+
+.btl-swimlane .epic-label {
+    color: var(--rm-text-subtle);
+    font-size: 13px;
 }
 
 /* Swimlane Content */
@@ -270,17 +296,29 @@ body {
 .timeline-grid .grid-cell:nth-child(10n)::after {
     content: '';
     position: absolute;
-    width: 2px;
-    right: -1px;
+    width: 1px;
+    right: -0.5px;
     top: 0;
     bottom: 0;
-    background-color: var(--rm-grid-line);
+    background-color: var(--lane-grid-line, var(--rm-grid-line));
 }
 
 .timeline-grid .grid-cell:nth-child(30n)::after {
-    width: 3px;
-    right: -1.5px;
+    width: 2px;
+    right: -1px;
     background-color: var(--rm-grid-major);
+}
+
+.swimlane-even {
+    --lane-grid-line: var(--rm-grid-line);
+}
+.swimlane-odd {
+    --lane-grid-line: var(--rm-grid-line-odd);
+}
+
+.swimlanes-container > .swimlane:last-child .swimlane-content {
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
 }
 
 /* Story Track */
@@ -303,13 +341,15 @@ body {
 }
 
 /* Story Items */
-.story-item, .ktlo-story {
+.story-item,
+.ktlo-story {
     background-color: var(--rm-surface);
     color: var(--rm-text);
-    padding: 6px 9px 6px 8px;
+    padding: 7px 10px 7px 9px;
     margin: 3px 7px 1px 4px;
-    border-radius: 3px;
-    border: 2px solid var(--rm-border-strong);
+    border-radius: 6px;
+    border: 1.5px solid var(--rm-border-strong);
+    box-shadow: var(--rm-shadow-xs);
     cursor: pointer;
     grid-column: var(--start) / var(--end);
     position: relative;
@@ -331,8 +371,10 @@ body {
 }
 
 /*Highlight hovered items*/
-.story-item:hover,.monthly-box:hover .monthly-box-content, .ktlo-story:hover {
-    border: 2px solid var(--rm-border-strong);
+.story-item:hover,
+.monthly-box:hover .monthly-box-content,
+.ktlo-story:hover {
+    border-color: var(--rm-border-strong);
     background-color: var(--rm-surface);
 }
 
@@ -340,7 +382,7 @@ body {
 /* z-index 200 keeps the hovered story (and its milestone popover/track) above
    the KTLO monthly boxes, whose highest z-index is 155 (January hover). */
 .ktlo-story.story-zoom-large:hover {
-    transform: translateX(-4px) scale(1.20);
+    transform: translateX(-4px) scale(1.2);
     z-index: 200;
     transition: transform 0.2s ease 0.4s;
 }
@@ -359,7 +401,7 @@ body {
 
 /* Story States - Graduated Zoom Levels */
 .story-zoom-large:hover {
-    transform: scale(1.20);
+    transform: scale(1.2);
     z-index: 200;
     transition: transform 0.2s ease 0.4s;
 }
@@ -385,12 +427,12 @@ body {
 }
 
 .story-positioned-january.story-zoom-large:hover {
-    transform: translateX(-4px) scale(1.20);
+    transform: translateX(-4px) scale(1.2);
     transition: transform 0.2s ease 0.4s;
 }
 
 .story-positioned-october.story-zoom-large:hover {
-    transform: translateX(1px) scale(1.20);
+    transform: translateX(1px) scale(1.2);
     transition: transform 0.2s ease 0.4s;
 }
 
@@ -419,10 +461,38 @@ body {
    the active item. Uses :has() so a single rule covers regular hover and the
    external .story-hover/.textbox-hover triggers. The hovered element itself
    is excluded so it stays at full opacity. */
-.roadmap-container:has(.story-item:hover, .ktlo-story:hover, .story-hover, .textbox-hover, .roadmap-text:hover) .story-item:not(:hover):not(.story-hover),
-.roadmap-container:has(.story-item:hover, .ktlo-story:hover, .story-hover, .textbox-hover, .roadmap-text:hover) .ktlo-story:not(:hover):not(.story-hover),
-.roadmap-container:has(.story-item:hover, .ktlo-story:hover, .story-hover, .textbox-hover, .roadmap-text:hover) .monthly-box-content,
-.roadmap-container:has(.story-item:hover, .ktlo-story:hover, .story-hover, .textbox-hover, .roadmap-text:hover) .roadmap-text:not(.textbox-hover):not(:hover) {
+.roadmap-container:has(
+        .story-item:hover,
+        .ktlo-story:hover,
+        .story-hover,
+        .textbox-hover,
+        .roadmap-text:hover
+    )
+    .story-item:not(:hover):not(.story-hover),
+.roadmap-container:has(
+        .story-item:hover,
+        .ktlo-story:hover,
+        .story-hover,
+        .textbox-hover,
+        .roadmap-text:hover
+    )
+    .ktlo-story:not(:hover):not(.story-hover),
+.roadmap-container:has(
+        .story-item:hover,
+        .ktlo-story:hover,
+        .story-hover,
+        .textbox-hover,
+        .roadmap-text:hover
+    )
+    .monthly-box-content,
+.roadmap-container:has(
+        .story-item:hover,
+        .ktlo-story:hover,
+        .story-hover,
+        .textbox-hover,
+        .roadmap-text:hover
+    )
+    .roadmap-text:not(.textbox-hover):not(:hover) {
     opacity: 0.35;
     transition: opacity 0.2s ease 0.4s;
 }
@@ -439,7 +509,7 @@ body {
    to its hovered companion story. In beta (hover) mode the milestone
    track below the bar already shows the same info, so the side box dims
    like every other non-focused element. */
-html[data-status-style="side"]
+html[data-status-style='side']
     .roadmap-container:has(.story-item:hover, .story-hover, .roadmap-text:hover)
     .story-track:has(.story-item:hover, .story-item.story-hover, .roadmap-text:hover)
     .roadmap-text {
@@ -451,26 +521,38 @@ html[data-status-style="side"]
     background-color: var(--rm-surface-disabled);
     color: var(--rm-text-faint);
     border-color: var(--rm-border-disabled);
+    border-style: dashed;
 }
 
-.story-cancelled .task-title { color: var(--rm-text-faint); }
-.story-cancelled .task-bullets { color: var(--rm-text-faintest); }
+.story-cancelled .task-title {
+    color: var(--rm-text-faint);
+    text-decoration: line-through;
+}
+.story-cancelled .task-bullets {
+    color: var(--rm-text-faintest);
+}
 
 /* Transferred Stories */
 .story-transferred {
     background-color: var(--rm-surface-disabled);
     color: var(--rm-text-faint);
     border-color: var(--rm-border-disabled);
+    border-style: dashed;
 }
 
-.story-transferred .task-title { color: var(--rm-text-faint); }
-.story-transferred .task-bullets { color: var(--rm-text-faintest); }
+.story-transferred .task-title {
+    color: var(--rm-text-faint);
+}
+.story-transferred .task-bullets {
+    color: var(--rm-text-faintest);
+}
 
 /* Proposed Stories */
 .story-proposed {
     background-color: var(--rm-surface-proposed);
     color: var(--rm-text-faint);
-    border-color: var(--rm-border-disabled);
+    border-color: var(--rm-text-faint);
+    border-style: dashed;
 }
 
 .story-proposed .task-title {
@@ -513,7 +595,7 @@ html[data-status-style="side"]
 /* Tags row (IMO + Priority) shown above a story */
 .story-tags {
     position: absolute;
-    top: -13px;
+    top: -9px;
     right: 11px;
     display: flex;
     align-items: center;
@@ -524,115 +606,96 @@ html[data-status-style="side"]
 
 /* IMO Tag - background color set inline by JavaScript */
 .imo-tag {
-    font-size: 8px;
-    color: var(--rm-text-subtle);
-    font-weight: normal;
-    padding: 1px 3px;
-    border-radius: 2px;
+    font-size: 8.5px;
+    color: var(--rm-text-muted);
+    font-weight: 600;
+    padding: 1px 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    background: var(--rm-surface);
     display: inline-block;
     width: fit-content;
 }
 
 /* Priority Tag - shown next to IMO tag */
 .priority-tag {
-    font-size: 8px;
-    font-weight: bold;
-    padding: 1px 4px;
-    border-radius: 2px;
+    font-size: 8.5px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
     display: inline-block;
     width: fit-content;
-    color: #fff;
+    color: var(--rm-text-muted);
+    background: var(--rm-surface);
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
 
 .priority-tag.priority-high {
-    background-color: #d9534f;
+    color: #b91c1c;
+    background-color: var(--rm-surface);
 }
 
 .priority-tag.priority-medium {
-    background-color: #f0ad4e;
+    color: #b45309;
+    background-color: var(--rm-surface);
 }
 
 .priority-tag.priority-low {
-    background-color: #5bc0de;
+    color: #0369a1;
+    background-color: var(--rm-surface);
 }
 
 /* Story Content */
 .task-title {
     font-size: 10pt;
-    font-weight: bold;
+    font-weight: 700;
     margin-bottom: 3px;
+    letter-spacing: -0.005em;
 }
 
 /* Continuation Indicator Container */
 .continuation-indicator {
     position: absolute;
-    right: 2px;
+    right: 6px;
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
     background-color: transparent;
     pointer-events: none;
-    opacity: 0.7;
-    width: 50px;
-    height: 80px;
-    display: block;
+    opacity: 1;
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border: 1px solid var(--rm-border);
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--rm-text-subtle);
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.story-start-info {
+    display: inline-flex;
+    margin-left: 6px;
+    border: 1px solid var(--neutral-300);
+    border-radius: 999px;
+    padding: 1px 6px;
+    color: var(--neutral-600);
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 /* Continuation Month (Rotated 90 degrees) */
-.continuation-month {
-    position: absolute;
-    top: 50%;
-    right: -15px;
-    font-size: 20pt;
-    font-weight: 700;
-    color: var(--rm-text-faint);
-    text-shadow: var(--rm-text-shadow);
-    transform: translateY(-50%) rotate(90deg) scaleY(0.6) scaleX(0.7);
-    transform-origin: center center;
-    white-space: nowrap;
-    text-align: center;
-    letter-spacing: 0.5px;
-    width: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Continuation Year (Rotated 90 degrees) */
-.continuation-year {
-    position: absolute;
-    top: 50%;
-    left: -3px;
-    font-size: 23pt;
-    font-weight: 900;
-    color: var(--rm-text-faint);
-    text-shadow: var(--rm-text-shadow);
-    transform: translateY(calc(-50% + 0.5px)) rotate(90deg) scaleY(0.6) scaleX(0.7);
-    transform-origin: center center;
-    white-space: nowrap;
-    text-align: center;
-    line-height: 1;
-    letter-spacing: 1px;
-}
-
-/* Continuation indicator for stories that start before search range - positioned on left */
 .continuation-start {
-    left: 2px;
+    left: 6px;
     right: auto;
-}
-
-.continuation-start .continuation-month {
-    left: -15px;
-    right: auto;
-    color: var(--rm-text-subtle);
-}
-
-.continuation-start .continuation-year {
-    right: -3px;
-    left: auto;
-    color: var(--rm-text-subtle);
 }
 
 .task-bullets {
@@ -644,10 +707,22 @@ html[data-status-style="side"]
 
 .task-bullets li {
     margin: 0;
+    color: var(--rm-text-muted);
+}
+
+.task-bullets li::marker {
+    color: var(--rm-text-faint);
 }
 
 /* Icons - Base Styles */
-.roadmap-icon, .done-icon, .cancel-icon, .atrisk-icon, .newstory-icon, .transferredout-icon, .transferredin-icon, .proposed-icon {
+.roadmap-icon,
+.done-icon,
+.cancel-icon,
+.atrisk-icon,
+.newstory-icon,
+.transferredout-icon,
+.transferredin-icon,
+.proposed-icon {
     position: absolute;
     z-index: 9999;
     display: flex;
@@ -656,51 +731,65 @@ html[data-status-style="side"]
 }
 
 .roadmap-icon {
-    top: -10px;
-    right: -10px;
-    font-size: 16px;
-    color: var(--rm-text-subtle);
-    width: 20px;
-    height: 20px;
+    top: -9px;
+    right: -9px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border: 2px solid var(--rm-surface);
+    border-radius: 999px;
+    background: var(--rm-status-transfer);
+    color: #fff;
+    box-shadow: 0 1px 3px rgb(15 23 42 / 0.25);
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.done-icon,
+.cancel-icon,
+.newstory-icon,
+.transferredout-icon,
+.transferredin-icon,
+.proposed-icon {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--rm-surface);
+    border-radius: 999px;
+    color: #fff;
+    box-shadow: 0 1px 3px rgb(15 23 42 / 0.25);
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.done-icon,
+.cancel-icon,
+.transferredout-icon {
+    bottom: -8px;
+    right: -6px;
 }
 
 .done-icon {
-    bottom: -8px;
-    right: -8px;
-    font-size: 18px;
-    color: #28a745;
-    background-color: var(--rm-surface);
-    border-radius: 50%;
-    width: 16px;
-    height: 16px;
+    background: var(--rm-status-done);
 }
-
 .cancel-icon {
-    bottom: -8px;
-    right: -8px;
-    font-size: 11px;
-    font-weight: bold;
-    color: white;
-    background-color: #dc3545;
-    border-radius: 2px;
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 1;
+    background: var(--rm-status-cancel);
 }
 
 .atrisk-icon {
     bottom: -8px;
-    right: -8px;
+    right: -6px;
     width: 16px;
     height: 16px;
-    background-color: #dc3545;
+    background-color: var(--rm-status-risk);
     transform: rotate(45deg);
+    border: 2px solid var(--rm-surface);
+    border-radius: 3px;
     color: white;
-    font-size: 11px;
-    font-weight: bold;
+    box-shadow: 0 1px 3px rgb(15 23 42 / 0.25);
+    font-size: 10px;
+    font-weight: 800;
 }
 
 .atrisk-icon::after {
@@ -710,49 +799,33 @@ html[data-status-style="side"]
 }
 
 .newstory-icon {
-    top: -8px;
-    left: -11px;
-    font-size: 26px;
-    width: 20px;
-    height: 20px;
+    top: -9px;
+    left: -6px;
+    background: var(--rm-status-new);
 }
 
 .transferredout-icon {
-    bottom: -8px;
-    right: -8px;
-    font-size: 18px;
-    width: 16px;
-    height: 16px;
+    background: var(--rm-status-transfer);
 }
 
 .transferredin-icon {
     bottom: -8px;
-    left: -9px;
-    font-size: 18px;
-    width: 16px;
-    height: 16px;
+    left: -6px;
+    background: var(--rm-status-transfer);
 }
 
 /* Info icon specific positioning */
 .story-item .transferredin-icon.info-position {
-    left: -9px;
+    left: -6px;
+    background: var(--rm-status-info);
+    font-family: Georgia, serif;
+    font-style: italic;
 }
 
-
-
 .proposed-icon {
-    top: -10px;
-    left: -9px;
-    font-size: 14px;
-    color: #fff;
-    background-color: #005a8b;
-    border-radius: 3px;
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-top: 1px;
+    top: -9px;
+    left: -6px;
+    background-color: var(--rm-status-proposed);
     z-index: 9999;
 }
 
@@ -778,7 +851,7 @@ html[data-status-style="side"]
 .edit-icon:hover {
     color: var(--rm-text);
     opacity: 1;
-    transform: scaleX(-1.20) scaleY(1.20);
+    transform: scaleX(-1.2) scaleY(1.2);
 }
 
 /* Story edit icons get darker when story is hovered/zoomed */
@@ -798,9 +871,10 @@ html[data-status-style="side"]
     font-size: 9px;
     color: var(--rm-text);
     background-color: var(--rm-surface);
-    padding: 6px 4.5px 5px 9px;
-    border-radius: 10px;
-    border: none;
+    padding: 7px 9px 6px;
+    border: 1px solid var(--rm-border);
+    border-radius: 8px;
+    box-shadow: var(--rm-shadow-xs);
     white-space: nowrap;
     z-index: 15;
     display: flex;
@@ -816,7 +890,9 @@ html[data-status-style="side"]
     transform: scale(1.3);
     z-index: 300;
     box-shadow: var(--rm-hover-shadow);
-    transition: transform 0.2s ease 0.4s, box-shadow 0.2s ease 0.4s;
+    transition:
+        transform 0.2s ease 0.4s,
+        box-shadow 0.2s ease 0.4s;
 }
 
 .roadmap-text:hover * {
@@ -838,7 +914,7 @@ html[data-status-style="side"]
 .roadmap-columns {
     display: flex;
     width: 100%;
-    gap: 15px;
+    gap: 14px;
     box-sizing: border-box;
 }
 
@@ -852,26 +928,90 @@ html[data-status-style="side"]
     min-width: 0;
 }
 
+.status-card-column {
+    position: relative;
+    left: -3px;
+}
+
+.status-card-column.status-card-left {
+    top: 4px;
+}
+
+.status-card-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
+    color: var(--status-color);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.status-mini-badge {
+    width: 11px;
+    height: 11px;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--status-color);
+    color: #fff;
+    font-size: 8px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.roadmap-change del {
+    color: var(--rm-text-faint);
+}
+
+.roadmap-change strong {
+    color: var(--rm-text-strong);
+}
+
 /* Text Box Content - Consolidated Styles */
-.roadmap-date, .roadmap-date-early, .done-date, .cancel-date, .atrisk-date, .newstory-date {
-    font-weight: bold;
-    font-size: 12px;
+.roadmap-date,
+.roadmap-date-early,
+.done-date,
+.cancel-date,
+.atrisk-date,
+.newstory-date {
+    font-weight: 700;
+    font-size: 11px;
     margin-bottom: 2px;
     display: flex;
     align-items: center;
 }
 
-.roadmap-date { color: #dc3545; }
-.roadmap-date-early { color: #28a745; }
-.done-date { color: #28a745; }
-.cancel-date { color: #dc3545; }
-.atrisk-date { color: #dc3545; }
-.newstory-date { color: var(--rm-text); }
+.roadmap-date {
+    color: var(--rm-status-transfer);
+}
+.roadmap-date-early {
+    color: var(--rm-status-done);
+}
+.done-date {
+    color: var(--rm-status-done);
+}
+.cancel-date {
+    color: var(--rm-status-cancel);
+}
+.atrisk-date {
+    color: var(--rm-status-risk);
+}
+.newstory-date {
+    color: var(--rm-text);
+}
 
-.roadmap-description, .done-notes, .cancel-notes, .atrisk-notes, .newstory-notes {
+.roadmap-description,
+.done-notes,
+.cancel-notes,
+.atrisk-notes,
+.newstory-notes {
     font-size: 10px;
-    font-weight: bold;
-    line-height: 1.2;
+    font-weight: 500;
+    line-height: 1.25;
     word-wrap: break-word;
     overflow-wrap: break-word;
     max-width: 100%;
@@ -893,7 +1033,7 @@ html[data-status-style="side"]
 
 .roadmap-change {
     font-size: 10px;
-    font-weight: normal;
+    font-weight: 500;
     margin: 1px 0 2px 0;
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -924,11 +1064,11 @@ html[data-status-style="side"]
     grid-template-columns: repeat(120, 1fr);
     gap: 0;
     margin: 8px 7px 10px 7px;
-    align-items: center;
+    align-items: stretch;
 }
 
 .monthly-box {
-    margin: 0 1px;
+    margin: 0 2px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -938,11 +1078,12 @@ html[data-status-style="side"]
 }
 
 .monthly-box-content {
-    background-color: var(--rm-surface-muted);
+    background-color: var(--rm-surface);
     color: var(--rm-text);
     border: 1px solid var(--rm-border);
-    border-radius: 3px;
-    padding: 4px;
+    border-radius: 6px;
+    padding: 6px 4px;
+    box-shadow: var(--rm-shadow-xs);
     text-align: center;
     font-size: 8px;
     box-sizing: border-box;
@@ -970,7 +1111,9 @@ html[data-status-style="side"]
     z-index: 5;
     opacity: 0.7;
     transform: scaleX(-1);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
     display: none;
 }
 
@@ -981,7 +1124,10 @@ html[data-status-style="side"]
 }
 
 /* Monthly box hover effects - using higher specificity instead of !important */
-.roadmap-container .monthly-boxes-container .monthly-box:not(.monthly-box-december) .monthly-box-content:hover {
+.roadmap-container
+    .monthly-boxes-container
+    .monthly-box:not(.monthly-box-december)
+    .monthly-box-content:hover {
     transform: scale(1.3);
     z-index: 100;
     box-shadow: var(--rm-hover-shadow);
@@ -1049,27 +1195,28 @@ html[data-status-style="side"]
 }
 
 .monthly-box-header {
-    font-weight: bold;
-    font-size: 9px;
-    margin-bottom: 4px;
-    color: var(--rm-text);
+    font-weight: 700;
+    font-size: 8.5px;
+    margin-bottom: 3px;
+    color: var(--rm-text-faint);
+    letter-spacing: 0.08em;
 }
 
 .monthly-box-numbers {
-    font-weight: bold;
-    font-size: 14px;
-    margin-bottom: 2px;
-    color: var(--rm-text);
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 1px;
+    color: var(--rm-text-strong);
 }
 
 .monthly-box-description {
-    font-size: 10px;
+    font-size: 9px;
     line-height: 1.3;
     color: var(--rm-text-subtle);
     word-wrap: break-word;
     overflow-wrap: break-word;
     text-align: center;
-    max-height: 49px;
+    max-height: 48px;
     overflow: hidden;
     padding-top: 2px;
 }

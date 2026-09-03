@@ -11,52 +11,33 @@
 
 import { showToast } from './notifications.js';
 
-function findKTLOHeader() {
-    return [...document.querySelectorAll('h2')].find((h2) => h2.textContent.includes('KTLO (Keep The Lights On)'));
-}
-
 export function hideKTLOSection() {
-    const header = findKTLOHeader();
-    const div = header ? header.nextElementSibling : null;
-    if (header) header.style.display = 'none';
-    if (div) div.style.display = 'none';
+    const section = document.querySelector('.ktlo-section');
+    if (section) section.style.display = 'none';
 }
 
 export function showKTLOSection() {
-    const header = findKTLOHeader();
-    const div = header ? header.nextElementSibling : null;
-    if (header) header.style.display = '';
-    if (div) div.style.display = '';
+    const section = document.querySelector('.ktlo-section');
+    if (section) section.style.display = '';
 }
 
 export function repositionKTLOSection() {
     const ktloToggle = document.getElementById('ktlo-position-toggle');
     if (!ktloToggle) return;
 
-    const ktloHeader = findKTLOHeader();
-    const ktloDiv = ktloHeader ? ktloHeader.nextElementSibling : null;
-    const epicsHeader = [...document.querySelectorAll('h2')].find((h2) => h2.textContent.trim() === 'EPICs');
-    const epicsContainer = epicsHeader ? epicsHeader.nextElementSibling : null;
-    const epicsButton = epicsContainer ? epicsContainer.nextElementSibling : null;
-    const btlHeader = [...document.querySelectorAll('h2')].find((h2) => h2.textContent.includes('Below The Line'));
+    const ktloSection = document.querySelector('.ktlo-section');
+    const epicsContainer = document.getElementById('epics-container');
+    const epicsButton = document.querySelector('.epic-add-button');
+    const btlSection = document.querySelector('.btl-section');
 
-    if (!ktloHeader || !ktloDiv || !epicsHeader || !epicsContainer || !epicsButton) return;
+    if (!ktloSection || !epicsContainer || !epicsButton || !btlSection) return;
 
     if (ktloToggle.checked) {
-        // Top: insert KTLO right before the EPICs header.
-        epicsHeader.parentNode.insertBefore(ktloHeader, epicsHeader);
-        epicsHeader.parentNode.insertBefore(ktloDiv, epicsHeader);
+        epicsContainer.parentNode.insertBefore(ktloSection, epicsContainer);
         return;
     }
 
-    // Bottom: insert before BTL header if present, else after the EPICs add-button.
-    if (btlHeader) {
-        btlHeader.parentNode.insertBefore(ktloHeader, btlHeader);
-        btlHeader.parentNode.insertBefore(ktloDiv, btlHeader);
-    } else {
-        epicsButton.parentNode.insertBefore(ktloHeader, epicsButton.nextSibling);
-        epicsButton.parentNode.insertBefore(ktloDiv, epicsButton.nextSibling);
-    }
+    btlSection.parentNode.insertBefore(ktloSection, btlSection);
 }
 
 function showKTLOPositionNotification(isTop) {
@@ -76,7 +57,7 @@ export function createKTLOSectionHandlers({ initializeDatePickersForSection, gen
         if (!contentDiv || !collapseBtn) return;
 
         if (contentDiv.style.display === 'none') {
-            contentDiv.style.display = 'block';
+            contentDiv.style.display = '';
             collapseBtn.textContent = '▼';
             collapseBtn.title = 'Collapse KTLO';
             collapseBtn.classList.remove('collapse-btn-collapsed');
@@ -112,9 +93,11 @@ export function createKTLOSectionHandlers({ initializeDatePickersForSection, gen
     function handleKTLOToggleShortcut(event) {
         // Don't intercept the shortcut while the user is typing.
         const active = document.activeElement;
-        const isEditable = active && (
-            active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.contentEditable === 'true'
-        );
+        const isEditable =
+            active &&
+            (active.tagName === 'INPUT' ||
+                active.tagName === 'TEXTAREA' ||
+                active.contentEditable === 'true');
         if (isEditable) return;
 
         if (!(event.shiftKey && event.key === 'K')) return;

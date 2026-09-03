@@ -71,11 +71,15 @@ export function createBuilderCollapse() {
 
         if (collapsed) {
             panel.classList.remove('collapsed');
-            btn.textContent = '▲ Hide Builder';
+            btn.textContent = '▲';
+            btn.title = 'Collapse builder';
+            btn.setAttribute('aria-label', 'Collapse builder');
             collapsed = false;
         } else {
             panel.classList.add('collapsed');
-            btn.textContent = '▼ Show Builder';
+            btn.textContent = '▼';
+            btn.title = 'Expand builder';
+            btn.setAttribute('aria-label', 'Expand builder');
             collapsed = true;
         }
     }

@@ -59,7 +59,9 @@ export function createStatsHandlers({ collectFormData }) {
         const barChartContainer = container.classList.contains('bar-chart-container')
             ? container
             : container.closest('.bar-chart-container');
-        const chevron = barChartContainer ? barChartContainer.querySelector('.expand-chevron') : null;
+        const chevron = barChartContainer
+            ? barChartContainer.querySelector('.expand-chevron')
+            : null;
 
         if (existing) {
             existing.remove();
@@ -68,7 +70,12 @@ export function createStatsHandlers({ collectFormData }) {
         }
         if (chevron) chevron.style.transform = 'rotate(90deg)';
 
-        const stats = window.__roadmapStats || { delayBreakdown: {}, delayStories: {}, totalStories: 0, cancelled: 0 };
+        const stats = window.__roadmapStats || {
+            delayBreakdown: {},
+            delayStories: {},
+            totalStories: 0,
+            cancelled: 0,
+        };
 
         const breakdown = document.createElement('div');
         breakdown.id = breakdownId;
@@ -100,10 +107,16 @@ export function createStatsHandlers({ collectFormData }) {
 
     function computeRoadmapStats(teamData) {
         const result = {
-            totalEpics: 0, totalStories: 0,
-            onTime: 0, onTimeDone: 0, onTimeNotDone: 0,
-            delayedOnce: 0, delayedTwiceOrMore: 0,
-            accelerated: 0, cancelled: 0, totalDelayed: 0,
+            totalEpics: 0,
+            totalStories: 0,
+            onTime: 0,
+            onTimeDone: 0,
+            onTimeNotDone: 0,
+            delayedOnce: 0,
+            delayedTwiceOrMore: 0,
+            accelerated: 0,
+            cancelled: 0,
+            totalDelayed: 0,
             delayBreakdown: {},
             delayStories: {},
             acceleratedStories: { done: [], notDone: [] },
@@ -122,7 +135,11 @@ export function createStatsHandlers({ collectFormData }) {
                 result.totalStories++;
                 if (story.isCancelled) {
                     result.cancelled++;
-                    result.cancelledStories.push({ title: story.title, epicName: epic.name, teamName });
+                    result.cancelledStories.push({
+                        title: story.title,
+                        epicName: epic.name,
+                        teamName,
+                    });
                     continue;
                 }
 
@@ -134,7 +151,11 @@ export function createStatsHandlers({ collectFormData }) {
                 const changes = story.roadmapChanges?.changes || [];
                 for (const change of changes) {
                     if (!change.prevEndDate || !change.newEndDate) continue;
-                    const prevISO = DateUtility.parseTextValue(change.prevEndDate, true, roadmapYear);
+                    const prevISO = DateUtility.parseTextValue(
+                        change.prevEndDate,
+                        true,
+                        roadmapYear
+                    );
                     const newISO = DateUtility.parseTextValue(change.newEndDate, true, roadmapYear);
                     if (!prevISO || !newISO) continue;
                     if (newISO > prevISO) actualDelayCount++;
@@ -143,20 +164,25 @@ export function createStatsHandlers({ collectFormData }) {
 
                 if (actualDelayCount === 0 && !hasAcceleration) {
                     result.onTime++;
-                    const bucket = story.isDone ? result.onTimeStories.done : result.onTimeStories.notDone;
+                    const bucket = story.isDone
+                        ? result.onTimeStories.done
+                        : result.onTimeStories.notDone;
                     bucket.push({ title: story.title, epicName: epic.name });
                     if (story.isDone) result.onTimeDone++;
                     else result.onTimeNotDone++;
                 } else if (hasAcceleration && actualDelayCount === 0) {
                     result.accelerated++;
-                    const bucket = story.isDone ? result.acceleratedStories.done : result.acceleratedStories.notDone;
+                    const bucket = story.isDone
+                        ? result.acceleratedStories.done
+                        : result.acceleratedStories.notDone;
                     bucket.push({ title: story.title, epicName: epic.name });
                 } else if (actualDelayCount > 0) {
                     result.totalDelayed++;
                     if (actualDelayCount === 1) result.delayedOnce++;
                     else result.delayedTwiceOrMore++;
 
-                    result.delayBreakdown[actualDelayCount] = (result.delayBreakdown[actualDelayCount] || 0) + 1;
+                    result.delayBreakdown[actualDelayCount] =
+                        (result.delayBreakdown[actualDelayCount] || 0) + 1;
                     if (!result.delayStories[actualDelayCount]) {
                         result.delayStories[actualDelayCount] = { done: [], notDone: [] };
                     }
@@ -189,16 +215,23 @@ export function createStatsHandlers({ collectFormData }) {
     function renderStatsHtml(s) {
         return (
             '<div style="padding: 20px;">' +
-                '<h3 style="margin: 0 0 20px 0; color: #333; text-align: center;">📊 Project Status Overview</h3>' +
-                '<div style="margin-bottom: 20px; text-align: center; font-size: 14px; color: #666;">' +
-                    `${s.totalStories} Total Stories across ${s.totalEpics} EPICs` +
-                '</div>' +
-                '<div style="max-width: 600px; margin: 0 auto;">' +
-                    barChart('On-time Projects', s.onTime, s.totalStories, '#28a745', s, 'ontime') +
-                    barChart('Delayed Projects', s.totalDelayed, s.totalStories, '#dc3545', s, 'delayed') +
-                    barChart('Accelerated Projects', s.accelerated, s.totalStories, '#17a2b8', s, 'accelerated') +
-                    barChart('Cancelled', s.cancelled, s.totalStories, '#6c757d', s, 'cancelled') +
-                '</div>' +
+            '<h3 style="margin: 0 0 20px 0; color: #333; text-align: center;">Project Status Overview</h3>' +
+            '<div style="margin-bottom: 20px; text-align: center; font-size: 14px; color: #666;">' +
+            `${s.totalStories} Total Stories across ${s.totalEpics} EPICs` +
+            '</div>' +
+            '<div style="max-width: 600px; margin: 0 auto;">' +
+            barChart('On-time Projects', s.onTime, s.totalStories, '#28a745', s, 'ontime') +
+            barChart('Delayed Projects', s.totalDelayed, s.totalStories, '#dc3545', s, 'delayed') +
+            barChart(
+                'Accelerated Projects',
+                s.accelerated,
+                s.totalStories,
+                '#17a2b8',
+                s,
+                'accelerated'
+            ) +
+            barChart('Cancelled', s.cancelled, s.totalStories, '#6c757d', s, 'cancelled') +
+            '</div>' +
             '</div>'
         );
     }
@@ -214,11 +247,15 @@ export function createStatsHandlers({ collectFormData }) {
             expandIcon = `<span class="expand-chevron" style="margin-right: 8px; font-size: 12px; color: #6b7280; transition: transform 0.2s ease; pointer-events: none;">▶</span>`;
         }
         return (
-            '<div style="margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; background: #f9fafb; cursor: ' + cursorStyle + '; transition: all 0.2s ease;" class="bar-chart-container" ' + tooltipContent + '>' +
-                '<div style="display: flex; justify-content: space-between; align-items: center; pointer-events: none;">' +
-                    `<span style="font-size: 14px; font-weight: 500; color: #374151; display: flex; align-items: center;">${expandIcon}${label}</span>` +
-                    `<span style="font-size: 14px; font-weight: 600; color: ${color};">${value} (${percentage}%)</span>` +
-                '</div>' +
+            '<div style="margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; background: #f9fafb; cursor: ' +
+            cursorStyle +
+            '; transition: all 0.2s ease;" class="bar-chart-container" ' +
+            tooltipContent +
+            '>' +
+            '<div style="display: flex; justify-content: space-between; align-items: center; pointer-events: none;">' +
+            `<span style="font-size: 14px; font-weight: 500; color: #374151; display: flex; align-items: center;">${expandIcon}${label}</span>` +
+            `<span style="font-size: 14px; font-weight: 600; color: ${color};">${value} (${percentage}%)</span>` +
+            '</div>' +
             '</div>'
         );
     }
@@ -226,15 +263,17 @@ export function createStatsHandlers({ collectFormData }) {
     function card(label, value) {
         return (
             '<div style="border:1px solid #e5e7eb; border-radius:8px; padding:12px; background:#fafafa;">' +
-                `<div style="font-size:12px; color:#6b7280; margin-bottom:6px;">${label}</div>` +
-                `<div style="font-size:20px; font-weight:600; color:#111827;">${value}</div>` +
+            `<div style="font-size:12px; color:#6b7280; margin-bottom:6px;">${label}</div>` +
+            `<div style="font-size:20px; font-weight:600; color:#111827;">${value}</div>` +
             '</div>'
         );
     }
 
     function getDelayBreakdown(stats) {
         let result = 'Delay Breakdown:\n';
-        const sorted = Object.keys(stats.delayBreakdown || {}).map(Number).sort((a, b) => a - b);
+        const sorted = Object.keys(stats.delayBreakdown || {})
+            .map(Number)
+            .sort((a, b) => a - b);
         if (sorted.length === 0) {
             result += 'No delays recorded';
         } else {
@@ -263,21 +302,32 @@ export function createStatsHandlers({ collectFormData }) {
     function renderDelayDetails(stories) {
         if (!stories || !stories.length) return '<div style="color:#6b7280;">No items</div>';
         const sorted = [...stories].sort(compareByTeamEpicTitle);
-        return sorted.map((s) => {
-            const team = escapeHtml(s.teamName);
-            const epic = escapeHtml(s.epicName);
-            const title = escapeHtml(s.title);
-            return '<div style="font-size:12px; color:#374151; padding:2px 0;">' +
-                (team ? `<span style="color:#6b7280;">[${team}]</span> ` : '') +
-                (epic ? `<span style="color:#6b7280;">[${epic}]</span> ` : '') +
-                title +
-            '</div>';
-        }).join('');
+        return sorted
+            .map((s) => {
+                const team = escapeHtml(s.teamName);
+                const epic = escapeHtml(s.epicName);
+                const title = escapeHtml(s.title);
+                return (
+                    '<div style="font-size:12px; color:#374151; padding:2px 0;">' +
+                    (team ? `<span style="color:#6b7280;">[${team}]</span> ` : '') +
+                    (epic ? `<span style="color:#6b7280;">[${epic}]</span> ` : '') +
+                    title +
+                    '</div>'
+                );
+            })
+            .join('');
     }
 
     // Two-row breakdown (Done / Not Done) with collapsible details. Used by
     // both the on-time and accelerated breakdowns.
-    function renderDoneNotDoneRows(rowKey, doneStories, notDoneStories, totalStories, leftBorderDone = '#28a745', leftBorderNotDone = '#ffc107') {
+    function renderDoneNotDoneRows(
+        rowKey,
+        doneStories,
+        notDoneStories,
+        totalStories,
+        leftBorderDone = '#28a745',
+        leftBorderNotDone = '#ffc107'
+    ) {
         const done = doneStories.length;
         const notDone = notDoneStories.length;
         if (done === 0 && notDone === 0) return null;
@@ -287,22 +337,22 @@ export function createStatsHandlers({ collectFormData }) {
 
         return (
             `<div class="delay-row" id="${rowKey}-done-row" style="margin-bottom: 8px; margin-left: 10px;">` +
-                '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                    '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                    `<span style="font-size:13px; color:#374151;">Done (${done} / ${donePct}%)</span>` +
-                '</div>' +
-                `<div class="delay-row-details" id="${rowKey}-done-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid ${leftBorderDone};">` +
-                    renderDelayDetails(doneStories) +
-                '</div>' +
+            '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
+            '<span style="margin-right: 8px; color:#999;">▶</span>' +
+            `<span style="font-size:13px; color:#374151;">Done (${done} / ${donePct}%)</span>` +
+            '</div>' +
+            `<div class="delay-row-details" id="${rowKey}-done-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid ${leftBorderDone};">` +
+            renderDelayDetails(doneStories) +
+            '</div>' +
             '</div>' +
             `<div class="delay-row" id="${rowKey}-notdone-row" style="margin-bottom: 8px; margin-left: 10px;">` +
-                '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                    '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                    `<span style="font-size:13px; color:#374151;">Not Done (${notDone} / ${notDonePct}%)</span>` +
-                '</div>' +
-                `<div class="delay-row-details" id="${rowKey}-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid ${leftBorderNotDone};">` +
-                    renderDelayDetails(notDoneStories) +
-                '</div>' +
+            '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
+            '<span style="margin-right: 8px; color:#999;">▶</span>' +
+            `<span style="font-size:13px; color:#374151;">Not Done (${notDone} / ${notDonePct}%)</span>` +
+            '</div>' +
+            `<div class="delay-row-details" id="${rowKey}-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid ${leftBorderNotDone};">` +
+            renderDelayDetails(notDoneStories) +
+            '</div>' +
             '</div>'
         );
     }
@@ -310,8 +360,10 @@ export function createStatsHandlers({ collectFormData }) {
     function renderOntimeBreakdown(stats, totalStories) {
         const done = (stats.onTimeStories && stats.onTimeStories.done) || [];
         const notDone = (stats.onTimeStories && stats.onTimeStories.notDone) || [];
-        return renderDoneNotDoneRows('ontime', done, notDone, totalStories) ||
-            '<div style="color:#6b7280;">No on-time projects</div>';
+        return (
+            renderDoneNotDoneRows('ontime', done, notDone, totalStories) ||
+            '<div style="color:#6b7280;">No on-time projects</div>'
+        );
     }
 
     function renderAcceleratedBreakdown(stats, totalStories) {
@@ -320,63 +372,86 @@ export function createStatsHandlers({ collectFormData }) {
         if (Array.isArray(acc)) {
             acc = { done: acc.filter((s) => s.isDone), notDone: acc.filter((s) => !s.isDone) };
         }
-        return renderDoneNotDoneRows('accelerated', acc.done || [], acc.notDone || [], totalStories) ||
-            '<div style="color:#6b7280;">No accelerated projects</div>';
+        return (
+            renderDoneNotDoneRows('accelerated', acc.done || [], acc.notDone || [], totalStories) ||
+            '<div style="color:#6b7280;">No accelerated projects</div>'
+        );
     }
 
     function renderCancelledBreakdown(stats) {
         const cancelled = Array.isArray(stats.cancelledStories) ? stats.cancelledStories : [];
-        if (cancelled.length === 0) return '<div style="color:#6b7280;">No cancelled projects</div>';
-        const items = cancelled.map((s) => {
-            const team = escapeHtml(s.teamName);
-            const epic = escapeHtml(s.epicName);
-            const title = escapeHtml(s.title);
-            return '<div style="font-size:12px; color:#374151; padding:2px 0;">' +
-                (team ? `<span style="color:#6b7280;">[${team}]</span> ` : '') +
-                (epic ? `<span style="color:#6b7280;">[${epic}]</span> ` : '') +
-                title +
-            '</div>';
-        }).join('');
-        return '<div style="display:block; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #dc3545;">' + items + '</div>';
+        if (cancelled.length === 0)
+            return '<div style="color:#6b7280;">No cancelled projects</div>';
+        const items = cancelled
+            .map((s) => {
+                const team = escapeHtml(s.teamName);
+                const epic = escapeHtml(s.epicName);
+                const title = escapeHtml(s.title);
+                return (
+                    '<div style="font-size:12px; color:#374151; padding:2px 0;">' +
+                    (team ? `<span style="color:#6b7280;">[${team}]</span> ` : '') +
+                    (epic ? `<span style="color:#6b7280;">[${epic}]</span> ` : '') +
+                    title +
+                    '</div>'
+                );
+            })
+            .join('');
+        return (
+            '<div style="display:block; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #dc3545;">' +
+            items +
+            '</div>'
+        );
     }
 
     function renderDelayBreakdown(stats, totalStories) {
         const counts = stats.delayBreakdown || {};
-        const sorted = Object.keys(counts).map((n) => parseInt(n, 10)).sort((a, b) => a - b);
+        const sorted = Object.keys(counts)
+            .map((n) => parseInt(n, 10))
+            .sort((a, b) => a - b);
         if (sorted.length === 0) return '<div style="color:#6b7280;">No delays recorded</div>';
 
-        return sorted.map((delayCount) => {
-            const value = counts[delayCount] || 0;
-            const pct = totalStories ? ((value / totalStories) * 100).toFixed(1) : 0;
-            const delayGroup = (stats.delayStories && stats.delayStories[delayCount]) || { done: [], notDone: [] };
-            const rowId = `delay-row-${delayCount}`;
-            const detailsId = `delay-details-${delayCount}`;
-            return (
-                `<div class="delay-row" id="${rowId}" style="margin-bottom: 8px; margin-left: 10px;">` +
+        return sorted
+            .map((delayCount) => {
+                const value = counts[delayCount] || 0;
+                const pct = totalStories ? ((value / totalStories) * 100).toFixed(1) : 0;
+                const delayGroup = (stats.delayStories && stats.delayStories[delayCount]) || {
+                    done: [],
+                    notDone: [],
+                };
+                const rowId = `delay-row-${delayCount}`;
+                const detailsId = `delay-details-${delayCount}`;
+                return (
+                    `<div class="delay-row" id="${rowId}" style="margin-bottom: 8px; margin-left: 10px;">` +
                     '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                        '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                        `<span style="font-size:13px; color:#374151;">${delayCount} delay${delayCount > 1 ? 's' : ''} (${value} / ${pct}%)</span>` +
+                    '<span style="margin-right: 8px; color:#999;">▶</span>' +
+                    `<span style="font-size:13px; color:#374151;">${delayCount} delay${delayCount > 1 ? 's' : ''} (${value} / ${pct}%)</span>` +
                     '</div>' +
                     `<div class="delay-row-details" id="${detailsId}" style="display:none; margin-left: 20px;">` +
-                        renderDelaySubBreakdown(delayGroup, delayCount, value) +
+                    renderDelaySubBreakdown(delayGroup, delayCount, value) +
                     '</div>' +
-                '</div>'
-            );
-        }).join('');
+                    '</div>'
+                );
+            })
+            .join('');
     }
 
     function renderDelaySubBreakdown(delayGroup, delayCount, totalCount) {
         // Backward compat with flat-array shape.
         let group = delayGroup;
         if (Array.isArray(group)) {
-            group = { done: group.filter((s) => s.isDone), notDone: group.filter((s) => !s.isDone) };
+            group = {
+                done: group.filter((s) => s.isDone),
+                notDone: group.filter((s) => !s.isDone),
+            };
         }
-        return renderDoneNotDoneRows(
-            `delay-${delayCount}`,
-            group.done || [],
-            group.notDone || [],
-            totalCount
-        ) || '';
+        return (
+            renderDoneNotDoneRows(
+                `delay-${delayCount}`,
+                group.done || [],
+                group.notDone || [],
+                totalCount
+            ) || ''
+        );
     }
 
     function setupDelayBreakdownInteractions() {

@@ -34,6 +34,24 @@ export function createFileBrowser({
     setFileHandle,
 }) {
     let selectedDirectoryHandle = null;
+    const folderIcon =
+        '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"></path></svg>';
+    const documentIcon =
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>';
+
+    function escapeHTML(value) {
+        return String(value).replace(
+            /[&<>"']/g,
+            (character) =>
+                ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[character]
+        );
+    }
 
     function toggleFileBrowser() {
         const panel = document.getElementById('fileBrowserPanel');
@@ -111,22 +129,34 @@ export function createFileBrowser({
 
             roadmapFiles.sort((a, b) => a.name.localeCompare(b.name));
 
+            fileList.innerHTML = `<div class="directory-path">${folderIcon}<span>${escapeHTML(selectedDirectoryHandle.name || 'roadmaps')}</span></div>`;
+
             if (roadmapFiles.length === 0) {
-                fileList.innerHTML =
-                    '<div class="no-directory-message">No roadmap (.json) files found in this folder</div>';
+                fileList.insertAdjacentHTML(
+                    'beforeend',
+                    '<div class="no-directory-message">No roadmap (.json) files found in this folder</div>'
+                );
                 return;
             }
 
             for (const fileInfo of roadmapFiles) {
                 const item = document.createElement('div');
                 item.className = 'file-item';
-                item.onclick = () => openRoadmapFile(fileInfo.handle, fileInfo.fileType);
+                const currentFilename = document.getElementById('currentFilename')?.value;
+                if (currentFilename === fileInfo.name) item.classList.add('active');
+                item.onclick = () => {
+                    fileList.querySelectorAll('.file-item.active').forEach((fileItem) => {
+                        fileItem.classList.remove('active');
+                    });
+                    item.classList.add('active');
+                    openRoadmapFile(fileInfo.handle, fileInfo.fileType);
+                };
                 const modified = new Date(fileInfo.lastModified).toLocaleDateString('en-GB');
                 item.title = `${fileInfo.name}\nType: JSON\nTeam: ${fileInfo.teamName}\nSize: ${(fileInfo.size / 1024).toFixed(1)} KB\nModified: ${modified}`;
                 item.innerHTML = `
-                    <div class="file-item-icon">📋</div>
+                    <div class="file-item-icon">${documentIcon}</div>
                     <div class="file-item-info">
-                        <div class="file-item-name">${fileInfo.name}</div>
+                        <div class="file-item-name">${escapeHTML(fileInfo.name)}</div>
                     </div>
                 `;
                 fileList.appendChild(item);
@@ -258,7 +288,7 @@ export function createFileBrowser({
             }
             if (snap.permission !== 'granted') {
                 selectedDirectoryHandle = null;
-                fileList.innerHTML = `<div class="no-directory-message">🔒 Folder <strong>${snap.name}</strong> is locked. Click <strong>Unlock</strong> in the top bar to grant access.</div>`;
+                fileList.innerHTML = `<div class="no-directory-message">Folder <strong>${escapeHTML(snap.name)}</strong> is locked. Click <strong>Unlock</strong> in the top bar to grant access.</div>`;
                 return;
             }
             // Single-file mode: nothing to list. The file is already loaded
@@ -267,7 +297,7 @@ export function createFileBrowser({
             if (snap.type === 'file') {
                 selectedDirectoryHandle = null;
                 lastHandle = null;
-                fileList.innerHTML = `<div class="no-directory-message">📄 Editing single file: <strong>${snap.name}</strong></div>`;
+                fileList.innerHTML = `<div class="no-directory-message">Editing single file: <strong>${escapeHTML(snap.name)}</strong></div>`;
                 return;
             }
             selectedDirectoryHandle = snap.handle;
