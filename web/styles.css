@@ -98,9 +98,18 @@
     --motion-slow: 280ms cubic-bezier(0.4, 0, 0.2, 1);
 
     --focus-ring: 0 0 0 3px var(--primary-ring);
+
+    /* The app picks its own theme and ignores the OS preference, so the
+       scheme has to be stated explicitly or native controls (checkboxes,
+       date pickers, selects, scrollbars) stay light in dark mode. */
+    color-scheme: light;
 }
 
 :root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --page-bg: #0f172a;
+
     --surface-0: #0f172a;
     --surface-1: #111827;
     --surface-2: #1e293b;
@@ -1596,7 +1605,7 @@ button.primary-action:hover {
 
 .file-item-name {
     max-width: 170px;
-    color: var(--color-neutral-600);
+    color: var(--text-default);
     font-size: 12px;
     font-weight: 500;
 }
@@ -1831,6 +1840,32 @@ button.quiet-remove-button:hover {
 .story-status-chip.status-proposed {
     color: #005a8b;
     background: #e0f2fe;
+}
+
+:root[data-theme='dark'] .story-status-chip.status-risk {
+    color: #fbbf24;
+    background: rgb(180 83 9 / 0.25);
+}
+:root[data-theme='dark'] .story-status-chip.status-done {
+    color: #34d399;
+    background: rgb(4 120 87 / 0.25);
+}
+:root[data-theme='dark'] .story-status-chip.status-new {
+    color: #c4b5fd;
+    background: rgb(109 40 217 / 0.3);
+}
+:root[data-theme='dark'] .story-status-chip.status-transfer,
+:root[data-theme='dark'] .story-status-chip.status-changes {
+    color: #cbd5e1;
+    background: rgb(71 85 105 / 0.45);
+}
+:root[data-theme='dark'] .story-status-chip.status-cancelled {
+    color: #fca5a5;
+    background: rgb(185 28 28 / 0.28);
+}
+:root[data-theme='dark'] .story-status-chip.status-proposed {
+    color: #7dd3fc;
+    background: rgb(2 132 199 / 0.25);
 }
 
 .story-date-range {

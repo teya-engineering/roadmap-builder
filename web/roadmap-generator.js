@@ -2,6 +2,21 @@ import { DateUtility } from './utilities/date-utility.js';
 import { UIUtility } from './utilities/ui-utility.js';
 import { ConfigUtility } from './utilities/config-utility.js';
 
+// Colours for the status badges and milestone pins. They resolve at render
+// time against whichever scheme is active, so dark mode can lighten them in
+// roadmap-styles.css without the generator knowing about themes.
+const STATUS_COLORS = {
+    change: 'var(--rm-status-transfer)',
+    done: 'var(--rm-status-done)',
+    cancel: 'var(--rm-status-cancel)',
+    atRisk: 'var(--rm-status-risk)',
+    newStory: 'var(--rm-status-new)',
+    info: 'var(--rm-status-info)',
+    transfer: 'var(--rm-status-transfer)',
+    proposed: 'var(--rm-status-proposed)',
+    added: 'var(--rm-status-transfer)',
+};
+
 export class RoadmapGenerator {
     constructor(roadmapYear = null) {
         this.months = ConfigUtility.getAllMonthNames();
@@ -1048,7 +1063,7 @@ export class RoadmapGenerator {
                     type: 'change',
                     date: change.date,
                     glyph: '↻',
-                    color: '#64748b',
+                    color: STATUS_COLORS.change,
                     label: this.formatDateEuropean(change.date),
                     subtitle: subtitleParts.join(' &middot; '),
                     notes: change.description,
@@ -1061,7 +1076,7 @@ export class RoadmapGenerator {
                 type: 'done',
                 date: rc.doneInfo.date,
                 glyph: '✓',
-                color: '#059669',
+                color: STATUS_COLORS.done,
                 label: this.formatDateEuropean(rc.doneInfo.date),
                 notes: rc.doneInfo.notes,
             });
@@ -1072,7 +1087,7 @@ export class RoadmapGenerator {
                 type: 'cancel',
                 date: rc.cancelInfo.date,
                 glyph: '✕',
-                color: '#dc2626',
+                color: STATUS_COLORS.cancel,
                 label: this.formatDateEuropean(rc.cancelInfo.date),
                 notes: rc.cancelInfo.notes,
             });
@@ -1083,7 +1098,7 @@ export class RoadmapGenerator {
                 type: 'atrisk',
                 date: rc.atRiskInfo.date,
                 glyph: '!',
-                color: '#d97706',
+                color: STATUS_COLORS.atRisk,
                 label: this.formatDateEuropean(rc.atRiskInfo.date),
                 notes: rc.atRiskInfo.notes,
             });
@@ -1094,7 +1109,7 @@ export class RoadmapGenerator {
                 type: 'newstory',
                 date: rc.newStoryInfo.date,
                 glyph: '★',
-                color: '#7c3aed',
+                color: STATUS_COLORS.newStory,
                 label: this.formatDateEuropean(rc.newStoryInfo.date),
                 notes: rc.newStoryInfo.notes,
             });
@@ -1108,7 +1123,7 @@ export class RoadmapGenerator {
                         type: 'info',
                         date: entry.date,
                         glyph: 'i',
-                        color: '#0284c7',
+                        color: STATUS_COLORS.info,
                         label: this.formatDateEuropean(entry.date),
                         notes: entry.notes,
                     });
@@ -1121,7 +1136,7 @@ export class RoadmapGenerator {
                 type: 'transferred-in',
                 date: rc.transferredInInfo.date,
                 glyph: '←',
-                color: '#64748b',
+                color: STATUS_COLORS.transfer,
                 label: `In: ${this.formatDateEuropean(rc.transferredInInfo.date)}`,
                 notes: rc.transferredInInfo.notes,
             });
@@ -1132,7 +1147,7 @@ export class RoadmapGenerator {
                 type: 'transferred-out',
                 date: rc.transferredOutInfo.date,
                 glyph: '→',
-                color: '#64748b',
+                color: STATUS_COLORS.transfer,
                 label: `Out: ${this.formatDateEuropean(rc.transferredOutInfo.date)}`,
                 notes: rc.transferredOutInfo.notes,
             });
@@ -1143,7 +1158,7 @@ export class RoadmapGenerator {
                 type: 'proposed',
                 date: rc.proposedInfo.date,
                 glyph: '?',
-                color: '#005a8b',
+                color: STATUS_COLORS.proposed,
                 label: this.formatDateEuropean(rc.proposedInfo.date),
                 notes: rc.proposedInfo.notes,
             });
@@ -1529,7 +1544,7 @@ export class RoadmapGenerator {
                     date: change.date,
                     html: generateStatusColumn({
                         glyph: '↻',
-                        color: '#64748b',
+                        color: STATUS_COLORS.change,
                         date: change.date,
                         label: 'Moved',
                         subtitle: displayParts.join(' · '),
@@ -1544,7 +1559,7 @@ export class RoadmapGenerator {
                 date: doneInfo.date,
                 html: generateStatusColumn({
                     glyph: '✓',
-                    color: '#059669',
+                    color: STATUS_COLORS.done,
                     date: doneInfo.date,
                     label: 'Done',
                     notes: doneInfo.notes,
@@ -1557,7 +1572,7 @@ export class RoadmapGenerator {
                 date: cancelInfo.date,
                 html: generateStatusColumn({
                     glyph: '✕',
-                    color: '#dc2626',
+                    color: STATUS_COLORS.cancel,
                     date: cancelInfo.date,
                     label: 'Cancelled',
                     notes: cancelInfo.notes,
@@ -1570,7 +1585,7 @@ export class RoadmapGenerator {
                 date: atRiskInfo.date,
                 html: generateStatusColumn({
                     glyph: '!',
-                    color: '#d97706',
+                    color: STATUS_COLORS.atRisk,
                     date: atRiskInfo.date,
                     label: 'At risk',
                     notes: atRiskInfo.notes,
@@ -1583,7 +1598,7 @@ export class RoadmapGenerator {
                 date: newStoryInfo.date,
                 html: generateStatusColumn({
                     glyph: '★',
-                    color: '#7c3aed',
+                    color: STATUS_COLORS.newStory,
                     date: newStoryInfo.date,
                     label: 'New',
                     notes: newStoryInfo.notes,
@@ -1599,7 +1614,7 @@ export class RoadmapGenerator {
                             date: entry.date,
                             html: generateStatusColumn({
                                 glyph: 'i',
-                                color: '#0284c7',
+                                color: STATUS_COLORS.info,
                                 date: entry.date,
                                 label: 'Info',
                                 notes: entry.notes,
@@ -1612,7 +1627,7 @@ export class RoadmapGenerator {
                     date: infoInfo.date,
                     html: generateStatusColumn({
                         glyph: 'i',
-                        color: '#0284c7',
+                        color: STATUS_COLORS.info,
                         date: infoInfo.date,
                         label: 'Info',
                         notes: infoInfo.notes,
@@ -1626,7 +1641,7 @@ export class RoadmapGenerator {
                 date: transferredInInfo.date,
                 html: generateStatusColumn({
                     glyph: '←',
-                    color: '#64748b',
+                    color: STATUS_COLORS.transfer,
                     date: transferredInInfo.date,
                     label: 'In',
                     notes: transferredInInfo.notes,
@@ -1639,7 +1654,7 @@ export class RoadmapGenerator {
                 date: transferredOutInfo.date,
                 html: generateStatusColumn({
                     glyph: '→',
-                    color: '#64748b',
+                    color: STATUS_COLORS.transfer,
                     date: transferredOutInfo.date,
                     label: 'Out',
                     notes: transferredOutInfo.notes,
@@ -1652,7 +1667,7 @@ export class RoadmapGenerator {
                 date: proposedInfo.date,
                 html: generateStatusColumn({
                     glyph: '?',
-                    color: '#005a8b',
+                    color: STATUS_COLORS.proposed,
                     date: proposedInfo.date,
                     label: 'Proposed',
                     notes: proposedInfo.notes,
@@ -1776,7 +1791,7 @@ export class RoadmapGenerator {
         <div class="roadmap-text roadmap-text-simple story-non-zoomable${belowClass}" 
              style="--start: ${textStartGrid}; --end: ${textEndGrid}; grid-row: ${gridRow};">
             <div class="roadmap-columns">
-                <div class="roadmap-column status-card-column status-card-left" style="--status-color: #64748b;">
+                <div class="roadmap-column status-card-column status-card-left" style="--status-color: ${STATUS_COLORS.added};">
                     <div class="status-card-header">
                         <span class="status-mini-badge">+</span>
                         <span>${formattedDate} · Added</span>

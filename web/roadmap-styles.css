@@ -29,6 +29,13 @@
     --rm-status-new: #7c3aed;
     --rm-status-transfer: #64748b;
     --rm-status-proposed: #005a8b;
+    /* Glyph colour for the round status badges, which are filled with a
+       --rm-status-* colour. Flips with the scheme because the dark palette
+       uses light fills. */
+    --rm-status-ink: #ffffff;
+    --rm-priority-high: #b91c1c;
+    --rm-priority-medium: #b45309;
+    --rm-priority-low: #0369a1;
     --rm-shadow-xs: 0 1px 2px rgb(15 23 42 / 0.06);
     --rm-shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.06);
     --rm-hover-shadow: 0 4px 8px rgb(15 23 42 / 0.18);
@@ -64,11 +71,24 @@
     --rm-text-strong: #f8fafc;
     --rm-text-muted: #cbd5e1;
     --rm-text-subtle: #b6c2d3;
-    --rm-text-faint: #94a3b8;
-    --rm-text-faintest: #64748b;
+    --rm-text-faint: #a3b0c2;
+    --rm-text-faintest: #8b9bb0;
     --rm-surface-disabled: #172033;
     --rm-surface-proposed: #172033;
     --rm-border-disabled: #475569;
+    /* The light status colours are all mid-tone and drop below 4:1 against
+       the dark card surfaces, so dark mode uses lighter variants. */
+    --rm-status-done: #34d399;
+    --rm-status-cancel: #f87171;
+    --rm-status-risk: #fbbf24;
+    --rm-status-info: #38bdf8;
+    --rm-status-new: #a78bfa;
+    --rm-status-transfer: #a3b0c2;
+    --rm-status-proposed: #7dd3fc;
+    --rm-status-ink: #0f172a;
+    --rm-priority-high: #fca5a5;
+    --rm-priority-medium: #fbbf24;
+    --rm-priority-low: #7dd3fc;
     --rm-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
     --rm-container-shadow: 0 4px 8px rgba(0, 0, 0, 0.45);
     --rm-swimlane-even: #1c2719;
@@ -148,7 +168,7 @@ body {
 
 /* Main Container */
 .roadmap-container {
-    border: 1px solid #94a3b8;
+    border: 1px solid var(--rm-grid-major);
     background-color: var(--rm-surface);
     color: var(--rm-text);
     border-radius: 10px;
@@ -234,7 +254,7 @@ body {
 .swimlane-separator-dashed {
     height: 0;
     background-color: var(--rm-surface);
-    border-top: 2px dashed #94a3b8;
+    border-top: 2px dashed var(--rm-grid-major);
     margin-top: 8px;
     margin-bottom: -1px;
     margin-left: 6px;
@@ -610,7 +630,7 @@ html[data-status-style='side']
     color: var(--rm-text-muted);
     font-weight: 600;
     padding: 1px 6px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--rm-border);
     border-radius: 999px;
     background: var(--rm-surface);
     display: inline-block;
@@ -622,7 +642,7 @@ html[data-status-style='side']
     font-size: 8.5px;
     font-weight: 600;
     padding: 1px 6px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--rm-border);
     border-radius: 999px;
     display: inline-block;
     width: fit-content;
@@ -633,17 +653,17 @@ html[data-status-style='side']
 }
 
 .priority-tag.priority-high {
-    color: #b91c1c;
+    color: var(--rm-priority-high);
     background-color: var(--rm-surface);
 }
 
 .priority-tag.priority-medium {
-    color: #b45309;
+    color: var(--rm-priority-medium);
     background-color: var(--rm-surface);
 }
 
 .priority-tag.priority-low {
-    color: #0369a1;
+    color: var(--rm-priority-low);
     background-color: var(--rm-surface);
 }
 
@@ -672,7 +692,7 @@ html[data-status-style='side']
     padding: 2px 7px;
     border: 1px solid var(--rm-border);
     border-radius: 999px;
-    background: #f1f5f9;
+    background: var(--rm-surface-muted);
     color: var(--rm-text-subtle);
     font-size: 10px;
     font-weight: 700;
@@ -682,10 +702,10 @@ html[data-status-style='side']
 .story-start-info {
     display: inline-flex;
     margin-left: 6px;
-    border: 1px solid var(--neutral-300);
+    border: 1px solid var(--rm-border);
     border-radius: 999px;
     padding: 1px 6px;
-    color: var(--neutral-600);
+    color: var(--rm-text-muted);
     font-size: 10px;
     font-style: normal;
     font-weight: 600;
@@ -739,7 +759,7 @@ html[data-status-style='side']
     border: 2px solid var(--rm-surface);
     border-radius: 999px;
     background: var(--rm-status-transfer);
-    color: #fff;
+    color: var(--rm-status-ink);
     box-shadow: 0 1px 3px rgb(15 23 42 / 0.25);
     font-size: 9px;
     font-weight: 800;
@@ -756,7 +776,7 @@ html[data-status-style='side']
     height: 16px;
     border: 2px solid var(--rm-surface);
     border-radius: 999px;
-    color: #fff;
+    color: var(--rm-status-ink);
     box-shadow: 0 1px 3px rgb(15 23 42 / 0.25);
     font-size: 9px;
     font-weight: 800;
@@ -786,7 +806,7 @@ html[data-status-style='side']
     transform: rotate(45deg);
     border: 2px solid var(--rm-surface);
     border-radius: 3px;
-    color: white;
+    color: var(--rm-status-ink);
     box-shadow: 0 1px 3px rgb(15 23 42 / 0.25);
     font-size: 10px;
     font-weight: 800;
@@ -957,7 +977,7 @@ html[data-status-style='side']
     justify-content: center;
     border-radius: 999px;
     background: var(--status-color);
-    color: #fff;
+    color: var(--rm-status-ink);
     font-size: 8px;
     font-weight: 800;
     line-height: 1;
@@ -1352,7 +1372,7 @@ body .roadmap-container input[data-date-picker-initialized] {
     height: 16px;
     border-radius: 50%;
     background-color: var(--milestone-color);
-    color: #fff;
+    color: var(--rm-status-ink);
     border: 2px solid var(--rm-surface);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
     display: flex;
@@ -1432,7 +1452,7 @@ body .roadmap-container input[data-date-picker-initialized] {
 .milestone-atrisk .milestone-pin-glyph,
 .milestone-transferred-in .milestone-pin-glyph,
 .milestone-transferred-out .milestone-pin-glyph {
-    color: #fff;
+    color: var(--rm-status-ink);
 }
 
 .milestone-popover-date {
