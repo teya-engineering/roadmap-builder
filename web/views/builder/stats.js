@@ -82,11 +82,11 @@ export function createStatsHandlers({ collectFormData }) {
         breakdown.style.cssText = `
             margin-top: 10px;
             padding: 12px;
-            background: #f8f9fa;
-            border: 1px solid #e5e7eb;
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
             border-radius: 6px;
             font-size: 12px;
-            color: #374151;
+            color: var(--text-default);
         `;
 
         if (breakdownType === 'delayed') {
@@ -215,22 +215,43 @@ export function createStatsHandlers({ collectFormData }) {
     function renderStatsHtml(s) {
         return (
             '<div style="padding: 20px;">' +
-            '<h3 style="margin: 0 0 20px 0; color: #333; text-align: center;">Project Status Overview</h3>' +
-            '<div style="margin-bottom: 20px; text-align: center; font-size: 14px; color: #666;">' +
+            '<h3 style="margin: 0 0 20px 0; color: var(--text-strong); text-align: center;">Project Status Overview</h3>' +
+            '<div style="margin-bottom: 20px; text-align: center; font-size: 14px; color: var(--text-muted);">' +
             `${s.totalStories} Total Stories across ${s.totalEpics} EPICs` +
             '</div>' +
             '<div style="max-width: 600px; margin: 0 auto;">' +
-            barChart('On-time Projects', s.onTime, s.totalStories, '#28a745', s, 'ontime') +
-            barChart('Delayed Projects', s.totalDelayed, s.totalStories, '#dc3545', s, 'delayed') +
+            barChart(
+                'On-time Projects',
+                s.onTime,
+                s.totalStories,
+                'var(--stats-on-time)',
+                s,
+                'ontime'
+            ) +
+            barChart(
+                'Delayed Projects',
+                s.totalDelayed,
+                s.totalStories,
+                'var(--stats-delayed)',
+                s,
+                'delayed'
+            ) +
             barChart(
                 'Accelerated Projects',
                 s.accelerated,
                 s.totalStories,
-                '#17a2b8',
+                'var(--stats-accelerated)',
                 s,
                 'accelerated'
             ) +
-            barChart('Cancelled', s.cancelled, s.totalStories, '#6c757d', s, 'cancelled') +
+            barChart(
+                'Cancelled',
+                s.cancelled,
+                s.totalStories,
+                'var(--stats-cancelled)',
+                s,
+                'cancelled'
+            ) +
             '</div>' +
             '</div>'
         );
@@ -244,16 +265,16 @@ export function createStatsHandlers({ collectFormData }) {
         if (stats && breakdownType) {
             tooltipContent = `data-tooltip="breakdown" data-breakdown-type="${breakdownType}"`;
             cursorStyle = 'pointer';
-            expandIcon = `<span class="expand-chevron" style="margin-right: 8px; font-size: 12px; color: #6b7280; transition: transform 0.2s ease; pointer-events: none;">▶</span>`;
+            expandIcon = `<span class="expand-chevron" style="margin-right: 8px; font-size: 12px; color: var(--text-muted); transition: transform 0.2s ease; pointer-events: none;">▶</span>`;
         }
         return (
-            '<div style="margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; background: #f9fafb; cursor: ' +
+            '<div style="margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; background: var(--surface-1); cursor: ' +
             cursorStyle +
             '; transition: all 0.2s ease;" class="bar-chart-container" ' +
             tooltipContent +
             '>' +
             '<div style="display: flex; justify-content: space-between; align-items: center; pointer-events: none;">' +
-            `<span style="font-size: 14px; font-weight: 500; color: #374151; display: flex; align-items: center;">${expandIcon}${label}</span>` +
+            `<span style="font-size: 14px; font-weight: 500; color: var(--text-default); display: flex; align-items: center;">${expandIcon}${label}</span>` +
             `<span style="font-size: 14px; font-weight: 600; color: ${color};">${value} (${percentage}%)</span>` +
             '</div>' +
             '</div>'
@@ -262,9 +283,9 @@ export function createStatsHandlers({ collectFormData }) {
 
     function card(label, value) {
         return (
-            '<div style="border:1px solid #e5e7eb; border-radius:8px; padding:12px; background:#fafafa;">' +
-            `<div style="font-size:12px; color:#6b7280; margin-bottom:6px;">${label}</div>` +
-            `<div style="font-size:20px; font-weight:600; color:#111827;">${value}</div>` +
+            '<div style="border:1px solid var(--border-subtle); border-radius:8px; padding:12px; background:var(--surface-1);">' +
+            `<div style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">${label}</div>` +
+            `<div style="font-size:20px; font-weight:600; color:var(--text-strong);">${value}</div>` +
             '</div>'
         );
     }
@@ -300,7 +321,8 @@ export function createStatsHandlers({ collectFormData }) {
     }
 
     function renderDelayDetails(stories) {
-        if (!stories || !stories.length) return '<div style="color:#6b7280;">No items</div>';
+        if (!stories || !stories.length)
+            return '<div style="color:var(--text-muted);">No items</div>';
         const sorted = [...stories].sort(compareByTeamEpicTitle);
         return sorted
             .map((s) => {
@@ -308,9 +330,9 @@ export function createStatsHandlers({ collectFormData }) {
                 const epic = escapeHtml(s.epicName);
                 const title = escapeHtml(s.title);
                 return (
-                    '<div style="font-size:12px; color:#374151; padding:2px 0;">' +
-                    (team ? `<span style="color:#6b7280;">[${team}]</span> ` : '') +
-                    (epic ? `<span style="color:#6b7280;">[${epic}]</span> ` : '') +
+                    '<div style="font-size:12px; color:var(--text-default); padding:2px 0;">' +
+                    (team ? `<span style="color:var(--text-muted);">[${team}]</span> ` : '') +
+                    (epic ? `<span style="color:var(--text-muted);">[${epic}]</span> ` : '') +
                     title +
                     '</div>'
                 );
@@ -338,19 +360,19 @@ export function createStatsHandlers({ collectFormData }) {
         return (
             `<div class="delay-row" id="${rowKey}-done-row" style="margin-bottom: 8px; margin-left: 10px;">` +
             '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-            '<span style="margin-right: 8px; color:#999;">▶</span>' +
-            `<span style="font-size:13px; color:#374151;">Done (${done} / ${donePct}%)</span>` +
+            '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+            `<span style="font-size:13px; color:var(--text-default);">Done (${done} / ${donePct}%)</span>` +
             '</div>' +
-            `<div class="delay-row-details" id="${rowKey}-done-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid ${leftBorderDone};">` +
+            `<div class="delay-row-details" id="${rowKey}-done-details" style="display:none; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid ${leftBorderDone};">` +
             renderDelayDetails(doneStories) +
             '</div>' +
             '</div>' +
             `<div class="delay-row" id="${rowKey}-notdone-row" style="margin-bottom: 8px; margin-left: 10px;">` +
             '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-            '<span style="margin-right: 8px; color:#999;">▶</span>' +
-            `<span style="font-size:13px; color:#374151;">Not Done (${notDone} / ${notDonePct}%)</span>` +
+            '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+            `<span style="font-size:13px; color:var(--text-default);">Not Done (${notDone} / ${notDonePct}%)</span>` +
             '</div>' +
-            `<div class="delay-row-details" id="${rowKey}-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid ${leftBorderNotDone};">` +
+            `<div class="delay-row-details" id="${rowKey}-notdone-details" style="display:none; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid ${leftBorderNotDone};">` +
             renderDelayDetails(notDoneStories) +
             '</div>' +
             '</div>'
@@ -362,7 +384,7 @@ export function createStatsHandlers({ collectFormData }) {
         const notDone = (stats.onTimeStories && stats.onTimeStories.notDone) || [];
         return (
             renderDoneNotDoneRows('ontime', done, notDone, totalStories) ||
-            '<div style="color:#6b7280;">No on-time projects</div>'
+            '<div style="color:var(--text-muted);">No on-time projects</div>'
         );
     }
 
@@ -374,30 +396,30 @@ export function createStatsHandlers({ collectFormData }) {
         }
         return (
             renderDoneNotDoneRows('accelerated', acc.done || [], acc.notDone || [], totalStories) ||
-            '<div style="color:#6b7280;">No accelerated projects</div>'
+            '<div style="color:var(--text-muted);">No accelerated projects</div>'
         );
     }
 
     function renderCancelledBreakdown(stats) {
         const cancelled = Array.isArray(stats.cancelledStories) ? stats.cancelledStories : [];
         if (cancelled.length === 0)
-            return '<div style="color:#6b7280;">No cancelled projects</div>';
+            return '<div style="color:var(--text-muted);">No cancelled projects</div>';
         const items = cancelled
             .map((s) => {
                 const team = escapeHtml(s.teamName);
                 const epic = escapeHtml(s.epicName);
                 const title = escapeHtml(s.title);
                 return (
-                    '<div style="font-size:12px; color:#374151; padding:2px 0;">' +
-                    (team ? `<span style="color:#6b7280;">[${team}]</span> ` : '') +
-                    (epic ? `<span style="color:#6b7280;">[${epic}]</span> ` : '') +
+                    '<div style="font-size:12px; color:var(--text-default); padding:2px 0;">' +
+                    (team ? `<span style="color:var(--text-muted);">[${team}]</span> ` : '') +
+                    (epic ? `<span style="color:var(--text-muted);">[${epic}]</span> ` : '') +
                     title +
                     '</div>'
                 );
             })
             .join('');
         return (
-            '<div style="display:block; margin-left: 20px; padding:8px; background:#ffffff; border-left: 2px solid #dc3545;">' +
+            '<div style="display:block; margin-left: 20px; padding:8px; background:var(--surface-0); border-left: 2px solid var(--stats-delayed);">' +
             items +
             '</div>'
         );
@@ -408,7 +430,8 @@ export function createStatsHandlers({ collectFormData }) {
         const sorted = Object.keys(counts)
             .map((n) => parseInt(n, 10))
             .sort((a, b) => a - b);
-        if (sorted.length === 0) return '<div style="color:#6b7280;">No delays recorded</div>';
+        if (sorted.length === 0)
+            return '<div style="color:var(--text-muted);">No delays recorded</div>';
 
         return sorted
             .map((delayCount) => {
@@ -423,8 +446,8 @@ export function createStatsHandlers({ collectFormData }) {
                 return (
                     `<div class="delay-row" id="${rowId}" style="margin-bottom: 8px; margin-left: 10px;">` +
                     '<div class="delay-row-header" style="display:flex; align-items:center; cursor:pointer; padding: 4px 0;">' +
-                    '<span style="margin-right: 8px; color:#999;">▶</span>' +
-                    `<span style="font-size:13px; color:#374151;">${delayCount} delay${delayCount > 1 ? 's' : ''} (${value} / ${pct}%)</span>` +
+                    '<span style="margin-right: 8px; color:var(--text-muted);">▶</span>' +
+                    `<span style="font-size:13px; color:var(--text-default);">${delayCount} delay${delayCount > 1 ? 's' : ''} (${value} / ${pct}%)</span>` +
                     '</div>' +
                     `<div class="delay-row-details" id="${detailsId}" style="display:none; margin-left: 20px;">` +
                     renderDelaySubBreakdown(delayGroup, delayCount, value) +
