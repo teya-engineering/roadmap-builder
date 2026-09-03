@@ -1452,14 +1452,14 @@ export function init(_root) {
                 const queryLabelSafe = (searchQuery || '').toString();
                 contentArea.innerHTML = `
                     <div class="results-container" style="margin-bottom: 0; padding-bottom: 0;">
-                        <div class="search-results-header" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007cba;">
-                            <h2 style="margin: 0 0 10px 0; color: #007cba; font-size: 24px;">🔍 Search Results</h2>
-                            <div class="search-summary" style="color: #666; font-size: 14px; margin: 5px 0;">
+                        <div class="search-results-header">
+                            <h2>🔍 Search Results</h2>
+                            <div class="search-summary">
                                 Found <strong>${stories.length}</strong> ${stories.length === 1 ? 'story' : 'stories'} 
                                 across <strong>${new Set(stories.map(s => s.teamName)).size}</strong> ${new Set(stories.map(s => s.teamName)).size === 1 ? 'team' : 'teams'} 
                                 for "<strong>${queryLabelSafe}</strong>": (${teamNamesHtml})
                             </div>
-                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                            <div class="search-results-header-options">
                                 <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; font-size: 14px;">
                                     <input type="checkbox" id="search-force-text-below-toggle" style="width: auto; flex-shrink: 0;" onchange="handleSearchForceTextBelowToggle()" ${searchTempForceTextBelow ? 'checked' : ''}>
                                     Force all text boxes below stories
