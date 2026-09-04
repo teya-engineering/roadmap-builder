@@ -29,7 +29,7 @@ export class IMOViewGenerator {
                     </div>
                     <div class="search-results-controls" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
                         <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; font-size: 14px;">
-                            <input type="checkbox" id="search-force-text-below-toggle" style="width: auto; flex-shrink: 0;" onchange="handleSearchForceTextBelowToggle()">
+                            <input type="checkbox" id="search-force-text-below-toggle" onchange="handleSearchForceTextBelowToggle()">
                             Force all text boxes below stories
                         </label>
                     </div>

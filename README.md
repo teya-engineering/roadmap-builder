@@ -26,6 +26,34 @@ npm start   # serves web/ on http://localhost:8080
 | `HOST`              | `0.0.0.0` | Bind address. Set `127.0.0.1` to keep the dev server off the LAN.                                                                                                                                                                                                                                                                                     |
 | `SLACK_WEBHOOK_URL` | _(unset)_ | Slack [incoming webhook](https://api.slack.com/messaging/webhooks) URL. When set, each roadmap save posts a summary of what changed to that channel. **Leave unset to disable** - the feature is a silent no-op. Set it in the deployment/runtime environment (e.g. the container env), not as a build arg, so the secret never ships to the browser. |
 
+## UI components
+
+Native form controls are drawn by the OS, so a `<select>` popup, a checkbox and
+a date picker cannot be themed and look wrong next to the rest of the app - and
+wrong again in dark mode. `web/components/` replaces them:
+
+| Component      | What it does                                            |
+| -------------- | ------------------------------------------------------- |
+| Select         | Button plus a listbox popup, with keyboard support      |
+| Search field   | Text filter with a magnifier and a clear button         |
+| Number field   | Native spinners swapped for steppers that match the app |
+| Checkbox/radio | Restyled in place, pure CSS                             |
+
+Nothing is rewritten in the views. Each component **wraps** the native element
+and leaves it in the DOM as the source of truth, so `getElementById(id).value`,
+inline `onchange` attributes and `addEventListener('change')` all keep working.
+The select also hooks its `value` property, because code that assigns `.value`
+fires no event and the visible label would otherwise go stale.
+
+Most of the app's markup is built with `innerHTML` at runtime, so
+`web/components/index.js` upgrades controls from a `MutationObserver` rather
+than from a call at each render site. Anything that appears in the DOM is
+upgraded once and marked; the rendered roadmap is skipped, since it holds no
+form controls and is rebuilt on almost every keystroke.
+
+Styling lives in `web/components/components.css` and uses only the design
+tokens from `web/styles.css`, which is what keeps both themes consistent.
+
 ## Slack notifications
 
 On save, the builder diffs the roadmap against its last-saved state and posts a

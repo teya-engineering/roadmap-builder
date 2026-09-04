@@ -1280,7 +1280,7 @@ export function init(_root) {
                         </div>
                         <div style="flex: 1;">
                             <label for="story-priority-${storyId}">Priority <span style="font-style: italic; color: #888;">(optional)</span>:</label>
-                            <select id="story-priority-${storyId}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            <select id="story-priority-${storyId}">
                                 <option value="">Select...</option>
                                 <option value="High">High</option>
                                 <option value="Medium">Medium</option>
@@ -1300,7 +1300,7 @@ export function init(_root) {
                     
                     <div class="form-group" style="margin-top: 15px;">
                         <label for="story-comments-${storyId}">Comments <span style="font-style: italic; color: #888;">(optional, not shown on roadmap)</span>:</label>
-                        <textarea id="story-comments-${storyId}" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;" placeholder="Add any notes or comments..."></textarea>
+                        <textarea id="story-comments-${storyId}" rows="3" style="resize: vertical;" placeholder="Add any notes or comments..."></textarea>
                     </div>
                     </div><!-- End Story Details Box -->
                     
@@ -1685,7 +1685,7 @@ export function init(_root) {
 
                     <div class="form-group">
                         <label for="btl-priority-${storyId}">Priority <span style="font-style: italic; color: #888;">(optional)</span>:</label>
-                        <select id="btl-priority-${storyId}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <select id="btl-priority-${storyId}">
                             <option value="">Select...</option>
                             <option value="High">High</option>
                             <option value="Medium">Medium</option>
@@ -1695,7 +1695,7 @@ export function init(_root) {
 
                     <div class="form-group">
                         <label for="btl-comments-${storyId}">Comments <span style="font-style: italic; color: #888;">(optional, not shown on roadmap)</span>:</label>
-                        <textarea id="btl-comments-${storyId}" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;" placeholder="Add any notes or comments..."></textarea>
+                        <textarea id="btl-comments-${storyId}" rows="3" style="resize: vertical;" placeholder="Add any notes or comments..."></textarea>
                     </div>
                     </div>
                 </div>

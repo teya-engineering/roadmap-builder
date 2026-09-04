@@ -6,7 +6,7 @@
     "type": "module",
     "scripts": {
         "start": "node server.mjs",
-        "test": "node --test --test-reporter=spec web/domain/*.test.js web/utilities/*.test.js web/views/builder/*.test.js web/views/imo-search/*.test.js server.test.mjs",
+        "test": "node --test --test-reporter=spec web/components/*.test.js web/domain/*.test.js web/utilities/*.test.js web/views/builder/*.test.js web/views/imo-search/*.test.js server.test.mjs",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "format": "prettier --write .",

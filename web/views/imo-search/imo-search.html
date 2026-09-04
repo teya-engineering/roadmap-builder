@@ -39,6 +39,7 @@
                         <input type="text"
                                class="search-input imo-input"
                                id="directorVPIdSearchInput"
+                               data-ui-search
                                placeholder="Enter Director/VP ID (partial match)"
                                onkeypress="handleCombinedSearchKeyPress(event)">
                     </div>
@@ -59,6 +60,7 @@
                             <input type="text"
                                class="search-input imo-input"
                                    id="searchInput"
+                               data-ui-search
                                placeholder="Enter IMO/Project ID"
                                    onkeypress="handleCombinedSearchKeyPress(event)">
                         <select class="search-input dropdown-select" id="prioritySelect" onchange="updateSearchButtonStates()">
@@ -76,6 +78,7 @@
                         <input type="text"
                                class="search-input imo-input"
                                id="titleSearchInput"
+                               data-ui-search
                                placeholder="Enter text to search in story titles"
                                onkeypress="handleCombinedSearchKeyPress(event)">
                     </div>
@@ -157,7 +160,7 @@
                         <div class="advanced-filter">
                             <label for="advancedFilterExpression" class="advanced-filter-label">Advanced filter (optional)</label>
                             <div class="advanced-filter-input">
-                                <input type="text" id="advancedFilterExpression"
+                                <input type="text" id="advancedFilterExpression" data-ui-search
                                        placeholder="e.g., Done && !Timeline, (Cancelled || AtRisk) && New"
                                        onchange="handleAdvancedFilterChange(this)"
                                        onkeydown="handleAdvancedFilterKeyDown(event, this)">

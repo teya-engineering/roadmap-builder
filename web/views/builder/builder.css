@@ -91,17 +91,6 @@
             cursor: default;
         }
 
-        /* Undo the global full-width input style for the checkbox inside the
-           flag option - we want a native-sized checkbox here. */
-        .country-flag-option > input[type="checkbox"] {
-            width: auto;
-            height: auto;
-            padding: 0;
-            border: 0;
-            margin: 0;
-            flex-shrink: 0;
-        }
-
         .country-flag-option > img.flag-icon {
             margin: 0;
             flex-shrink: 0;

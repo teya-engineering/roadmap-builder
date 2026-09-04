@@ -717,9 +717,12 @@ label {
     font-size: 13px;
 }
 
-input:not([type='checkbox']):not([type='radio']),
+input:not([type='checkbox']):not([type='radio']):not(.ui-field__input):not(.ui-number__input),
 textarea,
-select {
+select,
+.ui-field,
+.ui-select,
+.ui-number {
     width: 100%;
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--border-default);
@@ -732,12 +735,17 @@ select {
         border-color var(--motion-fast),
         box-shadow var(--motion-fast);
 }
-input:not([type='checkbox']):not([type='radio']):hover:not(:disabled),
+input:not([type='checkbox']):not([type='radio']):not(.ui-field__input):not(
+        .ui-number__input
+    ):hover:not(:disabled),
 textarea:hover:not(:disabled),
-select:hover:not(:disabled) {
+select:hover:not(:disabled),
+.ui-field:hover,
+.ui-select:not([data-disabled='true']):hover,
+.ui-number:hover {
     border-color: var(--border-strong);
 }
-input:not([type='checkbox']):not([type='radio']):focus,
+input:not([type='checkbox']):not([type='radio']):not(.ui-field__input):not(.ui-number__input):focus,
 textarea:focus,
 select:focus {
     outline: none;
@@ -775,17 +783,6 @@ input.plain-text-field[type='number'] {
     -moz-appearance: textfield;
 }
 
-input[type='checkbox'],
-input[type='radio'] {
-    accent-color: var(--primary);
-    cursor: pointer;
-}
-input[type='checkbox']:focus-visible,
-input[type='radio']:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-    border-radius: var(--radius-sm);
-}
 select:disabled {
     background-color: var(--surface-2);
     color: var(--text-muted);
@@ -848,29 +845,6 @@ label[for='editNewStoryNotes'],
 label[for='editHandedOverNotes'],
 label[for='editTransferredInNotes'] {
     margin-left: 5px;
-}
-
-input[id*='story-done-'],
-input[id*='story-cancelled-'],
-input[id*='story-atrisk-'],
-input[id*='story-newstory-'],
-input[id*='story-info-'],
-input[id*='story-handedover-'],
-input[id*='story-transferredin-'],
-input[id*='story-transferredout-'],
-input[id*='story-proposed-'],
-input[id*='story-changes-'],
-input[id='editDone'],
-input[id='editCancelled'],
-input[id='editAtRisk'],
-input[id='editNewStory'],
-input[id='editInfo'],
-input[id='editHandedOver'],
-input[id='editTransferredIn'],
-input[id='editTransferredOut'],
-input[id='editProposed'],
-input[id='editTimelineChanges'] {
-    transform: translateY(-3px);
 }
 
 .checkbox-group label[style*='margin-left: 15px'] {
@@ -999,15 +973,6 @@ button.danger:hover {
     align-items: center;
     gap: var(--space-2);
     margin-bottom: var(--space-2);
-}
-.checkbox-group input[type='checkbox'] {
-    width: auto;
-    accent-color: var(--primary);
-    cursor: pointer;
-}
-.checkbox-group input[type='checkbox']:focus-visible {
-    box-shadow: var(--focus-ring);
-    border-radius: var(--radius-sm);
 }
 
 #preview-area {
@@ -2014,8 +1979,9 @@ button.epic-add-button {
     display: contents !important;
 }
 
-#ktlo-monthly-content input,
-#ktlo-monthly-content select {
+#ktlo-monthly-content input:not(.ui-number__input),
+#ktlo-monthly-content .ui-select,
+#ktlo-monthly-content .ui-number {
     width: 110px !important;
 }
 

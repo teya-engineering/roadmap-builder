@@ -7,6 +7,8 @@
 // re-invoked on every navigation back to that view. Each view handles repeat
 // mounts and may return a cleanup function for the router to call.
 
+import { startComponents } from '../components/index.js';
+
 const ROUTES = {
     '/builder': {
         html: '/views/builder/builder.html',
@@ -173,4 +175,5 @@ if (normalizePath(location.pathname) === '/') {
 
 window.__router = { navigate, routes: ROUTES };
 
+startComponents();
 render();
