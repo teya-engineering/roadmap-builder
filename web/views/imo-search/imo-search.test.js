@@ -5,22 +5,14 @@ import { init } from './imo-search.js';
 
 const viewDirectory = new URL('./', import.meta.url);
 
-test('project exclusions work alongside the other cross-team search filters', (t) => {
-    const controls = Object.fromEntries(
-        Object.entries({
-            searchInput: '!CP* && !Bet*',
-            titleSearchInput: 'Keep',
-            directorVPIdSearchInput: '',
-            endDateInput: '2026-09-30',
-            searchModeSelect: 'range',
-            advancedFilterExpression: '!Done',
-        }).map(([id, value]) => [id, { value, addEventListener() {} }])
-    );
+function mountSearchView(t, controls = {}) {
+    for (const id of ['searchInput', 'titleSearchInput', 'directorVPIdSearchInput']) {
+        controls[id] ??= { value: '', addEventListener() {} };
+    }
     const viewWindow = { location: { search: '' }, addEventListener() {} };
     const viewDocument = {
         addEventListener() {},
         getElementById(id) {
-            if (id === 'searchFlagUK') return { checked: true };
             return controls[id] || null;
         },
     };
@@ -32,9 +24,24 @@ test('project exclusions work alongside the other cross-team search filters', (t
             else Reflect.deleteProperty(globalThis, name);
         });
     }
-    const errors = t.mock.method(console, 'error');
     const cleanup = init(null);
     t.after(cleanup);
+    return viewWindow;
+}
+
+test('project exclusions work alongside the other cross-team search filters', (t) => {
+    const controls = Object.fromEntries(
+        Object.entries({
+            searchInput: '!CP* && !Bet*',
+            titleSearchInput: 'Keep',
+            directorVPIdSearchInput: '',
+            endDateInput: '2026-09-30',
+            searchModeSelect: 'range',
+            advancedFilterExpression: '!Done',
+        }).map(([id, value]) => [id, { value, addEventListener() {} }])
+    );
+    const errors = t.mock.method(console, 'error');
+    const viewWindow = mountSearchView(t, { ...controls, searchFlagUK: { checked: true } });
 
     const common = { title: 'Keep project', countryFlags: ['UK'], endDate: '15/09/26' };
     const stories = [
@@ -52,6 +59,57 @@ test('project exclusions work alongside the other cross-team search filters', (t
         Reflect.get(viewWindow, 'applyAdditionalFilters')(stories, []),
         stories.slice(2, 4)
     );
+    assert.equal(errors.mock.calls.length, 0);
+});
+
+test('advanced IMO wildcards include prefixes and exclude IMO2 stories', (t) => {
+    const controls = {
+        advancedFilterExpression: { value: 'IMO* && !IMO2*', addEventListener() {} },
+    };
+    const errors = t.mock.method(console, 'error');
+    const viewWindow = mountSearchView(t, controls);
+    const stories = [
+        { imo: 'IMO1', isDone: true },
+        { imo: ' imo10 ', priority: 'High' },
+        { imo: 'IMO3' },
+        { imo: 'IMO2' },
+        { imo: 'IMO20' },
+        { imo: 'CP-1' },
+        { imo: '' },
+        { imo: null },
+        {},
+    ];
+
+    for (const { expression, expected } of [
+        { expression: 'IMO* && !IMO2*', expected: stories.slice(0, 3) },
+        { expression: 'imo*&&!imo2*', expected: stories.slice(0, 3) },
+        { expression: 'IMO && !IMO2', expected: stories.slice(0, 3) },
+        { expression: 'IMO1', expected: stories.slice(0, 2) },
+        { expression: 'IMO1*', expected: stories.slice(0, 2) },
+        { expression: '!IMO*', expected: stories.slice(5) },
+        { expression: '(IMO1* || IMO3*) && !Done', expected: stories.slice(1, 3) },
+        { expression: 'IMO* && !IMO2* && High', expected: [stories[1]] },
+    ]) {
+        controls.advancedFilterExpression.value = expression;
+        assert.deepEqual(
+            Reflect.get(viewWindow, 'applyAdditionalFilters')(stories, []),
+            expected,
+            expression
+        );
+    }
+    assert.equal(errors.mock.calls.length, 0);
+});
+
+test('advanced IMO prefixes leave quoted field values literal', (t) => {
+    const errors = t.mock.method(console, 'error');
+    const viewWindow = mountSearchView(t);
+    const evaluate = Reflect.get(viewWindow, 'evaluateFilterExpression');
+    const story = { imo: 'IMO1', title: 'IMO2* launch', teamName: 'IMO2 team' };
+
+    assert.equal(evaluate('TITLE="IMO2*" && IMO1*', story), true);
+    assert.equal(evaluate('TEAM="IMO2" && IMO1', story), true);
+    assert.equal(evaluate('TITLE="IMO1"', story), false);
+    assert.equal(evaluate('IMO="1"', story), true);
     assert.equal(errors.mock.calls.length, 0);
 });
 

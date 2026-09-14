@@ -1932,14 +1932,6 @@ export function init(_root) {
                 return imo.includes(value.toLowerCase()) ? 'TRUE' : 'FALSE';
             });
 
-            // IMO<chars> (no quotes) - shorthand keyword search on the IMO field.
-            // Bare `IMO` (no suffix) is handled later as a presence token, so the
-            // suffix regex requires at least one non-operator character.
-            processedExpr = processedExpr.replace(/\bIMO([^\s!&|()"]+)/gi, (match, value) => {
-                const imo = (story.imo || '').toLowerCase();
-                return imo.startsWith(('imo' + value).toLowerCase()) ? 'TRUE' : 'FALSE';
-            });
-
             // PRIORITY="value" - matches priority value (exact, case-insensitive)
             processedExpr = processedExpr.replace(/PRIORITY="([^"]+)"/gi, (match, value) => {
                 const priority = (story.priority || '').toLowerCase();
@@ -2072,6 +2064,13 @@ export function init(_root) {
                 if (statusKey !== undefined) {
                     pos++; // consume status name
                     return statusMap[statusKey] || false;
+                }
+
+                // Match whole tokens so IMO prefixes inside quoted field values stay literal.
+                if (/^IMO[^\s!&|()"]+$/i.test(token)) {
+                    pos++;
+                    const prefix = token.replace(/\*$/, '').toLowerCase();
+                    return storyImo.startsWith(prefix);
                 }
 
                 // Quarter tokens: Q1, Q2, Q3, Q4
@@ -2208,6 +2207,7 @@ export function init(_root) {
                     <div class="advanced-filter-help-section">
                         <strong>FIELD FILTERS (partial match unless noted):</strong><br>
                         <code>IMO="0043"</code> - IMO number (partial)<br>
+                        <code>IMO1</code> or <code>IMO1*</code> - IMO starts with IMO1<br>
                         <code>PRIORITY="High"</code> - Priority (exact)<br>
                         <code>TEAM="Terminal"</code> - Team name<br>
                         <code>EPIC="Core"</code> - Epic name<br>
@@ -2221,6 +2221,7 @@ export function init(_root) {
                         <code>Done && !Timeline</code><br>
                         <code>TEAM="Terminal" && Done</code><br>
                         <code>IMO="0043" || IMO="0044"</code><br>
+                        <code>IMO* && !IMO2*</code> - IMO IDs excluding those starting with IMO2<br>
                         <code>(TEAM="A" || TEAM="B") && !Cancelled</code><br>
                         <code>COUNTRY="UK" && LEADERSHIP="John"</code><br>
                         <code>!IMO</code> - stories without IMO<br>
