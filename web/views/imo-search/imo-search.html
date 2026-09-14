@@ -61,6 +61,7 @@
                                class="search-input imo-input"
                                    id="searchInput"
                                data-ui-search
+                               aria-describedby="imoSearchHelp"
                                placeholder="Enter IMO/Project ID"
                                    onkeypress="handleCombinedSearchKeyPress(event)">
                         <select class="search-input dropdown-select" id="prioritySelect" onchange="updateSearchButtonStates()">
@@ -69,6 +70,10 @@
                             <option value="Medium">Medium</option>
                             <option value="Low">Low</option>
                         </select>
+                    </div>
+                    <div id="imoSearchHelp" class="search-help-text">
+                        Exclude IDs starting with CP or Bet: <code>!CP* &amp;&amp; !Bet*</code>.
+                        Exclusions ignore case and keep stories without a project ID.
                     </div>
                 </div>
                 <!-- Story Title Search -->

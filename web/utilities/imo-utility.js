@@ -176,7 +176,8 @@ export class IMOUtility {
     /**
      * Filter stories by IMO/Project ID
      * - If search term is purely numeric: match it anywhere in the IMO value
-     * - If search term contains non-numeric characters: partial string match
+     * - Text or a term ending in "*" matches the start of the ID
+     * - "!" excludes a term; "&&" combines filters; "||" combines positive alternatives
      * @param {Array} stories - Array of story objects
      * @param {string} imoSearch - IMO/Project ID to search for or "all" for any IMO
      * @returns {Array} - Filtered array of stories with matching IMO or all stories with any IMO
@@ -184,28 +185,43 @@ export class IMOUtility {
     static filterStoriesByIMO(stories, imoSearch) {
         if (!imoSearch || !Array.isArray(stories)) return [];
 
-        // Special case: "all" means find all stories with any IMO tag
-        if (imoSearch === 'all') {
-            return this.filterStoriesWithAnyIMO(stories);
-        }
-
-        const searchTerm = imoSearch.toString().trim().toLowerCase();
-
-        // Check if search term is purely numeric (digits only)
-        const isNumericOnly = /^\d+$/.test(searchTerm);
+        const groups = imoSearch
+            .toString()
+            .trim()
+            .toLowerCase()
+            .split('&&')
+            .map((group) => {
+                const terms = group.split('||').map((term) => {
+                    const trimmed = term.trim();
+                    const negated = trimmed.startsWith('!');
+                    const value = (negated ? trimmed.slice(1) : trimmed).trim();
+                    const prefix = value.endsWith('*') ? value.slice(0, -1) : value;
+                    return { negated, value, prefix, numeric: /^\d+$/.test(value) };
+                });
+                return {
+                    positive: terms.filter((term) => !term.negated),
+                    negative: terms.filter((term) => term.negated),
+                    valid: terms.every((term) => term.value.length > 0),
+                };
+            });
+        if (groups.some((group) => !group.valid)) return [];
 
         return stories.filter((story) => {
-            if (!story.imo) return false;
+            const storyIMO = (story.imo || '').toString().trim().toLowerCase();
+            const matches = (term) => {
+                if (!storyIMO) return false;
+                if (term.value === 'all') return true;
+                return term.numeric
+                    ? storyIMO.includes(term.value)
+                    : storyIMO.startsWith(term.prefix);
+            };
 
-            const storyIMO = story.imo.toString().trim().toLowerCase();
-
-            if (isNumericOnly) {
-                // Substring match so "0043" matches "IMP 0043", "IMO-0043", etc.
-                return storyIMO.includes(searchTerm);
-            } else {
-                // Prefix match for text/mixed searches
-                return storyIMO.startsWith(searchTerm);
-            }
+            // Exclusions apply to every alternative, as in the general search query syntax.
+            return groups.every(
+                (group) =>
+                    (group.positive.length === 0 || group.positive.some(matches)) &&
+                    !group.negative.some(matches)
+            );
         });
     }
 
@@ -430,6 +446,15 @@ export class IMOUtility {
         const imoWithPrefixMatch = cleanQuery.match(/^imo\s+(.+)$/i);
         if (imoWithPrefixMatch) {
             return { type: 'imo', value: imoWithPrefixMatch[1].trim() };
+        }
+
+        const wildcardMatch = cleanQuery.match(/^(!?)\s*([^!*&|]+)\*$/);
+        if (wildcardMatch) {
+            return {
+                type: 'imo',
+                value: `${wildcardMatch[2].trim().toLowerCase()}*`,
+                negated: wildcardMatch[1] === '!',
+            };
         }
 
         // Bare alphanumeric code starting with a letter (e.g. "IMO", "IMP", "IMO1", "RR") - stories whose IMO field starts with it

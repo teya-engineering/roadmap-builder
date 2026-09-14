@@ -1807,7 +1807,6 @@ export function init(_root) {
                     );
                 }
 
-                // IMO/Project ID filter (direct search, no query parsing)
                 const imoQuery = document.getElementById('searchInput')?.value.trim();
                 if (!opts.skipIMO && imoQuery) {
                     result = IMOUtility.filterStoriesByIMO(result, imoQuery);
