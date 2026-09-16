@@ -98,8 +98,7 @@ export class ConfigUtility {
             MODAL_PADDING: 24,
             CLOCK_ICON_SIZE: 20,
             ICON_OFFSET_TOP: -13,
-            ICON_OFFSET_RIGHT: -14,
-            BTL_MAX_STORIES: 3
+            ICON_OFFSET_RIGHT: -14
         },
         
         // Timing Constants (in milliseconds)

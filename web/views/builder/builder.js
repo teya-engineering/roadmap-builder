@@ -1617,17 +1617,6 @@ export function init(_root) {
         let btlStoryCounter = 0;
 
         function addBTLStory() {
-            // Check if we already have max BTL stories
-            const existingBTLStories = document.querySelectorAll(
-                '#btl-stories-container .story-section'
-            );
-            if (existingBTLStories.length >= ConfigUtility.CSS.UI.BTL_MAX_STORIES) {
-                alert(
-                    `Maximum of ${ConfigUtility.CSS.UI.BTL_MAX_STORIES} BTL stories allowed. Please remove an existing story before adding a new one.`
-                );
-                return;
-            }
-
             btlStoryCounter++;
             const storyId = `btl-${btlStoryCounter}`;
 
@@ -1771,27 +1760,16 @@ export function init(_root) {
             }
         };
 
+        // Keeps the BTL section's story count in step with its contents. It used to
+        // also cap the section at three stories (disabling the add button, and
+        // refusing the fourth) — that cap is gone, so BTL grows like an EPIC does.
         function updateBTLAddButton() {
             const existingBTLStories = document.querySelectorAll(
                 '#btl-stories-container .story-section'
             );
-            const addButton = document.querySelector('button[onclick="addBTLStory()"]');
             const meta = document.getElementById('btl-story-meta');
             const count = existingBTLStories.length;
-            if (meta) meta.textContent = `${count} ${count === 1 ? 'story' : 'stories'} · max 3`;
-            if (!addButton) return;
-
-            if (count >= 3) {
-                addButton.disabled = true;
-                addButton.textContent = '+ Add Story (Max 3 reached)';
-                addButton.style.opacity = '0.5';
-                addButton.style.cursor = 'not-allowed';
-            } else {
-                addButton.disabled = false;
-                addButton.textContent = '+ Add Story';
-                addButton.style.opacity = '1';
-                addButton.style.cursor = 'pointer';
-            }
+            if (meta) meta.textContent = `${count} ${count === 1 ? 'story' : 'stories'}`;
         }
 
         // Story-form timeline-change handlers (toggleChanges) are now in
@@ -3664,18 +3642,10 @@ export function init(_root) {
                 document.getElementById('btl-stories-container').innerHTML = '';
                 btlStoryCounter = 0;
 
-                let loadedBTLCount = 0;
-
                 // Load BTL stories if they exist
                 if (btlData.stories && Array.isArray(btlData.stories)) {
                     btlData.stories.forEach((story) => {
-                        // Only load first 3 BTL stories, ignore the rest
-                        if (loadedBTLCount >= 3) {
-                            return;
-                        }
-
                         addBTLStory();
-                        loadedBTLCount++;
                         const currentStoryId = `btl-${btlStoryCounter}`;
 
                         // Set story data
@@ -3753,18 +3723,7 @@ export function init(_root) {
                     });
                 }
 
-                // Notify user if some BTL stories were skipped
-                if (btlData.stories && btlData.stories.length > loadedBTLCount) {
-                    const skippedCount = btlData.stories.length - loadedBTLCount;
-
-                    if (skippedCount > 0) {
-                        alert(
-                            `Note: ${skippedCount} BTL ${skippedCount === 1 ? 'story was' : 'stories were'} skipped during import due to the 3-story maximum limit.`
-                        );
-                    }
-                }
-
-                updateBTLAddButton(); // Update button state after loading from JSON
+                updateBTLAddButton(); // Update the story count after loading from JSON
             } catch {
                 // Don't throw the error, just continue so loading can complete
             }
