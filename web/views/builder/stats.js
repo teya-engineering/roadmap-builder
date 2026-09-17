@@ -1,4 +1,5 @@
 import { DateUtility } from '../../utilities/date-utility.js';
+import { parseFte, formatFte } from '../../domain/fte.js';
 
 // Roadmap stats modal: bar charts of on-time / delayed / accelerated /
 // cancelled stories with click-to-expand drill-downs.
@@ -122,6 +123,11 @@ export function createStatsHandlers({ collectFormData }) {
             acceleratedStories: { done: [], notDone: [] },
             onTimeStories: { done: [], notDone: [] },
             cancelledStories: [],
+            // Staffing roll-up. Stories with no FTE are left out of the total
+            // rather than counted as zero, so a half-filled roadmap doesn't
+            // read as a cheap one; `counted` vs `eligible` says how complete
+            // the picture is.
+            people: { total: 0, counted: 0, eligible: 0, byEpic: [] },
         };
         if (!teamData || !Array.isArray(teamData.epics)) return result;
 
@@ -131,6 +137,8 @@ export function createStatsHandlers({ collectFormData }) {
 
         for (const epic of teamData.epics) {
             if (!Array.isArray(epic.stories)) continue;
+            let epicFte = 0;
+            let epicHasFte = false;
             for (const story of epic.stories) {
                 result.totalStories++;
                 if (story.isCancelled) {
@@ -141,6 +149,17 @@ export function createStatsHandlers({ collectFormData }) {
                         teamName,
                     });
                     continue;
+                }
+
+                // Cancelled work isn't staffed any more, so it sits outside
+                // both sides of the "3 of 4 stories" ratio.
+                result.people.eligible++;
+                const fte = parseFte(story.fte);
+                if (fte !== null) {
+                    result.people.total += fte;
+                    result.people.counted++;
+                    epicFte += fte;
+                    epicHasFte = true;
                 }
 
                 // Walk the story's recorded timeline changes and count actual
@@ -192,8 +211,20 @@ export function createStatsHandlers({ collectFormData }) {
                     bucket.push({ title: story.title, epicName: epic.name });
                 }
             }
+            if (epicHasFte) {
+                result.people.byEpic.push({ name: epic.name, fte: roundFte(epicFte) });
+            }
         }
+
+        result.people.total = roundFte(result.people.total);
+        result.people.byEpic.sort((a, b) => b.fte - a.fte);
         return result;
+    }
+
+    // Float addition leaves a tail on sums like 0.1 + 0.2, and the roll-up only
+    // ever shows halves.
+    function roundFte(value) {
+        return Math.round(value * 100) / 100;
     }
 
     function isDelayChange(change) {
@@ -253,6 +284,42 @@ export function createStatsHandlers({ collectFormData }) {
                 'cancelled'
             ) +
             '</div>' +
+            renderPeopleHtml(s.people) +
+            '</div>'
+        );
+    }
+
+    // Staffing roll-up: what the roadmap costs in people, and how much of the
+    // board actually answered the question.
+    function renderPeopleHtml(people) {
+        if (!people || people.eligible === 0) return '';
+
+        const summary = people.counted
+            ? `${formatFte(people.total)}<span style="font-size:14px; font-weight:400; color:var(--text-muted);"> FTE across ${people.counted} of ${people.eligible} ${people.eligible === 1 ? 'story' : 'stories'}</span>`
+            : '<span style="font-size:14px; font-weight:400; color:var(--text-muted);">No FTE set on any story yet</span>';
+
+        const rows = people.byEpic
+            .map((epic) => {
+                const width = people.total ? (epic.fte / people.total) * 100 : 0;
+                return (
+                    '<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">' +
+                    `<span style="flex:0 0 140px; font-size:13px; color:var(--text-default); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(epic.name)}</span>` +
+                    '<span style="flex:1; height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden;">' +
+                    `<i style="display:block; height:100%; width:${width.toFixed(1)}%; background:var(--primary);"></i></span>` +
+                    `<b style="flex:0 0 44px; text-align:right; font-size:13px; color:var(--text-strong); font-variant-numeric:tabular-nums;">${formatFte(epic.fte)}</b>` +
+                    '</div>'
+                );
+            })
+            .join('');
+
+        return (
+            '<div style="max-width: 600px; margin: 24px auto 0; padding-top: 20px; border-top: 1px solid var(--border-subtle);">' +
+            '<h3 style="margin: 0 0 12px 0; color: var(--text-strong); text-align: center;">People on this roadmap</h3>' +
+            `<div style="text-align:center; font-size:26px; font-weight:600; color:var(--text-strong); margin-bottom:16px;">${summary}</div>` +
+            rows +
+            '<p style="margin:12px 0 0; font-size:12px; color:var(--text-muted);">' +
+            'Stories with no FTE are left out of the total rather than counted as zero, so a half-filled roadmap does not read as a cheap one. Cancelled stories are excluded.' +
+            '</p>' +
             '</div>'
         );
     }
@@ -506,6 +573,7 @@ export function createStatsHandlers({ collectFormData }) {
         toggleDelayBreakdown,
         computeRoadmapStats,
         renderStatsHtml,
+        renderPeopleHtml,
         isDelayChange,
         getDelayBreakdown,
         compareByTeamEpicTitle,

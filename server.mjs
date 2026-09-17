@@ -11,16 +11,6 @@ const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 const WEB_DIR = resolve(join(__dirname, 'web'));
 
-// Slack save-notification proxy. The incoming-webhook URL is held server-side
-// (env), never shipped to the browser. When unset, the feature is a silent
-// no-op. Read at request time so it can be set without a restart.
-const NOTIFY_PATH = '/api/roadmap-saved';
-const MAX_BODY_BYTES = 64 * 1024;
-
-function slackWebhookUrl() {
-    return process.env.SLACK_WEBHOOK_URL || '';
-}
-
 const MIME_TYPES = {
     '.html': 'text/html',
     '.js': 'text/javascript',
@@ -81,77 +71,6 @@ function logRequest(req) {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - ${clientIP}`);
 }
 
-// Read and JSON-parse a request body, rejecting bodies over `limit` bytes.
-// Errors carry a `statusCode` so the caller can map them to a response.
-function readJsonBody(req, limit) {
-    return new Promise((resolve, reject) => {
-        let size = 0;
-        let aborted = false;
-        const chunks = [];
-        req.on('data', (chunk) => {
-            if (aborted) return;
-            size += chunk.length;
-            if (size > limit) {
-                aborted = true;
-                reject(Object.assign(new Error('payload too large'), { statusCode: 413 }));
-                return;
-            }
-            chunks.push(chunk);
-        });
-        req.on('end', () => {
-            if (aborted) return;
-            try {
-                const raw = Buffer.concat(chunks).toString('utf8');
-                resolve(raw ? JSON.parse(raw) : {});
-            } catch {
-                reject(Object.assign(new Error('invalid JSON'), { statusCode: 400 }));
-            }
-        });
-        req.on('error', (err) => {
-            if (!aborted) reject(err);
-        });
-    });
-}
-
-// Forward a pre-formatted message to the Slack incoming webhook. Throws on a
-// non-2xx response so the caller can report failure.
-async function postToSlack(webhookUrl, text) {
-    const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-    });
-    if (!response.ok) throw new Error(`Slack responded ${response.status}`);
-}
-
-// Handle the save-notification proxy. Accepts POST { text }, forwards it to
-// Slack, and returns 204. A missing webhook is treated as a silent no-op (204)
-// so the client's best-effort notify never surfaces an error.
-async function handleNotify(req, res) {
-    if (req.method !== 'POST') {
-        sendText(res, 405, 'Method not allowed', { Allow: 'POST' });
-        return;
-    }
-    try {
-        const body = await readJsonBody(req, MAX_BODY_BYTES);
-        const text = typeof body?.text === 'string' ? body.text.trim() : '';
-        if (!text) {
-            sendText(res, 400, 'Missing "text"');
-            return;
-        }
-        const webhookUrl = slackWebhookUrl();
-        if (webhookUrl) await postToSlack(webhookUrl, text);
-        res.writeHead(204);
-        res.end();
-    } catch (error) {
-        const status = error?.statusCode ?? 502;
-        if (status >= 500) {
-            console.error('roadmap-saved notify failed:', error?.message ?? error);
-        }
-        sendText(res, status, 'Notify failed');
-    }
-}
-
 // Exported so tests can drive it via their own http.createServer without
 // binding the production port or spawning a subprocess.
 export async function requestHandler(req, res) {
@@ -159,11 +78,6 @@ export async function requestHandler(req, res) {
 
     const url = new URL(req.url, 'http://localhost');
     const { pathname } = url;
-
-    if (pathname === NOTIFY_PATH) {
-        await handleNotify(req, res);
-        return;
-    }
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
         sendText(res, 405, 'Method not allowed', { Allow: 'GET, HEAD' });

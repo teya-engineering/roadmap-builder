@@ -28,7 +28,6 @@ import { createStatsHandlers } from './stats.js';
 import { initializeKTLOValidation, validateKTLOPercentage } from './ktlo-validation.js';
 import * as roadmapState from './state.js';
 import * as save from './save.js';
-import * as slackNotify from './slack-notify.js';
 import { enableTitleEditing } from './inline-edit.js';
 import { confettiBurst } from './confetti.js';
 import { RoadmapGenerator } from '../../roadmap-generator.js';
@@ -36,6 +35,35 @@ import { ConfigUtility } from '../../utilities/config-utility.js';
 import { DateUtility } from '../../utilities/date-utility.js';
 import { renderCountryFlagsHTML } from '../../utilities/countries.js';
 import { directoryStore } from '../../app/directory-store.js';
+import { parseFte } from '../../domain/fte.js';
+
+// Hint under every FTE field. The zero wording matters: staffed with nobody is
+// a real answer and has to read differently from not filled in yet.
+const FTE_HINT_DEFAULT = 'People working on this story, in halves. Leave empty if unknown.';
+const FTE_HINT_ZERO = 'Nobody staffed yet - the roadmap shows 0 FTE.';
+const FTE_HINT_INVALID = 'Enter a number of people, like 0.5, 1 or 2.5.';
+
+/**
+ * Keep the hint under an FTE field in step with what is typed.
+ *
+ * @param {string} hintId
+ * @param {string} rawValue
+ */
+function updateFteHint(hintId, rawValue) {
+    const hint = document.getElementById(hintId);
+    if (!hint) return;
+
+    const text = (rawValue || '').trim();
+    const value = parseFte(text);
+
+    if (text !== '' && value === null) {
+        hint.dataset.state = 'error';
+        hint.textContent = FTE_HINT_INVALID;
+        return;
+    }
+    hint.dataset.state = '';
+    hint.textContent = value === 0 ? FTE_HINT_ZERO : FTE_HINT_DEFAULT;
+}
 
 /**
  * Mount this view. Called by the SPA router on every navigation here.
@@ -134,11 +162,6 @@ export function init(_root) {
                         ? window.prepareRoadmapForSave()
                         : null,
             });
-
-        // Slack save-notifier: diffs each save against a baseline and posts a
-        // summary to the /api/roadmap-saved proxy. Listens for roadmap:saved,
-        // so it must init after save.init wires that event.
-        slackNotify.init();
 
         // Dirty tracking: any user input/change inside the SPA mount marks
         // the form as having unsaved changes. We rely on Event.isTrusted to
@@ -1013,6 +1036,31 @@ export function init(_root) {
             }
         });
 
+        // The story whose FTE was edited last, so the next render can pop just
+        // that one tag. The whole roadmap is rebuilt on every keystroke, so a
+        // plain CSS animation would fire on every tag on the board.
+        let ftePopStoryId = null;
+
+        // FTE fields live in three forms that are all built with innerHTML, so
+        // the hint is kept honest by delegation rather than per-field wiring.
+        document.addEventListener('input', (e) => {
+            const field = e.target;
+            if (!field || !field.id) return;
+
+            const storyMatch = field.id.match(/^story-fte-(.+)$/);
+            const isFteField =
+                storyMatch || field.id.startsWith('btl-fte-') || field.id === 'editFte';
+            if (!isFteField) return;
+
+            // The field already points at its own hint for screen readers.
+            updateFteHint(field.getAttribute('aria-describedby'), field.value);
+
+            if (storyMatch) {
+                const uniqueIdEl = document.getElementById(`story-id-${storyMatch[1]}`);
+                ftePopStoryId = uniqueIdEl ? uniqueIdEl.value : null;
+            }
+        });
+
         // The nav status-style toggle changes how status events are rendered
         // (hover bar vs. side text box). Both layouts produce different markup,
         // so regenerate the preview when the user flips it.
@@ -1126,7 +1174,7 @@ export function init(_root) {
             // Story fields
             document
                 .querySelectorAll(
-                    '[id^="story-title-"], [id^="story-start-"], [id^="story-end-"], [id^="story-bullets-"], [id^="story-imo-"]'
+                    '[id^="story-title-"], [id^="story-start-"], [id^="story-end-"], [id^="story-bullets-"], [id^="story-imo-"], input[id^="story-fte-"]'
                 )
                 .forEach((element) => {
                     element.addEventListener('input', debouncedGeneratePreview);
@@ -1178,7 +1226,7 @@ export function init(_root) {
             // BTL story fields
             document
                 .querySelectorAll(
-                    '[id^="btl-title-"], [id^="btl-start-"], [id^="btl-end-"], [id^="btl-bullets-"], [id^="btl-imo-"]'
+                    '[id^="btl-title-"], [id^="btl-start-"], [id^="btl-end-"], [id^="btl-bullets-"], [id^="btl-imo-"], input[id^="btl-fte-"]'
                 )
                 .forEach((element) => {
                     element.addEventListener('input', debouncedGeneratePreview);
@@ -1305,8 +1353,13 @@ export function init(_root) {
                                 <option value="Low">Low</option>
                             </select>
                         </div>
+                        <div style="flex: none; width: 118px;">
+                            <label for="story-fte-${storyId}">FTE <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                            <input type="number" id="story-fte-${storyId}" min="0" max="99" step="0.5" placeholder="1.5" aria-describedby="story-fte-hint-${storyId}">
+                        </div>
                     </div>
-                    
+                    <p class="field-hint" id="story-fte-hint-${storyId}" aria-live="polite">${FTE_HINT_DEFAULT}</p>
+
                     <div class="form-group">${renderCountryFlagsHTML({
                         id: (c) => `story-flag-${c.name.toLowerCase()}-${storyId}`,
                         onChange: (c) =>
@@ -1510,6 +1563,7 @@ export function init(_root) {
                 `story-director-vp-id-${storyId}`,
                 `story-imo-${storyId}`,
                 `story-priority-${storyId}`,
+                `story-fte-${storyId}`,
                 `done-date-${storyId}`,
                 `done-notes-${storyId}`,
                 `cancel-date-${storyId}`,
@@ -1696,15 +1750,22 @@ export function init(_root) {
                         <input type="text" id="btl-imo-${storyId}" placeholder="0001">
                     </div>
 
-                    <div class="form-group">
-                        <label for="btl-priority-${storyId}">Priority <span style="font-style: italic; color: #888;">(optional)</span>:</label>
-                        <select id="btl-priority-${storyId}">
-                            <option value="">Select...</option>
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                        </select>
+                    <div class="form-group" style="display: flex; gap: 15px; align-items: flex-end;">
+                        <div style="flex: 1;">
+                            <label for="btl-priority-${storyId}">Priority <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                            <select id="btl-priority-${storyId}">
+                                <option value="">Select...</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div style="flex: none; width: 118px;">
+                            <label for="btl-fte-${storyId}">FTE <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                            <input type="number" id="btl-fte-${storyId}" min="0" max="99" step="0.5" placeholder="1.5" aria-describedby="btl-fte-hint-${storyId}">
+                        </div>
                     </div>
+                    <p class="field-hint" id="btl-fte-hint-${storyId}" aria-live="polite">${FTE_HINT_DEFAULT}</p>
 
                     <div class="form-group">
                         <label for="btl-comments-${storyId}">Comments <span style="font-style: italic; color: #888;">(optional, not shown on roadmap)</span>:</label>
@@ -1731,6 +1792,7 @@ export function init(_root) {
                 `btl-description-${storyId}`,
                 `btl-imo-${storyId}`,
                 `btl-priority-${storyId}`,
+                `btl-fte-${storyId}`,
                 `btl-comments-${storyId}`,
             ];
 
@@ -1912,6 +1974,14 @@ export function init(_root) {
                 if (mount) {
                     mount.scrollTop = savedScrollTop;
                     mount.scrollLeft = savedScrollLeft;
+                }
+
+                if (ftePopStoryId && mount) {
+                    const changed = mount.querySelector(
+                        `.story-item[data-json-story-id="${CSS.escape(ftePopStoryId)}"] .fte-tag`
+                    );
+                    if (changed) changed.classList.add('is-changing');
+                    ftePopStoryId = null;
                 }
 
                 // Fullscreen overlay still uses an iframe with the export-style
@@ -2414,6 +2484,14 @@ export function init(_root) {
                 story.priority = priority;
             }
 
+            // Handle FTE - only stored when it parses, so "unknown" stays absent
+            // rather than becoming a misleading 0.
+            const fteEl = document.getElementById(`story-fte-${storyId}`);
+            const fte = parseFte(fteEl ? fteEl.value : '');
+            if (fte !== null) {
+                story.fte = fte;
+            }
+
             // Handle Comments
             const commentsEl = document.getElementById(`story-comments-${storyId}`);
             const comments = commentsEl ? commentsEl.value.trim() : '';
@@ -2903,6 +2981,13 @@ export function init(_root) {
             const priority = priorityEl ? priorityEl.value : '';
             if (priority) {
                 story.priority = priority;
+            }
+
+            // Handle FTE
+            const fteEl = document.getElementById(`btl-fte-${storyId}`);
+            const fte = parseFte(fteEl ? fteEl.value : '');
+            if (fte !== null) {
+                story.fte = fte;
             }
 
             // Handle Comments
@@ -3535,11 +3620,6 @@ export function init(_root) {
                                             // Refresh date pickers to sync with loaded data
                                             refreshAllDatePickers();
                                             generatePreview();
-                                            // Roadmap fully loaded and state synced. Signal the
-                                            // Slack notifier to (re)set its diff baseline here.
-                                            document.dispatchEvent(
-                                                new CustomEvent('roadmap:loaded')
-                                            );
                                             // Update document title with loaded team name
                                             updateDocumentTitle();
                                             // Programmatic loads dispatch input events on
@@ -3586,9 +3666,6 @@ export function init(_root) {
                     // Refresh date pickers to sync with loaded data
                     refreshAllDatePickers();
                     generatePreview();
-                    // Roadmap fully loaded and state synced. Signal the
-                    // Slack notifier to (re)set its diff baseline here.
-                    document.dispatchEvent(new CustomEvent('roadmap:loaded'));
                     // Update document title with loaded team name
                     updateDocumentTitle();
                     save.markClean();
@@ -3728,6 +3805,14 @@ export function init(_root) {
                 priorityEl.value = story.priority || '';
             }
 
+            // Set FTE field
+            const fteEl = document.getElementById(`btl-fte-${storyId}`);
+            if (fteEl) {
+                const fte = parseFte(story.fte);
+                fteEl.value = fte === null ? '' : String(fte);
+                updateFteHint(`btl-fte-hint-${storyId}`, fteEl.value);
+            }
+
             // Set Comments field
             const commentsEl = document.getElementById(`btl-comments-${storyId}`);
             if (commentsEl) {
@@ -3812,6 +3897,14 @@ export function init(_root) {
                 const priorityEl = document.getElementById(`story-priority-${storyId}`);
                 if (priorityEl) {
                     priorityEl.value = story.priority || '';
+                }
+
+                // Load FTE field
+                const fteEl = document.getElementById(`story-fte-${storyId}`);
+                if (fteEl) {
+                    const fte = parseFte(story.fte);
+                    fteEl.value = fte === null ? '' : String(fte);
+                    updateFteHint(`story-fte-hint-${storyId}`, fteEl.value);
                 }
 
                 // Load Comments field
@@ -4330,6 +4423,10 @@ export function init(_root) {
             document.getElementById('editDirectorVPId').value = foundStory.directorVPId || '';
             document.getElementById('editIMO').value = foundStory.imo || '';
             document.getElementById('editPriority').value = foundStory.priority || '';
+            const editFteValue = parseFte(foundStory.fte);
+            document.getElementById('editFte').value =
+                editFteValue === null ? '' : String(editFteValue);
+            updateFteHint('editFteHint', document.getElementById('editFte').value);
             document.getElementById('editComments').value = foundStory.comments || '';
 
             // Load Country Flags (Global is checked by default if no flags are saved)
@@ -5133,6 +5230,7 @@ export function init(_root) {
                             imo: imoEl ? imoEl.value : '',
                             priority:
                                 document.getElementById(`btl-priority-${storyId}`)?.value || '',
+                            fte: parseFte(document.getElementById(`btl-fte-${storyId}`)?.value),
                             comments: commentsEl ? commentsEl.value : '',
                             isDone: false, // BTL stories don't have status flags
                             isCancelled: false,
@@ -5328,6 +5426,7 @@ export function init(_root) {
                         directorVPId: directorVPIdEl ? directorVPIdEl.value : '',
                         imo: imoEl ? imoEl.value : '',
                         priority: document.getElementById(`story-priority-${storyId}`)?.value || '',
+                        fte: parseFte(document.getElementById(`story-fte-${storyId}`)?.value),
                         comments: commentsEl ? commentsEl.value : '',
                         countryFlags: storyCountryFlags.length > 0 ? storyCountryFlags : undefined,
                         includeInProductRoadmap: includeInProductRoadmapEl
@@ -5473,6 +5572,13 @@ export function init(_root) {
                     if (priorityEl)
                         priorityEl.value = document.getElementById('editPriority').value;
 
+                    // Update FTE
+                    const fteEl = document.getElementById(`btl-fte-${storyId}`);
+                    if (fteEl) {
+                        fteEl.value = document.getElementById('editFte').value;
+                        updateFteHint(`btl-fte-hint-${storyId}`, fteEl.value);
+                    }
+
                     // Update Comments
                     const commentsEl = document.getElementById(`btl-comments-${storyId}`);
                     if (commentsEl)
@@ -5506,6 +5612,13 @@ export function init(_root) {
                 // Update Priority
                 const priorityEl = document.getElementById(`story-priority-${storyId}`);
                 if (priorityEl) priorityEl.value = document.getElementById('editPriority').value;
+
+                // Update FTE
+                const fteEl = document.getElementById(`story-fte-${storyId}`);
+                if (fteEl) {
+                    fteEl.value = document.getElementById('editFte').value;
+                    updateFteHint(`story-fte-hint-${storyId}`, fteEl.value);
+                }
 
                 // Update Comments
                 const commentsEl = document.getElementById(`story-comments-${storyId}`);

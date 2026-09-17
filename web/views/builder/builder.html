@@ -349,7 +349,12 @@
                                 <option value="Low">Low</option>
                             </select>
                         </div>
+                        <div style="flex: none; width: 118px;">
+                            <label for="editFte">FTE <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                            <input type="number" id="editFte" name="fte" min="0" max="99" step="0.5" placeholder="1.5" aria-describedby="editFteHint">
+                        </div>
                     </div>
+                    <p class="field-hint" id="editFteHint" aria-live="polite">People working on this story, in halves. Leave empty if unknown.</p>
                     <div class="form-group" id="editFlagsContainer"></div>
                     <div class="form-group" style="margin-top: 15px;">
                         <label for="editComments">Comments <span style="font-style: italic; color: #888;">(optional, not shown on roadmap)</span>:</label>

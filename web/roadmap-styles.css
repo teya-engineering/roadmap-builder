@@ -667,6 +667,47 @@ html[data-status-style='side']
     background-color: var(--rm-surface);
 }
 
+/* FTE Tag - how many people work on the story. Tabular figures keep 0.5 and
+   1.5 the same width so stepping the field doesn't jiggle the tag row. */
+.fte-tag {
+    font-size: 8.5px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border: 1px solid var(--rm-border-strong);
+    border-radius: 999px;
+    display: inline-block;
+    width: fit-content;
+    white-space: nowrap;
+    color: var(--rm-text-strong);
+    background: var(--rm-surface);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Added by the builder to the one tag whose value just changed, so a stepper
+   press is visible without the whole re-rendered roadmap flashing. */
+.fte-tag.is-changing {
+    animation: fte-pop 260ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fte-pop {
+    0% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.14);
+        background: var(--rm-surface-muted);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fte-tag.is-changing {
+        animation: none;
+    }
+}
+
 /* Story Content */
 .task-title {
     font-size: 10pt;

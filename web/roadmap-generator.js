@@ -1,6 +1,7 @@
 import { DateUtility } from './utilities/date-utility.js';
 import { UIUtility } from './utilities/ui-utility.js';
 import { ConfigUtility } from './utilities/config-utility.js';
+import { parseFte, formatFteTag } from './domain/fte.js';
 
 // Colours for the status badges and milestone pins. They resolve at render
 // time against whichever scheme is active, so dark mode can lighten them in
@@ -953,6 +954,19 @@ export class RoadmapGenerator {
             positionClass = ' story-positioned-october';
         }
 
+        // Tags above the bar: FTE, then priority, then IMO. Any one of them on
+        // its own is enough to draw the row.
+        const fte = parseFte(story.fte);
+        const fteTagHTML = fte === null ? '' : `<div class="fte-tag">${formatFteTag(fte)}</div>`;
+        const priorityTagHTML = story.priority
+            ? `<div class="priority-tag priority-${story.priority.toLowerCase()}">${story.priority}</div>`
+            : '';
+        const imoTagHTML = story.imo ? `<div class="imo-tag">${story.imo}</div>` : '';
+        const storyTagsHTML =
+            fteTagHTML || priorityTagHTML || imoTagHTML
+                ? `<div class="story-tags">${fteTagHTML}${priorityTagHTML}${imoTagHTML}</div>`
+                : '';
+
         return `
             <div class="story-item${cancelledClass}${transferredClass}${proposedClass}${continuesClass}${zoomClass}${positionClass}"
              style="--start: ${startGrid}; --end: ${endGrid};"
@@ -974,14 +988,7 @@ export class RoadmapGenerator {
                 ${proposedIconHTML}
             ${editIconHTML}
             ${continuationYearHTML}
-            ${
-                story.imo
-                    ? `<div class="story-tags">
-                ${story.priority ? `<div class="priority-tag priority-${story.priority.toLowerCase()}">${story.priority}</div>` : ''}
-                <div class="imo-tag">${story.imo}</div>
-            </div>`
-                    : ''
-            }
+            ${storyTagsHTML}
                                 <div class="task-title">${this.getStoryTitleWithStartInfo(story)}</div>
             ${bulletsHTML}
             ${milestonesTrackHTML}

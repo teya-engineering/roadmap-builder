@@ -119,3 +119,14 @@
         .bar-chart-container:hover .expand-chevron {
             color: var(--text-strong);
         }
+
+        /* Hint under a field (FTE). Turns red while the value can't be used. */
+        .field-hint {
+            margin: 6px 0 15px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: var(--text-muted);
+        }
+        .field-hint[data-state="error"] {
+            color: var(--danger);
+        }

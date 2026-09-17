@@ -23,6 +23,7 @@
               "Second bullet point"
             ],
             "imo": "0043",
+            "fte": 1.5,
             "countryFlags": [
               "Global"
             ],
@@ -62,6 +63,7 @@
             ],
             "directorVPId": "Paulo",
             "imo": "Moto - 001",
+            "fte": 2,
             "imoClassification": "Other",
             "countryFlags": [
               "Iceland"
