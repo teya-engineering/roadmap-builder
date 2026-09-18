@@ -1306,11 +1306,7 @@ export function init(_root) {
                                 <input type="checkbox" id="story-include-product-roadmap-${storyId}" checked style="margin: 0;"> 
                             </label>
                         </div>
-                    <!-- v2: title editing migrated to inline-edit on the preview. The
-                         input stays in the DOM (hidden) so collectFormData and the
-                         collapsed story header still read it; inline-edit writes back
-                         to it via dispatching an 'input' event. -->
-                    <div class="form-group" style="display: none;">
+                    <div class="form-group">
                         <label for="story-title-${storyId}">Story Title:</label>
                         <input type="text" id="story-title-${storyId}" placeholder="Story title">
                     </div>
