@@ -58,7 +58,23 @@ export function createStoryMoves({ updateStoryNumbers, generatePreview }) {
         return null;
     }
 
+    // BTL stories live in #btl-stories-container, not inside an .epic-section,
+    // so the ByEpic movers below need a separate lookup for them.
+    function btlStoryIdAtIndex(storyIndex) {
+        const container = document.getElementById('btl-stories-container');
+        if (!container) return null;
+        const storyEl = container.querySelectorAll('.story-section')[storyIndex];
+        return storyEl ? storyEl.id.replace(/^story-/, '') : null;
+    }
+
     function moveStoryUpByEpic(epicName, storyIndex) {
+        if (epicName === 'Below the Line') {
+            const storyId = btlStoryIdAtIndex(storyIndex);
+            if (!storyId) return;
+            moveBTLStoryUp(storyId);
+            setTimeout(generatePreview, 100);
+            return;
+        }
         const epicEl = findEpicByName(epicName);
         if (!epicEl) {
             console.error('Could not find EPIC:', epicName);
@@ -82,6 +98,13 @@ export function createStoryMoves({ updateStoryNumbers, generatePreview }) {
     }
 
     function moveStoryDownByEpic(epicName, storyIndex) {
+        if (epicName === 'Below the Line') {
+            const storyId = btlStoryIdAtIndex(storyIndex);
+            if (!storyId) return;
+            moveBTLStoryDown(storyId);
+            setTimeout(generatePreview, 100);
+            return;
+        }
         const epicEl = findEpicByName(epicName);
         if (!epicEl) return;
 

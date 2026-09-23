@@ -6053,6 +6053,21 @@ export function init(_root) {
                 return;
             }
 
+            // BTL stories aren't grouped in an .epic-section - check the
+            // boundary against the BTL container directly.
+            if (currentEditingStory.epicName === 'Below the Line') {
+                const btlContainer = document.getElementById('btl-stories-container');
+                const btlStories = btlContainer.querySelectorAll('.story-section');
+                if (currentEditingStory.storyIndex < btlStories.length - 1) {
+                    moveStoryDownByEpic(
+                        currentEditingStory.epicName,
+                        currentEditingStory.storyIndex
+                    );
+                    currentEditingStory.storyIndex++;
+                }
+                return;
+            }
+
             // Find the EPIC to check if this is the last story
             const epicElements = document.querySelectorAll('.epic-section');
             let targetEpicElement = null;
