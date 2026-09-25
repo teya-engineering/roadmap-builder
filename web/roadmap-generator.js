@@ -32,6 +32,9 @@ export class RoadmapGenerator {
         ];
         this.roadmapYear = year;
         this.enableStackedIcons = false;
+        // Views without the builder checkboxes (cross-team search) set
+        // { epicTitleTop, hideStoryText } here instead.
+        this.displayOptions = {};
     }
 
     // Helper method to check if a story should be displayed based on roadmap year
@@ -1218,8 +1221,8 @@ export class RoadmapGenerator {
         }
     }
 
-    // Builder display toggles under "Force all text boxes below stories". They
-    // only exist in the builder form, so other views keep the default layout.
+    // Builder display toggles under "Force all text boxes below stories". Other
+    // views keep the default layout unless they pass displayOptions.
     isToggleChecked(id) {
         if (typeof document === 'undefined') return false;
         const toggle = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
@@ -1229,12 +1232,12 @@ export class RoadmapGenerator {
     // Epic names sit in a row at the top of each swimlane instead of rotated
     // down the left edge.
     isEpicTitleTop() {
-        return this.isToggleChecked('epic-title-top-toggle');
+        return this.displayOptions.epicTitleTop ?? this.isToggleChecked('epic-title-top-toggle');
     }
 
     // Story bars show only their title; the bullets appear on hover.
     isStoryTextHidden() {
-        return this.isToggleChecked('hide-story-text-toggle');
+        return this.displayOptions.hideStoryText ?? this.isToggleChecked('hide-story-text-toggle');
     }
 
     // Vertical marker for today's date, placed proportionally within its

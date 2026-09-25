@@ -442,8 +442,8 @@ export class IMOUtility {
             return { type: 'imo', value: negatedPrefixMatch[1].toLowerCase(), negated: true };
         }
 
-        // IMO/Project ID pattern: "IMO 0043" or "IMO SomeProject" (with IMO prefix and any value)
-        const imoWithPrefixMatch = cleanQuery.match(/^imo\s+(.+)$/i);
+        // CP/Project ID pattern: "CP 0043" or "CP SomeProject" (legacy "IMO 0043" still accepted)
+        const imoWithPrefixMatch = cleanQuery.match(/^(?:cp|imo)\s+(.+)$/i);
         if (imoWithPrefixMatch) {
             return { type: 'imo', value: imoWithPrefixMatch[1].trim() };
         }

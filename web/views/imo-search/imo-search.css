@@ -16,16 +16,15 @@
 
 /* Page shell */
 
+/* Full width with the same outer padding as .builder-container, so both views line up. */
 .search-container {
     width: 100%;
-    padding: var(--space-4);
+    padding: var(--space-2);
 }
 
 .search-header,
 .search-main-content {
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
 .title-and-controls {
@@ -516,8 +515,10 @@
     }
 }
 
+/* clip, not hidden: hidden makes this a scroll container that never scrolls,
+   and the sticky timeline header would stick to it instead of the page. */
 .results-container {
-    overflow: hidden;
+    overflow: clip;
     color: var(--text-default);
     background: var(--surface-0);
     border: 1px solid var(--border-subtle);
@@ -546,6 +547,9 @@
 }
 
 .search-results-header-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
     padding-top: var(--space-2);
     margin-top: var(--space-2);
     border-top: 1px solid var(--border-subtle);
@@ -569,9 +573,173 @@
     flex-shrink: 0;
 }
 
+/* The page scrolls here, not the roadmap frame as in the builder, so the
+   months header sticks just below the fixed top nav. */
+.search-roadmap .sticky-header {
+    top: var(--app-nav-height);
+}
+
+/* Same frame as the builder preview (#roadmap-mount) */
 .search-roadmap {
-    padding: 0;
+    padding: 20px;
     margin: 0;
+    background: var(--page-bg);
+}
+
+/* "Reorder teams" link in the results summary and its popover. The text
+   buttons override the global button hover/active fill, which would put
+   primary text on a primary background. */
+.reorder-teams-link {
+    margin: 0 0 0 var(--space-2);
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.reorder-teams-link:hover,
+.reorder-teams-link:active,
+.reorder-teams-link[aria-expanded='true'] {
+    background: none;
+    color: var(--primary-hover);
+    text-decoration: underline;
+    transform: none;
+}
+
+.team-order-popover {
+    position: absolute;
+    z-index: 1000;
+    width: min(320px, calc(100vw - 16px));
+    padding: var(--space-2);
+    background: var(--surface-0);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.team-order-header {
+    padding: var(--space-1) var(--space-2) var(--space-2);
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.team-order-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: min(60vh, 420px);
+    overflow-y: auto;
+}
+
+.team-order-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--text-default);
+    font-size: 13px;
+    cursor: grab;
+}
+
+.team-order-item:hover {
+    background: var(--surface-1);
+}
+
+.team-order-item.team-dragging {
+    opacity: 0.5;
+}
+
+.team-order-item.team-drop-before {
+    box-shadow: inset 0 2px 0 var(--primary);
+}
+
+.team-order-item.team-drop-after {
+    box-shadow: inset 0 -2px 0 var(--primary);
+}
+
+.team-order-grip {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+}
+
+.team-order-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.team-order-move {
+    margin: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--surface-0);
+    color: var(--text-default);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.team-order-move:hover:not(:disabled),
+.team-order-move:active:not(:disabled) {
+    /* --primary-soft has no dark variant, so mix against the surface instead */
+    background: color-mix(in srgb, var(--primary) 16%, var(--surface-0));
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.team-order-move:disabled:hover {
+    background: var(--surface-0);
+}
+
+.team-order-move:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.team-order-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-2) var(--space-1);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.team-order-reset {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+.team-order-reset:hover,
+.team-order-reset:active {
+    background: none;
+    transform: none;
+}
+
+.team-order-reset:hover:not(:disabled) {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+.team-order-reset:disabled {
+    color: var(--text-muted);
+    cursor: default;
 }
 
 .search-results-actions {
@@ -946,10 +1114,6 @@
 }
 
 @media (max-width: 720px) {
-    .search-container {
-        padding: var(--space-2);
-    }
-
     .title-and-controls {
         padding: var(--space-4);
     }

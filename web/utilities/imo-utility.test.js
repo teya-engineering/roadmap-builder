@@ -181,3 +181,11 @@ test('filterStoriesByEndDate uses the story roadmap year for dates without a yea
         ['Match']
     );
 });
+
+test('parseSearchQuery reads a "CP <id>" query as a project ID search', () => {
+    assert.deepEqual(IMOUtility.parseSearchQuery('CP 0043'), { type: 'imo', value: '0043' });
+});
+
+test('parseSearchQuery still accepts the legacy "IMO <id>" form', () => {
+    assert.deepEqual(IMOUtility.parseSearchQuery('IMO 0043'), { type: 'imo', value: '0043' });
+});

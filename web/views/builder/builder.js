@@ -1373,7 +1373,7 @@ export function init(_root) {
                     
                     <div class="form-group" style="display: flex; gap: 15px; align-items: flex-end;">
                         <div style="flex: 1;">
-                            <label for="story-imo-${storyId}">IMO/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                            <label for="story-imo-${storyId}">CP/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
                             <input type="text" id="story-imo-${storyId}" placeholder="0001">
                         </div>
                         <div style="flex: 1;">
@@ -1448,7 +1448,7 @@ export function init(_root) {
                     <!-- Row 3: Visibility -->
                     <div class="checkbox-group" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ddd;">
                         <input type="checkbox" id="story-hide-from-search-${storyId}">
-                        <label for="story-hide-from-search-${storyId}" title="When checked, this story will not appear in cross-team IMO/timeline search results">Hide from cross-team search</label>
+                        <label for="story-hide-from-search-${storyId}" title="When checked, this story will not appear in cross-team CP/timeline search results">Hide from cross-team search</label>
                     </div>
 
                     <!-- Done Section -->
@@ -1778,7 +1778,7 @@ export function init(_root) {
                     </div>
                     
                     <div class="form-group">
-                        <label for="btl-imo-${storyId}">IMO/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                        <label for="btl-imo-${storyId}">CP/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
                         <input type="text" id="btl-imo-${storyId}" placeholder="0001">
                     </div>
 
