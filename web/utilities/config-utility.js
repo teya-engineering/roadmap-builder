@@ -385,6 +385,24 @@ export class ConfigUtility {
         } catch {}
     }
 
+    // Red vertical marker at today's date. Hidden unless turned on.
+    static shouldShowTodayLine() {
+        try {
+            if (typeof localStorage !== 'undefined') {
+                return localStorage.getItem('roadmap-show-today-line') === 'true';
+            }
+        } catch {}
+        return false;
+    }
+
+    static setShowTodayLine(enabled) {
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('roadmap-show-today-line', enabled.toString());
+            }
+        } catch {}
+    }
+
     // Status event rendering style: 'hover' (track + popover under the bar)
     // or 'side' (legacy text box rendered to the right of / below the bar).
     static getStatusStyle() {

@@ -487,6 +487,12 @@ export function init(_root) {
             if (hideStoryTextToggle) {
                 hideStoryTextToggle.checked = ConfigUtility.shouldHideStoryText();
             }
+            const showTodayLineToggle = /** @type {HTMLInputElement | null} */ (
+                document.getElementById('show-today-line-toggle')
+            );
+            if (showTodayLineToggle) {
+                showTodayLineToggle.checked = ConfigUtility.shouldShowTodayLine();
+            }
 
             // Populate the country-flags fieldset in the edit modal once.
             // Global is checked by default so opening the modal without a
@@ -1069,6 +1075,15 @@ export function init(_root) {
             );
             if (!toggle) return;
             ConfigUtility.setHideStoryText(toggle.checked);
+            generatePreview();
+        }
+
+        function handleShowTodayLineToggle() {
+            const toggle = /** @type {HTMLInputElement | null} */ (
+                document.getElementById('show-today-line-toggle')
+            );
+            if (!toggle) return;
+            ConfigUtility.setShowTodayLine(toggle.checked);
             generatePreview();
         }
 
@@ -6415,6 +6430,7 @@ export function init(_root) {
             window.handleForceTextBelowToggle = handleForceTextBelowToggle;
         window.handleEpicTitleTopToggle = handleEpicTitleTopToggle;
         window.handleHideStoryTextToggle = handleHideStoryTextToggle;
+        window.handleShowTodayLineToggle = handleShowTodayLineToggle;
         if (typeof addAutoUpdateListeners === 'function')
             window.addAutoUpdateListeners = addAutoUpdateListeners;
         if (typeof addListenersToExistingElements === 'function')

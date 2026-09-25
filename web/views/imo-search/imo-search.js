@@ -1486,6 +1486,13 @@ export function init(_root) {
             displaySearchResults(currentResults, lastSearchQuery, null, buildTeamInfoMap(lastRoadmapFiles));
         }
 
+        function handleSearchShowTodayLineToggle() {
+            const toggle = /** @type {HTMLInputElement | null} */ (document.getElementById('search-show-today-line-toggle'));
+            if (!toggle) return;
+            ConfigUtility.setShowTodayLine(toggle.checked);
+            displaySearchResults(currentResults, lastSearchQuery, null, buildTeamInfoMap(lastRoadmapFiles));
+        }
+
         // The nav status-style toggle changes between hover bar and side text
         // box layouts; rebuild the current results so they pick up the new mode.
         document.addEventListener('roadmap-status-style-changed', () => {
@@ -1609,7 +1616,8 @@ export function init(_root) {
                 const generator = new RoadmapGenerator(crossTeamData.roadmapYear);
                 const epicTitleTop = ConfigUtility.shouldShowEpicTitleTop();
                 const hideStoryText = ConfigUtility.shouldHideStoryText();
-                generator.displayOptions = { epicTitleTop, hideStoryText };
+                const showTodayLine = ConfigUtility.shouldShowTodayLine();
+                generator.displayOptions = { epicTitleTop, hideStoryText, showTodayLine };
                 const fullRoadmapHtml = generator.generateRoadmap(crossTeamData, true, false); // embedded=true, enableEditing=false
                 
                 // Extract just the content without the wrapper and embedded CSS
@@ -1661,6 +1669,10 @@ export function init(_root) {
                                 <label class="search-results-option">
                                     <input type="checkbox" id="search-hide-story-text-toggle" onchange="handleSearchHideStoryTextToggle()" ${hideStoryText ? 'checked' : ''}>
                                     Show only story titles (text on hover)
+                                </label>
+                                <label class="search-results-option">
+                                    <input type="checkbox" id="search-show-today-line-toggle" onchange="handleSearchShowTodayLineToggle()" ${showTodayLine ? 'checked' : ''}>
+                                    Show today's date line
                                 </label>
                             </div>
                         </div>
@@ -3276,6 +3288,7 @@ if (typeof performSearch === 'function') window.performSearch = performSearch;
 if (typeof handleSearchForceTextBelowToggle === 'function') window.handleSearchForceTextBelowToggle = handleSearchForceTextBelowToggle;
 window.handleSearchEpicTitleTopToggle = handleSearchEpicTitleTopToggle;
 window.handleSearchHideStoryTextToggle = handleSearchHideStoryTextToggle;
+window.handleSearchShowTodayLineToggle = handleSearchShowTodayLineToggle;
 window.toggleTeamOrderPopover = toggleTeamOrderPopover;
 if (typeof displaySearchResults === 'function') window.displaySearchResults = displaySearchResults;
 if (typeof insertStatsButtonNearHeader === 'function') window.insertStatsButtonNearHeader = insertStatsButtonNearHeader;

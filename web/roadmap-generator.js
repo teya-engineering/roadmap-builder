@@ -33,7 +33,7 @@ export class RoadmapGenerator {
         this.roadmapYear = year;
         this.enableStackedIcons = false;
         // Views without the builder checkboxes (cross-team search) set
-        // { epicTitleTop, hideStoryText } here instead.
+        // { epicTitleTop, hideStoryText, showTodayLine } here instead.
         this.displayOptions = {};
     }
 
@@ -1240,9 +1240,15 @@ export class RoadmapGenerator {
         return this.displayOptions.hideStoryText ?? this.isToggleChecked('hide-story-text-toggle');
     }
 
+    // The today marker is opt-in.
+    isTodayLineShown() {
+        return this.displayOptions.showTodayLine ?? this.isToggleChecked('show-today-line-toggle');
+    }
+
     // Vertical marker for today's date, placed proportionally within its
-    // month. Only drawn when today falls inside the roadmap year.
+    // month. Only drawn when enabled and today falls inside the roadmap year.
     generateTodayLine(today = new Date()) {
+        if (!this.isTodayLineShown()) return '';
         const fraction = yearFraction(today, this.roadmapYear);
         if (fraction === null) return '';
         const label = `Today · ${today.getDate()} ${this.months[today.getMonth()]}`;
