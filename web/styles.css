@@ -1833,6 +1833,10 @@ button.quiet-remove-button:hover {
     color: #005a8b;
     background: #e0f2fe;
 }
+.story-status-chip.status-dependency {
+    color: #c2410c;
+    background: #ffedd5;
+}
 
 :root[data-theme='dark'] .story-status-chip.status-risk {
     color: #fbbf24;
@@ -1858,6 +1862,10 @@ button.quiet-remove-button:hover {
 :root[data-theme='dark'] .story-status-chip.status-proposed {
     color: #7dd3fc;
     background: rgb(2 132 199 / 0.25);
+}
+:root[data-theme='dark'] .story-status-chip.status-dependency {
+    color: #fdba74;
+    background: rgb(234 88 12 / 0.25);
 }
 
 .story-date-range {

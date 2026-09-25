@@ -16,6 +16,7 @@ const STATUS_COLORS = {
     info: 'var(--rm-status-info)',
     transfer: 'var(--rm-status-transfer)',
     proposed: 'var(--rm-status-proposed)',
+    dependency: 'var(--rm-status-dependency)',
     added: 'var(--rm-status-transfer)',
 };
 
@@ -33,7 +34,7 @@ export class RoadmapGenerator {
         this.roadmapYear = year;
         this.enableStackedIcons = false;
         // Views without the builder checkboxes (cross-team search) set
-        // { epicTitleTop, hideStoryText } here instead.
+        // { epicTitleTop, hideStoryText, showTodayLine } here instead.
         this.displayOptions = {};
     }
 
@@ -818,9 +819,11 @@ export class RoadmapGenerator {
         const showTransferredOutIcon =
             story.isTransferredOut && !story.isCancelled && !story.isDone && !story.isAtRisk;
 
-        // Bottom-left position: Info > Transferred In
-        const showInfoIcon = story.isInfo;
-        const showTransferredInIcon = story.isTransferredIn && !story.isInfo;
+        // Bottom-left position: Depends on > Info > Transferred In
+        const showDependencyIcon = story.hasDependency;
+        const showInfoIcon = story.isInfo && !story.hasDependency;
+        const showTransferredInIcon =
+            story.isTransferredIn && !story.isInfo && !story.hasDependency;
 
         const doneIconHTML = showDoneIcon ? '<div class="done-icon" title="Done">✓</div>' : '';
         const cancelIconHTML = showCancelledIcon
@@ -840,6 +843,9 @@ export class RoadmapGenerator {
             : '';
         const transferredInIconHTML = showTransferredInIcon
             ? '<div class="transferredin-icon" title="Transferred in">←</div>'
+            : '';
+        const dependencyIconHTML = showDependencyIcon
+            ? '<div class="dependency-icon" title="Depends on">↳</div>'
             : '';
         const proposedIconHTML = showProposedIcon
             ? '<div class="proposed-icon" title="Proposed">?</div>'
@@ -972,7 +978,7 @@ export class RoadmapGenerator {
                 : '';
 
         // Badges pinned to the bar's bottom corners.
-        const bottomIconsHTML = `${doneIconHTML}${cancelIconHTML}${atRiskIconHTML}${transferredOutIconHTML}${infoIconHTML}${transferredInIconHTML}`;
+        const bottomIconsHTML = `${doneIconHTML}${cancelIconHTML}${atRiskIconHTML}${transferredOutIconHTML}${dependencyIconHTML}${infoIconHTML}${transferredInIconHTML}`;
 
         // With story text hidden the bullets move into an overlay that opens
         // below the title on hover, so the bar grows without pushing the rows
@@ -1183,6 +1189,17 @@ export class RoadmapGenerator {
             });
         }
 
+        if (rc.dependencyInfo && (rc.dependencyInfo.date || rc.dependencyInfo.notes)) {
+            events.push({
+                type: 'dependency',
+                date: rc.dependencyInfo.date,
+                glyph: '↳',
+                color: STATUS_COLORS.dependency,
+                label: `Depends on: ${this.formatDateEuropean(rc.dependencyInfo.date)}`,
+                notes: rc.dependencyInfo.notes,
+            });
+        }
+
         events.sort((a, b) => DateUtility.compareDates(a.date, b.date));
         return events;
     }
@@ -1240,9 +1257,15 @@ export class RoadmapGenerator {
         return this.displayOptions.hideStoryText ?? this.isToggleChecked('hide-story-text-toggle');
     }
 
+    // The today marker is opt-in.
+    isTodayLineShown() {
+        return this.displayOptions.showTodayLine ?? this.isToggleChecked('show-today-line-toggle');
+    }
+
     // Vertical marker for today's date, placed proportionally within its
-    // month. Only drawn when today falls inside the roadmap year.
+    // month. Only drawn when enabled and today falls inside the roadmap year.
     generateTodayLine(today = new Date()) {
+        if (!this.isTodayLineShown()) return '';
         const fraction = yearFraction(today, this.roadmapYear);
         if (fraction === null) return '';
         const label = `Today · ${today.getDate()} ${this.months[today.getMonth()]}`;
@@ -1334,6 +1357,8 @@ export class RoadmapGenerator {
             rc && rc.transferredInInfo && (rc.transferredInInfo.date || rc.transferredInInfo.notes);
         const hasProposedInfo =
             rc && rc.proposedInfo && (rc.proposedInfo.date || rc.proposedInfo.notes);
+        const hasDependencyInfo =
+            rc && rc.dependencyInfo && (rc.dependencyInfo.date || rc.dependencyInfo.notes);
         if (
             !hasChanges &&
             !hasDoneInfo &&
@@ -1343,7 +1368,8 @@ export class RoadmapGenerator {
             !hasInfoInfo &&
             !hasTransferredOutInfo &&
             !hasTransferredInInfo &&
-            !hasProposedInfo
+            !hasProposedInfo &&
+            !hasDependencyInfo
         ) {
             return '';
         }
@@ -1361,6 +1387,7 @@ export class RoadmapGenerator {
         if (hasTransferredOutInfo) totalItems += 1;
         if (hasTransferredInInfo) totalItems += 1;
         if (hasProposedInfo) totalItems += 1;
+        if (hasDependencyInfo) totalItems += 1;
         const textBoxWidth = ConfigUtility.calculateTextBoxWidth(totalItems);
 
         let storyStartGrid;
@@ -1507,6 +1534,7 @@ export class RoadmapGenerator {
             rc.transferredOutInfo,
             rc.transferredInInfo,
             rc.proposedInfo,
+            rc.dependencyInfo,
             shouldPositionBelowFinal,
             storyStartGrid,
             backgroundColor,
@@ -1529,6 +1557,7 @@ export class RoadmapGenerator {
         transferredOutInfo = null,
         transferredInInfo = null,
         proposedInfo = null,
+        dependencyInfo = null,
         positionBelow = false,
         storyStartGrid = null,
         _backgroundColor = null,
@@ -1546,7 +1575,8 @@ export class RoadmapGenerator {
             !infoInfo &&
             !transferredOutInfo &&
             !transferredInInfo &&
-            !proposedInfo
+            !proposedInfo &&
+            !dependencyInfo
         )
             return '';
 
@@ -1718,6 +1748,19 @@ export class RoadmapGenerator {
                     date: proposedInfo.date,
                     label: 'Proposed',
                     notes: proposedInfo.notes,
+                }),
+            });
+        }
+
+        if (dependencyInfo && (dependencyInfo.date || dependencyInfo.notes)) {
+            allItems.push({
+                date: dependencyInfo.date,
+                html: generateStatusColumn({
+                    glyph: '↳',
+                    color: STATUS_COLORS.dependency,
+                    date: dependencyInfo.date,
+                    label: 'Depends on',
+                    notes: dependencyInfo.notes,
                 }),
             });
         }

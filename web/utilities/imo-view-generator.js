@@ -1033,6 +1033,7 @@ export class IMOViewGenerator {
                 isTransferredOut: Boolean(story.isTransferredOut),
                 isTransferredIn: Boolean(story.isTransferredIn),
                 isProposed: Boolean(story.isProposed),
+                hasDependency: Boolean(story.hasDependency),
                 // Include roadmap changes data for text boxes
                 roadmapChanges: story.roadmapChanges || [],
                 doneInfo: story.doneInfo || null,
@@ -1043,6 +1044,7 @@ export class IMOViewGenerator {
                 transferredOutInfo: story.transferredOutInfo || null,
                 transferredInInfo: story.transferredInInfo || null,
                 proposedInfo: story.proposedInfo || null,
+                dependencyInfo: story.dependencyInfo || null,
                 // Add source information for reference
                 _originalEpic: String(story.epicName || 'Unknown Epic'),
                 _sourceTeam: String(story.teamName || 'Unknown Team'),

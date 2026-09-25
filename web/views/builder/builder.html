@@ -203,6 +203,10 @@
                     <input type="checkbox" id="hide-story-text-toggle" onchange="handleHideStoryTextToggle()">
                     Show only story titles (text on hover)
                 </label>
+                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; margin-top: 6px;">
+                    <input type="checkbox" id="show-today-line-toggle" onchange="handleShowTodayLineToggle()">
+                    Show today's date line
+                </label>
             </div>
             <!-- Action Buttons -->
             <div class="action-buttons">
@@ -373,12 +377,14 @@
                         <input type="checkbox" id="editTimelineChanges" name="timelinechanges" onchange="toggleEditTimelineChanges()">
                         <label for="editTimelineChanges">Timeline</label>
                     </div>
-                    <!-- Row 2: At Risk, Proposed, Transferred: In, Out -->
+                    <!-- Row 2: At Risk, Proposed, Depends on, Transferred: In, Out -->
                     <div class="checkbox-group">
                         <input type="checkbox" id="editAtRisk" name="atrisk" onchange="toggleEditStatusFields()">
                         <label for="editAtRisk">At Risk</label>
                         <input type="checkbox" id="editProposed" name="proposed" onchange="toggleEditStatusFields()">
                         <label for="editProposed">Proposed</label>
+                        <input type="checkbox" id="editDependency" name="dependency" onchange="toggleEditStatusFields()">
+                        <label for="editDependency">Depends on</label>
                         <label style="margin-left: 8px; margin-right: 2px;">Transferred:</label>
                         <input type="checkbox" id="editTransferredIn" name="transferredin" onchange="toggleEditStatusFields()">
                         <label for="editTransferredIn" style="margin-right: 5px;">In</label>
@@ -489,6 +495,20 @@
                                 <div class="form-group">
                                     <label for="editProposedNotes">Proposed Notes:</label>
                                     <input type="text" id="editProposedNotes">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="editDependencyFields" class="border-card" style="display: none;">
+                            <h5>Story Dependency</h5>
+                            <div class="inline-group">
+                                <div class="form-group">
+                                    <label for="editDependencyDate">Dependency Date:</label>
+                                    <input type="text" id="editDependencyDate" placeholder="15/01/25">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editDependencyNotes">Depends On:</label>
+                                    <input type="text" id="editDependencyNotes" placeholder="Team, story or system this story waits on">
                                 </div>
                             </div>
                         </div>

@@ -29,6 +29,7 @@
     --rm-status-new: #7c3aed;
     --rm-status-transfer: #64748b;
     --rm-status-proposed: #005a8b;
+    --rm-status-dependency: #ea580c;
     /* Glyph colour for the round status badges, which are filled with a
        --rm-status-* colour. Flips with the scheme because the dark palette
        uses light fills. */
@@ -86,6 +87,7 @@
     --rm-status-new: #a78bfa;
     --rm-status-transfer: #a3b0c2;
     --rm-status-proposed: #7dd3fc;
+    --rm-status-dependency: #fb923c;
     --rm-status-ink: #0f172a;
     --rm-today-line: #fb7185;
     --rm-priority-high: #fca5a5;
@@ -924,6 +926,7 @@ html[data-status-style='side']
 .newstory-icon,
 .transferredout-icon,
 .transferredin-icon,
+.dependency-icon,
 .proposed-icon {
     position: absolute;
     z-index: 9999;
@@ -953,6 +956,7 @@ html[data-status-style='side']
 .newstory-icon,
 .transferredout-icon,
 .transferredin-icon,
+.dependency-icon,
 .proposed-icon {
     width: 16px;
     height: 16px;
@@ -1014,6 +1018,12 @@ html[data-status-style='side']
     bottom: -8px;
     left: -6px;
     background: var(--rm-status-transfer);
+}
+
+.dependency-icon {
+    bottom: -8px;
+    left: -6px;
+    background: var(--rm-status-dependency);
 }
 
 /* Info icon specific positioning */
