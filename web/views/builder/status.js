@@ -1,7 +1,7 @@
 import { DateUtility } from '../../utilities/date-utility.js';
 
 // Status checkboxes (Done, Cancelled, At Risk, New, Info, Transferred In/Out,
-// Proposed) on each story. The seven simple status types share one generic
+// Proposed, Depends on) on each story. The eight simple status types share one generic
 // handler `handleStatusChange`; "info" is special-cased because it manages a
 // list of entries rather than a single date+notes pair.
 //
@@ -65,6 +65,14 @@ export const STATUS_CONFIG = {
         notesLabel: 'Proposed Notes',
         datePlaceholder: '10/12 or 10/12/25 or 10-12-2025',
         notesPlaceholder: 'Proposal details',
+    },
+    dependency: {
+        label: 'Depends on',
+        sectionTitle: 'Story Dependency',
+        dateLabel: 'Dependency Date',
+        notesLabel: 'Depends On',
+        datePlaceholder: '15/01 or 15/01/25 or 15-01-2025',
+        notesPlaceholder: 'Team, story or system this story waits on',
     },
 };
 
@@ -174,6 +182,7 @@ export function createStatusHandlers({ addInfoEntry, convertSingleInfoToMultiple
     function handleTransferredOutChange(storyId) { handleStatusChange(storyId, 'transferredout'); }
     function handleTransferredInChange(storyId) { handleStatusChange(storyId, 'transferredin'); }
     function handleProposedChange(storyId) { handleStatusChange(storyId, 'proposed'); }
+    function handleDependencyChange(storyId) { handleStatusChange(storyId, 'dependency'); }
 
     function handleInfoChange(storyId) {
         const checkbox = document.getElementById(`story-info-${storyId}`);
@@ -209,5 +218,6 @@ export function createStatusHandlers({ addInfoEntry, convertSingleInfoToMultiple
         handleTransferredOutChange,
         handleTransferredInChange,
         handleProposedChange,
+        handleDependencyChange,
     };
 }

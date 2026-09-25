@@ -148,6 +148,10 @@
                                 <span id="filterProposed" class="tri-state-checkbox" data-state="none"></span>
                                 <span>Proposed</span>
                             </label>
+                            <label class="status-filter-option" onclick="cycleFilterState('filterDependency', event)">
+                                <span id="filterDependency" class="tri-state-checkbox" data-state="none"></span>
+                                <span>Depends on</span>
+                            </label>
                             <span class="status-filter-group-label">Transferred:</span>
                             <label class="status-filter-option" onclick="cycleFilterState('filterTransferredIn', event)">
                                 <span id="filterTransferredIn" class="tri-state-checkbox" data-state="none"></span>
@@ -172,7 +176,7 @@
                             </div>
                             <div class="advanced-filter-help">
                                 Use: <code>&&</code> (AND), <code>||</code> (OR), <code>!</code> (NOT), <code>( )</code> (grouping)<br>
-                                Status names: Done, Cancelled, Timeline, New, AtRisk, Proposed, Info, TransferredIn, TransferredOut<br>
+                                Status names: Done, Cancelled, Timeline, New, AtRisk, Proposed, DependsOn, Info, TransferredIn, TransferredOut<br>
                                 Field presence: CP, Priority (use <code>!</code> for empty) &nbsp;&nbsp; Priority values: High, Medium, Low<br>
                                 CP prefixes: <code>CP1</code> or <code>CP1*</code>; <code>CP* && !CP2*</code> excludes IDs starting with CP2.<br>
                                 Expression overrides checkboxes if provided.
@@ -297,12 +301,14 @@
                         <input type="checkbox" id="viewTimelineChanges" disabled>
                         <label for="viewTimelineChanges">Timeline</label>
                     </div>
-                    <!-- Row 2: At Risk, Proposed, Transferred: In, Out -->
+                    <!-- Row 2: At Risk, Proposed, Depends on, Transferred: In, Out -->
                     <div class="checkbox-group">
                         <input type="checkbox" id="viewAtRisk" disabled>
                         <label for="viewAtRisk">At Risk</label>
                         <input type="checkbox" id="viewProposed" disabled>
                         <label for="viewProposed">Proposed</label>
+                        <input type="checkbox" id="viewDependency" disabled>
+                        <label for="viewDependency">Depends on</label>
                         <label style="margin-left: 8px; margin-right: 2px;">Transferred:</label>
                         <input type="checkbox" id="viewTransferredIn" disabled>
                         <label for="viewTransferredIn" style="margin-right: 5px;">In</label>
@@ -407,6 +413,20 @@
                                 <div class="form-group">
                                     <label>Proposed Notes:</label>
                                     <div class="readonly-field" id="viewProposedNotes"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="viewDependencyFields" class="border-card" style="display: none;">
+                            <h5>Story Dependency</h5>
+                            <div class="inline-group">
+                                <div class="form-group">
+                                    <label>Dependency Date:</label>
+                                    <div class="readonly-field" id="viewDependencyDate"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Depends On:</label>
+                                    <div class="readonly-field" id="viewDependencyNotes"></div>
                                 </div>
                             </div>
                         </div>

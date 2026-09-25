@@ -44,6 +44,7 @@ export function init(_root) {
             filterAtRisk: 'none',
             filterTimeline: 'none',
             filterProposed: 'none',
+            filterDependency: 'none',
             filterInfo: 'none',
             filterTransferredIn: 'none',
             filterTransferredOut: 'none'
@@ -684,7 +685,7 @@ export function init(_root) {
             // Keep read-only status values selectable by the shared checkbox styles.
             setTimeout(() => {
                 const checkboxIds = ['viewNewStory', 'viewDone', 'viewCancelled', 'viewInfo', 
-                                   'viewTimelineChanges', 'viewAtRisk', 'viewProposed', 
+                                   'viewTimelineChanges', 'viewAtRisk', 'viewProposed', 'viewDependency', 
                                    'viewTransferredIn', 'viewTransferredOut'];
                 checkboxIds.forEach(id => {
                     const checkbox = document.getElementById(id);
@@ -713,6 +714,7 @@ export function init(_root) {
             document.getElementById('viewTimelineChanges').checked = hasTimelineChanges;
             document.getElementById('viewAtRisk').checked = storyData.isAtRisk || false;
             document.getElementById('viewProposed').checked = storyData.isProposed || false;
+            document.getElementById('viewDependency').checked = storyData.hasDependency || false;
             document.getElementById('viewTransferredIn').checked = storyData.isTransferredIn || false;
             document.getElementById('viewTransferredOut').checked = storyData.isTransferredOut || false;
         }
@@ -967,6 +969,17 @@ export function init(_root) {
                 document.getElementById('viewProposedFields').style.display = 'block';
             } else {
                 document.getElementById('viewProposedFields').style.display = 'none';
+            }
+
+            // Dependency status
+            if (storyData.hasDependency) {
+                const dependencyInfo = storyData.dependencyInfo || storyData.roadmapChanges?.dependencyInfo || {};
+
+                document.getElementById('viewDependencyDate').textContent = dependencyInfo.date || 'Not specified';
+                document.getElementById('viewDependencyNotes').textContent = dependencyInfo.notes || 'None';
+                document.getElementById('viewDependencyFields').style.display = 'block';
+            } else {
+                document.getElementById('viewDependencyFields').style.display = 'none';
             }
         }
         
@@ -2097,6 +2110,7 @@ export function init(_root) {
                         filterAtRisk: statusFilterStates.filterAtRisk,
                         filterTimeline: statusFilterStates.filterTimeline,
                         filterProposed: statusFilterStates.filterProposed,
+                        filterDependency: statusFilterStates.filterDependency,
                         filterInfo: statusFilterStates.filterInfo,
                         filterTransferredIn: statusFilterStates.filterTransferredIn,
                         filterTransferredOut: statusFilterStates.filterTransferredOut
@@ -2115,6 +2129,7 @@ export function init(_root) {
                                     case 'filterAtRisk': return story.isAtRisk;
                                     case 'filterTimeline': return story.roadmapChanges && story.roadmapChanges.changes && story.roadmapChanges.changes.length > 0;
                                     case 'filterProposed': return story.isProposed;
+                                    case 'filterDependency': return story.hasDependency;
                                     case 'filterInfo': return story.isInfo;
                                     case 'filterTransferredIn': return story.isTransferredIn;
                                     case 'filterTransferredOut': return story.isTransferredOut;
@@ -2293,6 +2308,7 @@ export function init(_root) {
                     'New': story.isNewStory,
                     'AtRisk': story.isAtRisk,
                     'Proposed': story.isProposed,
+                    'DependsOn': story.hasDependency,
                     'Info': story.isInfo,
                     'TransferredIn': story.isTransferredIn,
                     'TransferredOut': story.isTransferredOut,
@@ -2444,7 +2460,7 @@ export function init(_root) {
                     <div class="advanced-filter-help-section">
                         <strong>STATUS FLAGS:</strong><br>
                         <code>Done</code> <code>Cancelled</code> <code>Timeline</code> <code>New</code> <code>AtRisk</code><br>
-                        <code>Proposed</code> <code>Info</code> <code>TransferredIn</code> <code>TransferredOut</code>
+                        <code>Proposed</code> <code>DependsOn</code> <code>Info</code> <code>TransferredIn</code> <code>TransferredOut</code>
                     </div>
                     <div class="advanced-filter-help-section">
                         <strong>FIELD PRESENCE:</strong><br>
