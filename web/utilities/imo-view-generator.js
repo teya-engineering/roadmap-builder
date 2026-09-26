@@ -1,7 +1,6 @@
 import { RoadmapGenerator } from '../roadmap-generator.js';
 import { IMOUtility } from './imo-utility.js';
 import { UIUtility } from './ui-utility.js';
-import { orderTeamNames } from '../domain/team-order.js';
 
 export class IMOViewGenerator {
     
@@ -228,7 +227,7 @@ export class IMOViewGenerator {
                 <div class="search-suggestions">
                     <h4>Try searching for:</h4>
                     <ul>
-                        <li><strong>CP numbers:</strong> "CP 0043" or "0043"</li>
+                        <li><strong>IMO numbers:</strong> "IMO 0043" or "0043"</li>
                         <li><strong>Quarters:</strong> "Q1", "Q2", "Q3", "Q4"</li>
                         <li><strong>Months:</strong> "April", "Mar", "September"</li>
                         <li><strong>Years:</strong> "2025", "2024"</li>
@@ -527,7 +526,7 @@ export class IMOViewGenerator {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>CP Search: ${this.escapeHtml(searchQuery)} - Cross-Team Results</title>
+                <title>IMO Search: ${this.escapeHtml(searchQuery)} - Cross-Team Results</title>
                 <style>
                     body {
                         margin: 0;
@@ -746,7 +745,7 @@ export class IMOViewGenerator {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>CP Search: ${this.escapeHtml(searchQuery)} - Cross-Team Results</title>
+                <title>IMO Search: ${this.escapeHtml(searchQuery)} - Cross-Team Results</title>
                 
                 <!-- Include all required dependencies -->
                 <script src="./utilities/date-utility.js"></script>
@@ -961,10 +960,9 @@ export class IMOViewGenerator {
      * @param {Array} stories - Search results from IMO search
      * @param {string} searchQuery - Original search query
      * @param {Object} searchRange - Optional search range with startDate and endDate for date range searches
-     * @param {string[]} teamOrder - Saved team order; teams not in it follow A-Z
      * @returns {Object} - TeamData object compatible with RoadmapGenerator
      */
-    static transformStoriesToRoadmapData(stories, searchQuery, searchRange = null, teamOrder = []) {
+    static transformStoriesToRoadmapData(stories, searchQuery, searchRange = null) {
         // Filter out any invalid stories first
         const validStories = stories.filter(story => {
             if (!story || typeof story !== 'object') {
@@ -1023,7 +1021,6 @@ export class IMOViewGenerator {
                 bullets: processedBullets,
                 imo: String(story.imo || ''),
                 priority: String(story.priority || ''),
-                fte: story.fte,
                 countryFlags: Array.isArray(story.countryFlags) ? story.countryFlags : [],
                 isDone: Boolean(story.isDone),
                 isCancelled: Boolean(story.isCancelled),
@@ -1033,7 +1030,6 @@ export class IMOViewGenerator {
                 isTransferredOut: Boolean(story.isTransferredOut),
                 isTransferredIn: Boolean(story.isTransferredIn),
                 isProposed: Boolean(story.isProposed),
-                hasDependency: Boolean(story.hasDependency),
                 // Include roadmap changes data for text boxes
                 roadmapChanges: story.roadmapChanges || [],
                 doneInfo: story.doneInfo || null,
@@ -1044,7 +1040,6 @@ export class IMOViewGenerator {
                 transferredOutInfo: story.transferredOutInfo || null,
                 transferredInInfo: story.transferredInInfo || null,
                 proposedInfo: story.proposedInfo || null,
-                dependencyInfo: story.dependencyInfo || null,
                 // Add source information for reference
                 _originalEpic: String(story.epicName || 'Unknown Epic'),
                 _sourceTeam: String(story.teamName || 'Unknown Team'),
@@ -1052,8 +1047,8 @@ export class IMOViewGenerator {
             });
         });
         
-        // Convert team groups to epics (one epic per team) in the user's saved order
-        const epics = orderTeamNames(Object.keys(teamGroups), teamOrder).map(teamName => {
+        // Convert team groups to epics (one epic per team) - sort alphabetically
+        const epics = Object.keys(teamGroups).sort().map(teamName => {
             return {
                 name: teamName,
                 stories: teamGroups[teamName]
