@@ -2,7 +2,6 @@ import { DateUtility } from './utilities/date-utility.js';
 import { UIUtility } from './utilities/ui-utility.js';
 import { ConfigUtility } from './utilities/config-utility.js';
 import { parseFte, formatFteTag } from './domain/fte.js';
-import { yearFraction } from './domain/grid.js';
 
 // Colours for the status badges and milestone pins. They resolve at render
 // time against whichever scheme is active, so dark mode can lighten them in
@@ -16,7 +15,6 @@ const STATUS_COLORS = {
     info: 'var(--rm-status-info)',
     transfer: 'var(--rm-status-transfer)',
     proposed: 'var(--rm-status-proposed)',
-    dependency: 'var(--rm-status-dependency)',
     added: 'var(--rm-status-transfer)',
 };
 
@@ -33,9 +31,6 @@ export class RoadmapGenerator {
         ];
         this.roadmapYear = year;
         this.enableStackedIcons = false;
-        // Views without the builder checkboxes (cross-team search) set
-        // { epicTitleTop, hideStoryText, showTodayLine } here instead.
-        this.displayOptions = {};
     }
 
     // Helper method to check if a story should be displayed based on roadmap year
@@ -819,11 +814,9 @@ export class RoadmapGenerator {
         const showTransferredOutIcon =
             story.isTransferredOut && !story.isCancelled && !story.isDone && !story.isAtRisk;
 
-        // Bottom-left position: Depends on > Info > Transferred In
-        const showDependencyIcon = story.hasDependency;
-        const showInfoIcon = story.isInfo && !story.hasDependency;
-        const showTransferredInIcon =
-            story.isTransferredIn && !story.isInfo && !story.hasDependency;
+        // Bottom-left position: Info > Transferred In
+        const showInfoIcon = story.isInfo;
+        const showTransferredInIcon = story.isTransferredIn && !story.isInfo;
 
         const doneIconHTML = showDoneIcon ? '<div class="done-icon" title="Done">✓</div>' : '';
         const cancelIconHTML = showCancelledIcon
@@ -843,9 +836,6 @@ export class RoadmapGenerator {
             : '';
         const transferredInIconHTML = showTransferredInIcon
             ? '<div class="transferredin-icon" title="Transferred in">←</div>'
-            : '';
-        const dependencyIconHTML = showDependencyIcon
-            ? '<div class="dependency-icon" title="Depends on">↳</div>'
             : '';
         const proposedIconHTML = showProposedIcon
             ? '<div class="proposed-icon" title="Proposed">?</div>'
@@ -977,18 +967,6 @@ export class RoadmapGenerator {
                 ? `<div class="story-tags">${fteTagHTML}${priorityTagHTML}${imoTagHTML}</div>`
                 : '';
 
-        // Badges pinned to the bar's bottom corners.
-        const bottomIconsHTML = `${doneIconHTML}${cancelIconHTML}${atRiskIconHTML}${transferredOutIconHTML}${dependencyIconHTML}${infoIconHTML}${transferredInIconHTML}`;
-
-        // With story text hidden the bullets move into an overlay that opens
-        // below the title on hover, so the bar grows without pushing the rows
-        // underneath. The bottom badges and milestone track ride along so they
-        // stay at the bottom edge, wherever it is.
-        const hideText = !!bulletsHTML && this.isStoryTextHidden();
-        const storyBodyHTML = hideText
-            ? `<div class="story-details"><div class="story-details-body">${bulletsHTML}</div>${bottomIconsHTML}${milestonesTrackHTML}</div>`
-            : `${bulletsHTML}${milestonesTrackHTML}`;
-
         return `
             <div class="story-item${cancelledClass}${transferredClass}${proposedClass}${continuesClass}${zoomClass}${positionClass}"
              style="--start: ${startGrid}; --end: ${endGrid};"
@@ -1000,21 +978,25 @@ export class RoadmapGenerator {
              data-json-story-id="${this.formatText(story.storyId || '')}">
             ${iconHTML}
             ${countryFlagsHTML}
-            ${hideText ? '' : bottomIconsHTML}
-            ${newStoryIconHTML}
-            ${proposedIconHTML}
+                            ${doneIconHTML}
+                ${cancelIconHTML}
+                ${atRiskIconHTML}
+                ${newStoryIconHTML}
+                ${transferredOutIconHTML}
+                ${infoIconHTML}
+                ${transferredInIconHTML}
+                ${proposedIconHTML}
             ${editIconHTML}
             ${continuationYearHTML}
             ${storyTagsHTML}
                                 <div class="task-title">${this.getStoryTitleWithStartInfo(story)}</div>
-            ${storyBodyHTML}
+            ${bulletsHTML}
+            ${milestonesTrackHTML}
         </div>`;
     }
 
     // Helper function to truncate EPIC names based on available height
     truncateEpicName(name, numStories = 1) {
-        // A top title has the full swimlane width, so it is never cut short.
-        if (this.isEpicTitleTop()) return UIUtility.cleanWhitespace(name);
         return UIUtility.processEpicName(name, numStories);
     }
 
@@ -1189,17 +1171,6 @@ export class RoadmapGenerator {
             });
         }
 
-        if (rc.dependencyInfo && (rc.dependencyInfo.date || rc.dependencyInfo.notes)) {
-            events.push({
-                type: 'dependency',
-                date: rc.dependencyInfo.date,
-                glyph: '↳',
-                color: STATUS_COLORS.dependency,
-                label: `Depends on: ${this.formatDateEuropean(rc.dependencyInfo.date)}`,
-                notes: rc.dependencyInfo.notes,
-            });
-        }
-
         events.sort((a, b) => DateUtility.compareDates(a.date, b.date));
         return events;
     }
@@ -1236,40 +1207,6 @@ export class RoadmapGenerator {
         } catch {
             return false;
         }
-    }
-
-    // Builder display toggles under "Force all text boxes below stories". Other
-    // views keep the default layout unless they pass displayOptions.
-    isToggleChecked(id) {
-        if (typeof document === 'undefined') return false;
-        const toggle = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
-        return !!(toggle && toggle.checked);
-    }
-
-    // Epic names sit in a row at the top of each swimlane instead of rotated
-    // down the left edge.
-    isEpicTitleTop() {
-        return this.displayOptions.epicTitleTop ?? this.isToggleChecked('epic-title-top-toggle');
-    }
-
-    // Story bars show only their title; the bullets appear on hover.
-    isStoryTextHidden() {
-        return this.displayOptions.hideStoryText ?? this.isToggleChecked('hide-story-text-toggle');
-    }
-
-    // The today marker is opt-in.
-    isTodayLineShown() {
-        return this.displayOptions.showTodayLine ?? this.isToggleChecked('show-today-line-toggle');
-    }
-
-    // Vertical marker for today's date, placed proportionally within its
-    // month. Only drawn when enabled and today falls inside the roadmap year.
-    generateTodayLine(today = new Date()) {
-        if (!this.isTodayLineShown()) return '';
-        const fraction = yearFraction(today, this.roadmapYear);
-        if (fraction === null) return '';
-        const label = `Today · ${today.getDate()} ${this.months[today.getMonth()]}`;
-        return `<div class="today-line" style="left: ${(fraction * 100).toFixed(3)}%;" title="${label}" aria-hidden="true"></div>`;
     }
 
     // Generate a hover-revealed horizontal track placed below the story bar in the
@@ -1357,8 +1294,6 @@ export class RoadmapGenerator {
             rc && rc.transferredInInfo && (rc.transferredInInfo.date || rc.transferredInInfo.notes);
         const hasProposedInfo =
             rc && rc.proposedInfo && (rc.proposedInfo.date || rc.proposedInfo.notes);
-        const hasDependencyInfo =
-            rc && rc.dependencyInfo && (rc.dependencyInfo.date || rc.dependencyInfo.notes);
         if (
             !hasChanges &&
             !hasDoneInfo &&
@@ -1368,8 +1303,7 @@ export class RoadmapGenerator {
             !hasInfoInfo &&
             !hasTransferredOutInfo &&
             !hasTransferredInInfo &&
-            !hasProposedInfo &&
-            !hasDependencyInfo
+            !hasProposedInfo
         ) {
             return '';
         }
@@ -1387,7 +1321,6 @@ export class RoadmapGenerator {
         if (hasTransferredOutInfo) totalItems += 1;
         if (hasTransferredInInfo) totalItems += 1;
         if (hasProposedInfo) totalItems += 1;
-        if (hasDependencyInfo) totalItems += 1;
         const textBoxWidth = ConfigUtility.calculateTextBoxWidth(totalItems);
 
         let storyStartGrid;
@@ -1534,7 +1467,6 @@ export class RoadmapGenerator {
             rc.transferredOutInfo,
             rc.transferredInInfo,
             rc.proposedInfo,
-            rc.dependencyInfo,
             shouldPositionBelowFinal,
             storyStartGrid,
             backgroundColor,
@@ -1557,7 +1489,6 @@ export class RoadmapGenerator {
         transferredOutInfo = null,
         transferredInInfo = null,
         proposedInfo = null,
-        dependencyInfo = null,
         positionBelow = false,
         storyStartGrid = null,
         _backgroundColor = null,
@@ -1575,8 +1506,7 @@ export class RoadmapGenerator {
             !infoInfo &&
             !transferredOutInfo &&
             !transferredInInfo &&
-            !proposedInfo &&
-            !dependencyInfo
+            !proposedInfo
         )
             return '';
 
@@ -1748,19 +1678,6 @@ export class RoadmapGenerator {
                     date: proposedInfo.date,
                     label: 'Proposed',
                     notes: proposedInfo.notes,
-                }),
-            });
-        }
-
-        if (dependencyInfo && (dependencyInfo.date || dependencyInfo.notes)) {
-            allItems.push({
-                date: dependencyInfo.date,
-                html: generateStatusColumn({
-                    glyph: '↳',
-                    color: STATUS_COLORS.dependency,
-                    date: dependencyInfo.date,
-                    label: 'Depends on',
-                    notes: dependencyInfo.notes,
                 }),
             });
         }
@@ -2145,14 +2062,6 @@ export class RoadmapGenerator {
             bottomHTML += btlHTML;
         }
 
-        const containerClasses = [
-            'roadmap-container',
-            this.isEpicTitleTop() ? 'roadmap-epic-title-top' : '',
-            this.isStoryTextHidden() ? 'roadmap-hide-story-text' : '',
-        ]
-            .filter(Boolean)
-            .join(' ');
-
         const logoSrc = 'teya-logo.png';
         return `
             <div class="header">
@@ -2168,13 +2077,12 @@ export class RoadmapGenerator {
                 }
             </div>
 
-            <div class="${containerClasses}">
+            <div class="roadmap-container">
                 ${this.generateTimelineHeader()}
                 <div class="swimlanes-container">
                     ${ktloHTML}
                     ${epicsHTML}
                     ${bottomHTML}
-                    ${this.generateTodayLine()}
                 </div>
             </div>
 

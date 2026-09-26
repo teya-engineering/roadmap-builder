@@ -10,7 +10,6 @@ import {
     textBoxWidth,
     zoomLevel,
     shouldPlaceBadgeBelow,
-    yearFraction,
 } from './grid.js';
 
 test('grid constants', () => {
@@ -108,21 +107,4 @@ test('shouldPlaceBadgeBelow when there are 3+ items regardless of width', () => 
 test('shouldPlaceBadgeBelow false for short stories with 1-2 items', () => {
     assert.equal(shouldPlaceBadgeBelow(20, 20, 1), false);
     assert.equal(shouldPlaceBadgeBelow(30, 26, 2), false);
-});
-
-test('yearFraction places a date inside its month by day', () => {
-    assert.equal(yearFraction(new Date(2026, 0, 1), 2026), 0.5 / 31 / 12);
-    assert.equal(yearFraction(new Date(2026, 8, 16), 2026), (8 + 15.5 / 30) / 12);
-    assert.equal(yearFraction(new Date(2026, 11, 31), 2026), (11 + 30.5 / 31) / 12);
-});
-
-test('yearFraction uses the length of the month, including leap years', () => {
-    assert.equal(yearFraction(new Date(2026, 1, 28), 2026), (1 + 27.5 / 28) / 12);
-    assert.equal(yearFraction(new Date(2028, 1, 29), 2028), (1 + 28.5 / 29) / 12);
-});
-
-test('yearFraction returns null outside the year or for invalid dates', () => {
-    assert.equal(yearFraction(new Date(2025, 5, 1), 2026), null);
-    assert.equal(yearFraction(new Date('nope'), 2026), null);
-    assert.equal(yearFraction(null, 2026), null);
 });

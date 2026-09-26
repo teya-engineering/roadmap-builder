@@ -1,5 +1,7 @@
 
 
+
+
     <div class="builder-container">
         <!-- File Browser Panel -->
         <div class="file-browser-panel collapsed" id="fileBrowserPanel">
@@ -195,18 +197,6 @@
                     <input type="checkbox" id="force-text-below-toggle" onchange="handleForceTextBelowToggle()">
                     Force all text boxes below stories
                 </label>
-                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; margin-top: 6px;">
-                    <input type="checkbox" id="epic-title-top-toggle" onchange="handleEpicTitleTopToggle()">
-                    Show epic titles at the top of each epic
-                </label>
-                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; margin-top: 6px;">
-                    <input type="checkbox" id="hide-story-text-toggle" onchange="handleHideStoryTextToggle()">
-                    Show only story titles (text on hover)
-                </label>
-                <label style="display: flex; align-items: center; gap: 5px; font-weight: normal; margin-top: 6px;">
-                    <input type="checkbox" id="show-today-line-toggle" onchange="handleShowTodayLineToggle()">
-                    Show today's date line
-                </label>
             </div>
             <!-- Action Buttons -->
             <div class="action-buttons">
@@ -241,7 +231,17 @@
                     <svg class="fullscreen-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                 </button>
                 <div id="roadmap-mount" class="roadmap-root"></div>
-                <!-- Edit Story Modal -->
+            </div>
+        </div>
+    </div>
+    <!-- Fullscreen Overlay -->
+    <div class="fullscreen-overlay" id="fullscreen-overlay" onclick="hideFullscreen()">
+        <div class="fullscreen-content" onclick="event.stopPropagation()">
+            <button class="fullscreen-close" onclick="hideFullscreen()">✕ Close</button>
+            <iframe id="fullscreen-preview" src="about:blank"></iframe>
+        </div>
+    </div>
+    <!-- Edit Story Modal -->
     <div id="editStoryModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -337,7 +337,7 @@
                     </div>
                     <div class="form-group" style="display: flex; gap: 15px; align-items: flex-end;">
                         <div style="flex: 1;">
-                            <label for="editIMO">CP/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                            <label for="editIMO">IMO/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
                             <input type="text" id="editIMO" name="imo" placeholder="0001">
                         </div>
                         <div style="flex: 1;">
@@ -377,14 +377,12 @@
                         <input type="checkbox" id="editTimelineChanges" name="timelinechanges" onchange="toggleEditTimelineChanges()">
                         <label for="editTimelineChanges">Timeline</label>
                     </div>
-                    <!-- Row 2: At Risk, Proposed, Depends on, Transferred: In, Out -->
+                    <!-- Row 2: At Risk, Proposed, Transferred: In, Out -->
                     <div class="checkbox-group">
                         <input type="checkbox" id="editAtRisk" name="atrisk" onchange="toggleEditStatusFields()">
                         <label for="editAtRisk">At Risk</label>
                         <input type="checkbox" id="editProposed" name="proposed" onchange="toggleEditStatusFields()">
                         <label for="editProposed">Proposed</label>
-                        <input type="checkbox" id="editDependency" name="dependency" onchange="toggleEditStatusFields()">
-                        <label for="editDependency">Depends on</label>
                         <label style="margin-left: 8px; margin-right: 2px;">Transferred:</label>
                         <input type="checkbox" id="editTransferredIn" name="transferredin" onchange="toggleEditStatusFields()">
                         <label for="editTransferredIn" style="margin-right: 5px;">In</label>
@@ -394,7 +392,7 @@
                     <!-- Row 3: Visibility -->
                     <div class="checkbox-group" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ddd;">
                         <input type="checkbox" id="editHideFromSearch" name="hidefromsearch">
-                        <label for="editHideFromSearch" title="When checked, this story will not appear in cross-team CP/timeline search results">Hide from cross-team search</label>
+                        <label for="editHideFromSearch" title="When checked, this story will not appear in cross-team IMO/timeline search results">Hide from cross-team search</label>
                     </div>
                     <div id="editStatusFields" style="margin-top: 10px;">
                         <div id="editDoneFields" class="border-card" style="display: none;">
@@ -498,20 +496,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div id="editDependencyFields" class="border-card" style="display: none;">
-                            <h5>Story Dependency</h5>
-                            <div class="inline-group">
-                                <div class="form-group">
-                                    <label for="editDependencyDate">Dependency Date:</label>
-                                    <input type="text" id="editDependencyDate" placeholder="15/01/25">
-                                </div>
-                                <div class="form-group">
-                                    <label for="editDependencyNotes">Depends On:</label>
-                                    <input type="text" id="editDependencyNotes" placeholder="Team, story or system this story waits on">
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     <!-- Story Timeline Section -->
                     <div id="editTimelineChangesSection" class="border-section" style="display: none; margin-top: 0px;">
@@ -536,7 +520,31 @@
             </div>
         </div>
     </div>
-                <!-- Monthly KTLO Edit Modal -->
+
+    <!-- New Roadmap Modal -->
+    <div id="newRoadmapModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New Roadmap</h2>
+                <button class="close" onclick="closeNewRoadmapModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px;">Select the year for your new roadmap. All current data will be cleared.</p>
+                <div class="form-group">
+                    <label for="newRoadmapYear">Roadmap Year:</label>
+                    <input type="number" id="newRoadmapYear" value="2025" min="2020" max="2030" style="width: 100px;" onkeydown="if(event.key === 'Enter') confirmNewRoadmap();">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="flex-modal-footer">
+                    <button type="button" onclick="closeNewRoadmapModal()" class="secondary">Cancel</button>
+                    <button type="button" onclick="confirmNewRoadmap()" class="btn-modal">Create New Roadmap</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly KTLO Edit Modal -->
     <div id="editMonthlyKTLOModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -586,39 +594,3 @@
             </div>
         </div>
     </div>
-            </div>
-        </div>
-    </div>
-    <!-- Fullscreen Overlay -->
-    <div class="fullscreen-overlay" id="fullscreen-overlay" onclick="hideFullscreen()">
-        <div class="fullscreen-content" onclick="event.stopPropagation()">
-            <button class="fullscreen-close" onclick="hideFullscreen()">✕ Close</button>
-            <iframe id="fullscreen-preview" src="about:blank"></iframe>
-        </div>
-    </div>
-    
-
-    <!-- New Roadmap Modal -->
-    <div id="newRoadmapModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>New Roadmap</h2>
-                <button class="close" onclick="closeNewRoadmapModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 20px;">Select the year for your new roadmap. All current data will be cleared.</p>
-                <div class="form-group">
-                    <label for="newRoadmapYear">Roadmap Year:</label>
-                    <input type="number" id="newRoadmapYear" value="2025" min="2020" max="2030" style="width: 100px;" onkeydown="if(event.key === 'Enter') confirmNewRoadmap();">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <div class="flex-modal-footer">
-                    <button type="button" onclick="closeNewRoadmapModal()" class="secondary">Cancel</button>
-                    <button type="button" onclick="confirmNewRoadmap()" class="btn-modal">Create New Roadmap</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    

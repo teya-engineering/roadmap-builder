@@ -248,16 +248,9 @@ body {
 .builder-panel.collapsed #currentFilenameDisplay {
     display: none !important;
 }
-/* No flex-grow here. The ancestors (.main-content, .builder-container) are
-   sized by their content, not capped to the viewport, so a flex-grow on this
-   panel resolves against the roadmap's full natural height - the panel grew to
-   ~1750px, #roadmap-mount (height:100%) grew with it, its internal scroll range
-   collapsed to ~4px and the page became the scroller. The sticky timeline header
-   sticks to its nearest scrollport, so once that stopped being #roadmap-mount it
-   scrolled off with the rest of the page. The explicit height already gives the
-   preview the space freed by the collapsed builder; keep it the only sizer. */
 .builder-panel.collapsed + .preview-panel {
     height: calc(100vh - 80px);
+    flex: 1;
 }
 
 /* Drag-and-drop state for the builder panel */
@@ -999,14 +992,6 @@ button.danger:hover {
     overflow: auto;
     padding: 20px;
     box-sizing: border-box;
-    /* The rendered roadmap runs its own z-index scale (stories 1, text boxes 15,
-       the sticky timeline header 20, hover states 100-300). Nothing here is a
-       stacking context by itself, so those values used to compete with the
-       preview chrome that sits on top of this element - the sticky header at 20
-       painted over the fullscreen button at 10. isolate keeps that scale
-       internal, so the chrome only has to outrank this element, not the highest
-       value the roadmap happens to use. */
-    isolation: isolate;
 }
 
 #roadmap-mount .task-title.inline-editing {
@@ -1833,10 +1818,6 @@ button.quiet-remove-button:hover {
     color: #005a8b;
     background: #e0f2fe;
 }
-.story-status-chip.status-dependency {
-    color: #c2410c;
-    background: #ffedd5;
-}
 
 :root[data-theme='dark'] .story-status-chip.status-risk {
     color: #fbbf24;
@@ -1862,10 +1843,6 @@ button.quiet-remove-button:hover {
 :root[data-theme='dark'] .story-status-chip.status-proposed {
     color: #7dd3fc;
     background: rgb(2 132 199 / 0.25);
-}
-:root[data-theme='dark'] .story-status-chip.status-dependency {
-    color: #fdba74;
-    background: rgb(234 88 12 / 0.25);
 }
 
 .story-date-range {

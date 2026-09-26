@@ -473,27 +473,6 @@ export function init(_root) {
 
         // Use DOMContentLoaded instead of window.onload for more reliable initialization
         document.addEventListener('DOMContentLoaded', function () {
-            // Restore the saved layout toggles before anything renders the
-            // preview, since the generator reads them off the checkboxes.
-            const epicTitleTopToggle = /** @type {HTMLInputElement | null} */ (
-                document.getElementById('epic-title-top-toggle')
-            );
-            if (epicTitleTopToggle) {
-                epicTitleTopToggle.checked = ConfigUtility.shouldShowEpicTitleTop();
-            }
-            const hideStoryTextToggle = /** @type {HTMLInputElement | null} */ (
-                document.getElementById('hide-story-text-toggle')
-            );
-            if (hideStoryTextToggle) {
-                hideStoryTextToggle.checked = ConfigUtility.shouldHideStoryText();
-            }
-            const showTodayLineToggle = /** @type {HTMLInputElement | null} */ (
-                document.getElementById('show-today-line-toggle')
-            );
-            if (showTodayLineToggle) {
-                showTodayLineToggle.checked = ConfigUtility.shouldShowTodayLine();
-            }
-
             // Populate the country-flags fieldset in the edit modal once.
             // Global is checked by default so opening the modal without a
             // loaded story still matches the existing "empty = Global" rule.
@@ -835,7 +814,6 @@ export function init(_root) {
                 [checked('story-cancelled'), 'CANCELLED', 'status-cancelled'],
                 [checked('story-done'), 'DONE', 'status-done'],
                 [checked('story-atrisk'), 'AT RISK', 'status-risk'],
-                [checked('story-dependency'), 'DEPENDS ON', 'status-dependency'],
                 [checked('story-proposed'), 'PROPOSED', 'status-proposed'],
                 [checked('story-newstory'), 'NEW', 'status-new'],
                 [
@@ -1025,7 +1003,6 @@ export function init(_root) {
             handleTransferredInChange,
             handleTransferredOutChange,
             handleProposedChange,
-            handleDependencyChange,
         } = __statusBundle;
         Object.assign(window, __statusBundle);
 
@@ -1058,36 +1035,6 @@ export function init(_root) {
                 handleForceTextBelowToggle();
             }
         });
-
-        // Layout toggles below "force text below". Unlike that one they are
-        // display preferences, so they persist and survive loading a file.
-        // roadmap-generator.js reads the checkboxes directly.
-        function handleEpicTitleTopToggle() {
-            const toggle = /** @type {HTMLInputElement | null} */ (
-                document.getElementById('epic-title-top-toggle')
-            );
-            if (!toggle) return;
-            ConfigUtility.setEpicTitleTop(toggle.checked);
-            generatePreview();
-        }
-
-        function handleHideStoryTextToggle() {
-            const toggle = /** @type {HTMLInputElement | null} */ (
-                document.getElementById('hide-story-text-toggle')
-            );
-            if (!toggle) return;
-            ConfigUtility.setHideStoryText(toggle.checked);
-            generatePreview();
-        }
-
-        function handleShowTodayLineToggle() {
-            const toggle = /** @type {HTMLInputElement | null} */ (
-                document.getElementById('show-today-line-toggle')
-            );
-            if (!toggle) return;
-            ConfigUtility.setShowTodayLine(toggle.checked);
-            generatePreview();
-        }
 
         // The story whose FTE was edited last, so the next render can pop just
         // that one tag. The whole roadmap is rebuilt on every keystroke, so a
@@ -1359,7 +1306,11 @@ export function init(_root) {
                                 <input type="checkbox" id="story-include-product-roadmap-${storyId}" checked style="margin: 0;"> 
                             </label>
                         </div>
-                    <div class="form-group">
+                    <!-- v2: title editing migrated to inline-edit on the preview. The
+                         input stays in the DOM (hidden) so collectFormData and the
+                         collapsed story header still read it; inline-edit writes back
+                         to it via dispatching an 'input' event. -->
+                    <div class="form-group" style="display: none;">
                         <label for="story-title-${storyId}">Story Title:</label>
                         <input type="text" id="story-title-${storyId}" placeholder="Story title">
                     </div>
@@ -1390,7 +1341,7 @@ export function init(_root) {
                     
                     <div class="form-group" style="display: flex; gap: 15px; align-items: flex-end;">
                         <div style="flex: 1;">
-                            <label for="story-imo-${storyId}">CP/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                            <label for="story-imo-${storyId}">IMO/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
                             <input type="text" id="story-imo-${storyId}" placeholder="0001">
                         </div>
                         <div style="flex: 1;">
@@ -1446,16 +1397,13 @@ export function init(_root) {
                         <label for="story-changes-${storyId}">Timeline</label>
                     </div>
                     
-                    <!-- Row 2: At Risk, Proposed, Depends on, Transferred: In, Out -->
+                    <!-- Row 2: At Risk, Proposed, Transferred: In, Out -->
                     <div class="checkbox-group">
                         <input type="checkbox" id="story-atrisk-${storyId}" onchange="handleAtRiskChange('${storyId}')">
                         <label for="story-atrisk-${storyId}">At Risk</label>
                         
                         <input type="checkbox" id="story-proposed-${storyId}" onchange="handleProposedChange('${storyId}')">
                         <label for="story-proposed-${storyId}">Proposed</label>
-                        
-                        <input type="checkbox" id="story-dependency-${storyId}" onchange="handleDependencyChange('${storyId}')">
-                        <label for="story-dependency-${storyId}">Depends on</label>
                         
                         <label style="margin-left: 8px; margin-right: 2px;">Transferred:</label>
                         <input type="checkbox" id="story-transferredin-${storyId}" onchange="handleTransferredInChange('${storyId}')">
@@ -1468,7 +1416,7 @@ export function init(_root) {
                     <!-- Row 3: Visibility -->
                     <div class="checkbox-group" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ddd;">
                         <input type="checkbox" id="story-hide-from-search-${storyId}">
-                        <label for="story-hide-from-search-${storyId}" title="When checked, this story will not appear in cross-team CP/timeline search results">Hide from cross-team search</label>
+                        <label for="story-hide-from-search-${storyId}" title="When checked, this story will not appear in cross-team IMO/timeline search results">Hide from cross-team search</label>
                     </div>
 
                     <!-- Done Section -->
@@ -1584,21 +1532,6 @@ export function init(_root) {
                             </div>
                         </div>
                     </div>
-
-                    <!-- Dependency Section -->
-                    <div id="dependency-section-${storyId}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
-                        <h5>Story Dependency</h5>
-                        <div class="inline-group">
-                            <div class="form-group">
-                                <label for="dependency-date-${storyId}">Dependency Date:</label>
-                                <input type="text" id="dependency-date-${storyId}" placeholder="15/01 or 15/01/25 or 15-01-2025">
-                            </div>
-                            <div class="form-group">
-                                <label for="dependency-notes-${storyId}">Depends On:</label>
-                                <input type="text" id="dependency-notes-${storyId}" placeholder="Team, story or system this story waits on">
-                            </div>
-                        </div>
-                    </div>
                     
                     <!-- Story Timeline Section -->
                     <div id="changes-section-${storyId}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
@@ -1647,8 +1580,6 @@ export function init(_root) {
                 `transferredin-notes-${storyId}`,
                 `proposed-date-${storyId}`,
                 `proposed-notes-${storyId}`,
-                `dependency-date-${storyId}`,
-                `dependency-notes-${storyId}`,
             ];
 
             storyFields.forEach((fieldId) => {
@@ -1682,7 +1613,6 @@ export function init(_root) {
                 `story-transferredout-${storyId}`,
                 `story-transferredin-${storyId}`,
                 `story-proposed-${storyId}`,
-                `story-dependency-${storyId}`,
                 `story-changes-${storyId}`,
             ];
 
@@ -1731,7 +1661,6 @@ export function init(_root) {
                     false
                 );
                 initializeDatePicker(document.getElementById(`proposed-date-${storyId}`), false);
-                initializeDatePicker(document.getElementById(`dependency-date-${storyId}`), false);
             }, 200); // Increased delay to ensure DOM elements are ready
         }
 
@@ -1817,7 +1746,7 @@ export function init(_root) {
                     </div>
                     
                     <div class="form-group">
-                        <label for="btl-imo-${storyId}">CP/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
+                        <label for="btl-imo-${storyId}">IMO/Project ID <span style="font-style: italic; color: #888;">(optional)</span>:</label>
                         <input type="text" id="btl-imo-${storyId}" placeholder="0001">
                     </div>
 
@@ -2621,7 +2550,6 @@ export function init(_root) {
             const transferredOutEl = document.getElementById(`story-transferredout-${storyId}`);
             const transferredInEl = document.getElementById(`story-transferredin-${storyId}`);
             const proposedEl = document.getElementById(`story-proposed-${storyId}`);
-            const dependencyEl = document.getElementById(`story-dependency-${storyId}`);
 
             story.isDone = doneEl ? doneEl.checked : false;
             story.isCancelled = cancelledEl ? cancelledEl.checked : false;
@@ -2631,7 +2559,6 @@ export function init(_root) {
             story.isTransferredOut = transferredOutEl ? transferredOutEl.checked : false;
             story.isTransferredIn = transferredInEl ? transferredInEl.checked : false;
             story.isProposed = proposedEl ? proposedEl.checked : false;
-            story.hasDependency = dependencyEl ? dependencyEl.checked : false;
 
             // Visibility flag for cross-team search (default false = visible)
             const hideFromSearchEl = document.getElementById(`story-hide-from-search-${storyId}`);
@@ -2720,12 +2647,6 @@ export function init(_root) {
             const proposedDate = proposedDateEl ? proposedDateEl.value : '';
             const proposedNotes = proposedNotesEl ? proposedNotesEl.value : '';
 
-            // Collect dependency info (regardless of timeline changes checkbox)
-            const dependencyDateEl = document.getElementById(`dependency-date-${storyId}`);
-            const dependencyNotesEl = document.getElementById(`dependency-notes-${storyId}`);
-            const dependencyDate = dependencyDateEl ? dependencyDateEl.value : '';
-            const dependencyNotes = dependencyNotesEl ? dependencyNotesEl.value : '';
-
             // Check if we need to create roadmap changes for timeline changes, done, cancel, at risk, new story, or transferred out
             const timelineChangesEl = document.getElementById(`story-changes-${storyId}`);
             const hasTimelineChanges = timelineChangesEl ? timelineChangesEl.checked : false;
@@ -2739,7 +2660,6 @@ export function init(_root) {
             const hasTransferredOutInfo = transferredOutEl ? transferredOutEl.checked : false;
             const hasTransferredInInfo = transferredInEl ? transferredInEl.checked : false;
             const hasProposedInfo = proposedEl ? proposedEl.checked : false;
-            const hasDependencyInfo = dependencyEl ? dependencyEl.checked : false;
 
             if (
                 hasTimelineChanges ||
@@ -2750,8 +2670,7 @@ export function init(_root) {
                 hasInfoInfo ||
                 hasTransferredOutInfo ||
                 hasTransferredInInfo ||
-                hasProposedInfo ||
-                hasDependencyInfo
+                hasProposedInfo
             ) {
                 story.hasRoadmapChanges = true;
                 story.roadmapChanges = {
@@ -2764,7 +2683,6 @@ export function init(_root) {
                     transferredOutInfo: null,
                     transferredInInfo: null,
                     proposedInfo: null,
-                    dependencyInfo: null,
                 };
 
                 // Collect timeline changes (only if checkbox is checked)
@@ -2908,13 +2826,6 @@ export function init(_root) {
                     story.roadmapChanges.proposedInfo = {
                         date: ensureDateHasYear(proposedDate) || '',
                         notes: proposedNotes || '',
-                    };
-                }
-
-                if (story.hasDependency) {
-                    story.roadmapChanges.dependencyInfo = {
-                        date: ensureDateHasYear(dependencyDate) || '',
-                        notes: dependencyNotes || '',
                     };
                 }
             }
@@ -3494,14 +3405,6 @@ export function init(_root) {
                                         story.roadmapChanges.proposedInfo.date
                                     );
                                 }
-                                if (
-                                    story.roadmapChanges.dependencyInfo &&
-                                    story.roadmapChanges.dependencyInfo.date
-                                ) {
-                                    story.roadmapChanges.dependencyInfo.date = fixDate(
-                                        story.roadmapChanges.dependencyInfo.date
-                                    );
-                                }
                             }
                         });
                     }
@@ -4057,7 +3960,6 @@ export function init(_root) {
                 const transferredOutEl = document.getElementById(`story-transferredout-${storyId}`);
                 const transferredInEl = document.getElementById(`story-transferredin-${storyId}`);
                 const proposedEl = document.getElementById(`story-proposed-${storyId}`);
-                const dependencyEl = document.getElementById(`story-dependency-${storyId}`);
                 if (doneEl) doneEl.checked = story.isDone || false;
                 if (cancelledEl) cancelledEl.checked = story.isCancelled || false;
                 if (atRiskEl) atRiskEl.checked = story.isAtRisk || false;
@@ -4069,7 +3971,6 @@ export function init(_root) {
                         story.isTransferredOut || story.isHandedOver || false;
                 if (transferredInEl) transferredInEl.checked = story.isTransferredIn || false;
                 if (proposedEl) proposedEl.checked = story.isProposed || false;
-                if (dependencyEl) dependencyEl.checked = story.hasDependency || false;
 
                 const hideFromSearchEl = document.getElementById(
                     `story-hide-from-search-${storyId}`
@@ -4407,28 +4308,6 @@ export function init(_root) {
                             if (proposedSectionEl) proposedSectionEl.style.display = 'block';
                         }
                     }
-
-                    // Load dependency info and show dependency section if needed
-                    if (story.roadmapChanges.dependencyInfo) {
-                        const dependencyDateEl = document.getElementById(
-                            `dependency-date-${storyId}`
-                        );
-                        const dependencyNotesEl = document.getElementById(
-                            `dependency-notes-${storyId}`
-                        );
-                        if (dependencyDateEl)
-                            dependencyDateEl.value = story.roadmapChanges.dependencyInfo.date || '';
-                        if (dependencyNotesEl)
-                            dependencyNotesEl.value =
-                                story.roadmapChanges.dependencyInfo.notes || '';
-
-                        if (story.hasDependency) {
-                            const dependencySectionEl = document.getElementById(
-                                `dependency-section-${storyId}`
-                            );
-                            if (dependencySectionEl) dependencySectionEl.style.display = 'block';
-                        }
-                    }
                 }
             } catch {
                 // Continue loading other stories even if this one fails
@@ -4638,7 +4517,6 @@ export function init(_root) {
             document.getElementById('editTransferredIn').checked =
                 foundStory.isTransferredIn || false;
             document.getElementById('editProposed').checked = foundStory.isProposed || false;
-            document.getElementById('editDependency').checked = foundStory.hasDependency || false;
             document.getElementById('editTimelineChanges').checked =
                 foundStory.hasTimelineChanges || false;
             document.getElementById('editHideFromSearch').checked =
@@ -4798,8 +4676,6 @@ export function init(_root) {
                 foundStory.transferredInNotes || '';
             document.getElementById('editProposedDate').value = foundStory.proposedDate || '';
             document.getElementById('editProposedNotes').value = foundStory.proposedNotes || '';
-            document.getElementById('editDependencyDate').value = foundStory.dependencyDate || '';
-            document.getElementById('editDependencyNotes').value = foundStory.dependencyNotes || '';
 
             // Load existing timeline changes FIRST (before calling toggle functions)
             if (
@@ -4994,7 +4870,6 @@ export function init(_root) {
             const transferredOutChecked = document.getElementById('editTransferredOut').checked;
             const transferredInChecked = document.getElementById('editTransferredIn').checked;
             const proposedChecked = document.getElementById('editProposed').checked;
-            const dependencyChecked = document.getElementById('editDependency').checked;
 
             document.getElementById('editDoneFields').style.display = doneChecked
                 ? 'block'
@@ -5019,9 +4894,6 @@ export function init(_root) {
             document.getElementById('editProposedFields').style.display = proposedChecked
                 ? 'block'
                 : 'none';
-            document.getElementById('editDependencyFields').style.display = dependencyChecked
-                ? 'block'
-                : 'none';
 
             // Reinitialize date pickers for newly visible fields
             setTimeout(() => {
@@ -5040,8 +4912,6 @@ export function init(_root) {
                     initializeDatePicker(document.getElementById('editTransferredInDate'), false);
                 if (proposedChecked)
                     initializeDatePicker(document.getElementById('editProposedDate'), false);
-                if (dependencyChecked)
-                    initializeDatePicker(document.getElementById('editDependencyDate'), false);
             }, 10);
 
             // Auto-fill today's date if fields are empty and checkboxes are checked
@@ -5106,13 +4976,6 @@ export function init(_root) {
                 const proposedDateField = document.getElementById('editProposedDate');
                 if (proposedDateField && !proposedDateField.value) {
                     proposedDateField.value = getTodaysDateEuropean();
-                }
-            }
-
-            if (dependencyChecked) {
-                const dependencyDateField = document.getElementById('editDependencyDate');
-                if (dependencyDateField && !dependencyDateField.value) {
-                    dependencyDateField.value = getTodaysDateEuropean();
                 }
             }
         }
@@ -5445,7 +5308,6 @@ export function init(_root) {
                         `story-transferredin-${storyId}`
                     );
                     const proposedEl = document.getElementById(`story-proposed-${storyId}`);
-                    const dependencyEl = document.getElementById(`story-dependency-${storyId}`);
 
                     const doneDateEl = document.getElementById(`done-date-${storyId}`);
                     const doneNotesEl = document.getElementById(`done-notes-${storyId}`);
@@ -5471,10 +5333,6 @@ export function init(_root) {
                     );
                     const proposedDateEl = document.getElementById(`proposed-date-${storyId}`);
                     const proposedNotesEl = document.getElementById(`proposed-notes-${storyId}`);
-                    const dependencyDateEl = document.getElementById(`dependency-date-${storyId}`);
-                    const dependencyNotesEl = document.getElementById(
-                        `dependency-notes-${storyId}`
-                    );
 
                     // Get timeline changes - check both checkbox state AND actual DOM elements
                     const timelineChangesEl = document.getElementById(`story-changes-${storyId}`);
@@ -5583,7 +5441,6 @@ export function init(_root) {
                         isTransferredOut: transferredOutEl ? transferredOutEl.checked : false,
                         isTransferredIn: transferredInEl ? transferredInEl.checked : false,
                         isProposed: proposedEl ? proposedEl.checked : false,
-                        hasDependency: dependencyEl ? dependencyEl.checked : false,
                         doneDate: doneDateEl ? doneDateEl.value : '',
                         doneNotes: doneNotesEl ? doneNotesEl.value : '',
                         cancelDate: cancelDateEl ? cancelDateEl.value : '',
@@ -5602,8 +5459,6 @@ export function init(_root) {
                         transferredInNotes: transferredInNotesEl ? transferredInNotesEl.value : '',
                         proposedDate: proposedDateEl ? proposedDateEl.value : '',
                         proposedNotes: proposedNotesEl ? proposedNotesEl.value : '',
-                        dependencyDate: dependencyDateEl ? dependencyDateEl.value : '',
-                        dependencyNotes: dependencyNotesEl ? dependencyNotesEl.value : '',
                         hasTimelineChanges: hasTimelineChanges,
                         timelineChanges: timelineChanges,
                     };
@@ -5835,7 +5690,6 @@ export function init(_root) {
                 const transferredOutEl = document.getElementById(`story-transferredout-${storyId}`);
                 const transferredInEl = document.getElementById(`story-transferredin-${storyId}`);
                 const proposedEl = document.getElementById(`story-proposed-${storyId}`);
-                const dependencyEl = document.getElementById(`story-dependency-${storyId}`);
 
                 const doneChecked = document.getElementById('editDone').checked;
                 const cancelledChecked = document.getElementById('editCancelled').checked;
@@ -5845,7 +5699,6 @@ export function init(_root) {
                 const transferredOutChecked = document.getElementById('editTransferredOut').checked;
                 const transferredInChecked = document.getElementById('editTransferredIn').checked;
                 const proposedChecked = document.getElementById('editProposed').checked;
-                const dependencyChecked = document.getElementById('editDependency').checked;
                 const timelineChangesChecked =
                     document.getElementById('editTimelineChanges').checked;
 
@@ -5881,10 +5734,6 @@ export function init(_root) {
                     proposedEl.checked = proposedChecked;
                     handleProposedChange(storyId); // Show/hide proposed section
                 }
-                if (dependencyEl) {
-                    dependencyEl.checked = dependencyChecked;
-                    handleDependencyChange(storyId); // Show/hide dependency section
-                }
 
                 // Update timeline changes checkbox
                 const timelineChangesEl = document.getElementById(`story-changes-${storyId}`);
@@ -5917,10 +5766,6 @@ export function init(_root) {
                     );
                     const proposedDateEl = document.getElementById(`proposed-date-${storyId}`);
                     const proposedNotesEl = document.getElementById(`proposed-notes-${storyId}`);
-                    const dependencyDateEl = document.getElementById(`dependency-date-${storyId}`);
-                    const dependencyNotesEl = document.getElementById(
-                        `dependency-notes-${storyId}`
-                    );
 
                     if (doneDateEl)
                         doneDateEl.value = document.getElementById('editDoneDate').value;
@@ -6007,12 +5852,6 @@ export function init(_root) {
                         proposedDateEl.value = document.getElementById('editProposedDate').value;
                     if (proposedNotesEl)
                         proposedNotesEl.value = document.getElementById('editProposedNotes').value;
-                    if (dependencyDateEl)
-                        dependencyDateEl.value =
-                            document.getElementById('editDependencyDate').value;
-                    if (dependencyNotesEl)
-                        dependencyNotesEl.value =
-                            document.getElementById('editDependencyNotes').value;
 
                     // Handle timeline changes
                     if (timelineChangesChecked) {
@@ -6179,21 +6018,6 @@ export function init(_root) {
         function moveCurrentStoryDown() {
             if (!currentEditingStory) {
                 alert('No story selected for editing.');
-                return;
-            }
-
-            // BTL stories aren't grouped in an .epic-section - check the
-            // boundary against the BTL container directly.
-            if (currentEditingStory.epicName === 'Below the Line') {
-                const btlContainer = document.getElementById('btl-stories-container');
-                const btlStories = btlContainer.querySelectorAll('.story-section');
-                if (currentEditingStory.storyIndex < btlStories.length - 1) {
-                    moveStoryDownByEpic(
-                        currentEditingStory.epicName,
-                        currentEditingStory.storyIndex
-                    );
-                    currentEditingStory.storyIndex++;
-                }
                 return;
             }
 
@@ -6542,9 +6366,6 @@ export function init(_root) {
             window.debouncedGeneratePreview = debouncedGeneratePreview;
         if (typeof handleForceTextBelowToggle === 'function')
             window.handleForceTextBelowToggle = handleForceTextBelowToggle;
-        window.handleEpicTitleTopToggle = handleEpicTitleTopToggle;
-        window.handleHideStoryTextToggle = handleHideStoryTextToggle;
-        window.handleShowTodayLineToggle = handleShowTodayLineToggle;
         if (typeof addAutoUpdateListeners === 'function')
             window.addAutoUpdateListeners = addAutoUpdateListeners;
         if (typeof addListenersToExistingElements === 'function')

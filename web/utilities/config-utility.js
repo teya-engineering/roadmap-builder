@@ -349,60 +349,6 @@ export class ConfigUtility {
         } catch {}
     }
 
-    // Epic titles at the top of each swimlane instead of rotated on the left
-    static shouldShowEpicTitleTop() {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                return localStorage.getItem('roadmap-epic-title-top') === 'true';
-            }
-        } catch {}
-        return false;
-    }
-
-    static setEpicTitleTop(enabled) {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('roadmap-epic-title-top', enabled.toString());
-            }
-        } catch {}
-    }
-
-    // Story bars show only their title, with the text revealed on hover
-    static shouldHideStoryText() {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                return localStorage.getItem('roadmap-hide-story-text') === 'true';
-            }
-        } catch {}
-        return false;
-    }
-
-    static setHideStoryText(enabled) {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('roadmap-hide-story-text', enabled.toString());
-            }
-        } catch {}
-    }
-
-    // Red vertical marker at today's date. Hidden unless turned on.
-    static shouldShowTodayLine() {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                return localStorage.getItem('roadmap-show-today-line') === 'true';
-            }
-        } catch {}
-        return false;
-    }
-
-    static setShowTodayLine(enabled) {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('roadmap-show-today-line', enabled.toString());
-            }
-        } catch {}
-    }
-
     // Status event rendering style: 'hover' (track + popover under the bar)
     // or 'side' (legacy text box rendered to the right of / below the bar).
     static getStatusStyle() {

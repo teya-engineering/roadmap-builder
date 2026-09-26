@@ -38,16 +38,3 @@ export function shouldPlaceBadgeBelow(storyWidth, badgeWidth, totalItems) {
 }
 
 export { monthIndex as monthToIndex };
-
-// Where a date falls across the year's twelve equal-width month columns, as a
-// fraction from 0 (start of January) to 1 (end of December). Each month is
-// split by its own number of days and the date sits in the middle of its day,
-// so the 15th of a 30-day month lands just before the month's midpoint.
-// Returns null when the date is invalid or belongs to a different year.
-export function yearFraction(date, year) {
-    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
-    if (date.getFullYear() !== year) return null;
-    const month = date.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    return (month + (date.getDate() - 0.5) / daysInMonth) / MONTHS_IN_YEAR;
-}
