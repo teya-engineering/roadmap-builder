@@ -36,6 +36,7 @@ import { DateUtility } from '../../utilities/date-utility.js';
 import { renderCountryFlagsHTML } from '../../utilities/countries.js';
 import { directoryStore } from '../../app/directory-store.js';
 import { parseFte } from '../../domain/fte.js';
+import { describeImpossibleDates, findImpossibleDates } from '../../domain/date-validation.js';
 
 // Hint under every FTE field. The zero wording matters: staffed with nobody is
 // a real answer and has to read differently from not filled in yet.
@@ -3210,10 +3211,18 @@ export function init(_root) {
 
         // Snapshot the form into the roadmap state and compute the filename
         // both save flows use. Returns the suggestedName for the caller.
+        // Throws when the roadmap has dates that don't exist, so nothing
+        // that would render in the wrong place reaches the file.
         function prepareRoadmapForSave() {
             // Flush in-progress KTLO month edits before serializing.
             saveCurrentKTLOData();
             const teamData = collectFormData();
+            const impossibleDates = findImpossibleDates(teamData);
+            if (impossibleDates.length > 0) {
+                throw new Error(
+                    `${describeImpossibleDates(impossibleDates)}\n\nFix ${impossibleDates.length === 1 ? 'it' : 'them'} and save again.`
+                );
+            }
             roadmapState.setState(teamData);
             const currentFilename = document.getElementById('currentFilename').value.trim();
             return currentFilename
@@ -3233,7 +3242,13 @@ export function init(_root) {
                 return;
             }
 
-            const suggestedName = prepareRoadmapForSave();
+            let suggestedName;
+            try {
+                suggestedName = prepareRoadmapForSave();
+            } catch (err) {
+                window.alert(`Can't save: ${err.message}`);
+                return;
+            }
 
             // No writable handle yet: prompt the user once via showSaveFilePicker.
             // The chosen handle sticks for subsequent saves.
@@ -3263,7 +3278,13 @@ export function init(_root) {
         // "Download": build a JSON blob and trigger a browser download.
         // Works in every browser; does not touch the File System Access API.
         function downloadRoadmap() {
-            const suggestedName = prepareRoadmapForSave();
+            let suggestedName;
+            try {
+                suggestedName = prepareRoadmapForSave();
+            } catch (err) {
+                window.alert(`Can't download: ${err.message}`);
+                return;
+            }
             save.download({ suggestedName });
         }
 
@@ -3657,6 +3678,19 @@ export function init(_root) {
             // Load BTL data if it exists
             if (teamData.btlSwimlane) {
                 loadBTLData(teamData.btlSwimlane);
+            }
+
+            // A file can hold impossible dates that never went through the save
+            // check, for example from a hand edit. Warn now, since those stories
+            // draw in the wrong place and the file won't save until they are
+            // fixed. Deferred so the form is filled in behind the alert.
+            const impossibleDates = findImpossibleDates(teamData);
+            if (impossibleDates.length > 0) {
+                setTimeout(() =>
+                    window.alert(
+                        `This roadmap has dates that need fixing.\n\n${describeImpossibleDates(impossibleDates)}\n\nThese stories show in the wrong place, and the roadmap can't be saved until the dates are fixed.`
+                    )
+                );
             }
 
             // Handle case where there are no stories to load
