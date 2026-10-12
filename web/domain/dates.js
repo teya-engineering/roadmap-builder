@@ -69,6 +69,18 @@ export function looksIso(dateStr) {
     return typeof dateStr === 'string' && ISO_DATE_REGEX.test(dateStr);
 }
 
+// True for a value shaped like a date (DD/MM/YY or YYYY-MM-DD) that names a
+// day the calendar doesn't have, such as 31/06/26. Anything else, including
+// month names and empty values, is not this function's concern.
+export function isImpossibleDate(value, roadmapYear = null) {
+    if (looksEuropean(value)) return parseEuropeanParts(value, roadmapYear) === null;
+    if (looksIso(value)) {
+        const [year, month, day] = value.split('-').map(Number);
+        return !isCalendarDate(day, month, year);
+    }
+    return false;
+}
+
 export function monthIndex(name) {
     if (typeof name !== 'string') return -1;
 

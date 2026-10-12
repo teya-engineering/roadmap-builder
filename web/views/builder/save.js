@@ -132,7 +132,10 @@ async function performAutoSave() {
             if (name) suggestedName = name;
         }
     } catch (err) {
-        console.error('auto-save prepare failed:', err);
+        // Surface the reason in the status line instead of a popup, since
+        // auto-save runs on every pause in typing.
+        lastErrorMessage = err && err.message ? err.message : String(err);
+        setStatus('error');
         return;
     }
     await save({ suggestedName, auto: true });
@@ -309,7 +312,9 @@ function setStatus(kind, { auto = false } = {}) {
             idle: '',
             saving: 'Saving...',
             saved: '',
-            error: lastErrorMessage ? `Save failed: ${lastErrorMessage}` : 'Save failed',
+            error: lastErrorMessage
+                ? `Save failed: ${lastErrorMessage.split('\n')[0]}`
+                : 'Save failed',
         };
         statusEl.dataset.status = kind;
         statusEl.textContent = messages[kind] ?? '';
