@@ -322,6 +322,11 @@ export function init(_root) {
         // changeCounter moved into ./timeline-changes.js (resetTimelineChangeCounter resets it).
         let isGeneratingPreview = false; // Flag to prevent duplicate preview generation
 
+        // A roadmap that has no file yet takes its filename from the team name
+        // and year. Once it is tied to a real file, the name must stay fixed so
+        // the chip and auto-save keep pointing at that file.
+        let filenameFollowsTeamName = false;
+
         // Hexadecimal counter-based unique identifier generation
         let epicIdCounter = 0;
         let storyIdCounter = 0;
@@ -386,7 +391,7 @@ export function init(_root) {
                     const teamName = document.getElementById('teamName').value.trim() || 'MyTeam';
                     const roadmapYear = document.getElementById('roadmapYear').value || '2025';
                     const defaultFilename = `${teamName}.Teya-Roadmap.${roadmapYear}.json`;
-                    updateFilenameDisplay(defaultFilename);
+                    updateFilenameDisplay(defaultFilename, { followsTeamName: true });
                 }, 100);
 
                 // Preview generation will be handled by loadTeamData completion tracking
@@ -1095,21 +1100,15 @@ export function init(_root) {
                     // Update filename when team name or year changes
                     if (id === 'teamName' || id === 'roadmapYear') {
                         element.addEventListener('input', function () {
-                            const currentFilename = document
-                                .getElementById('currentFilename')
-                                .value.trim();
-                            // Only auto-update if filename follows the default pattern
-                            if (
-                                currentFilename.includes('.Teya-Roadmap.') &&
-                                currentFilename.endsWith('.json')
-                            ) {
-                                const teamName =
-                                    document.getElementById('teamName').value.trim() || 'MyTeam';
-                                const roadmapYear =
-                                    document.getElementById('roadmapYear').value || '2025';
-                                const newFilename = `${teamName}.Teya-Roadmap.${roadmapYear}.json`;
-                                document.getElementById('currentFilename').value = newFilename;
-                            }
+                            // The first auto-save of a new roadmap creates its file and
+                            // keeps the handle, so from then on the name is fixed too.
+                            if (!filenameFollowsTeamName || save.getFileHandle()) return;
+                            const teamName =
+                                document.getElementById('teamName').value.trim() || 'MyTeam';
+                            const roadmapYear =
+                                document.getElementById('roadmapYear').value || '2025';
+                            const newFilename = `${teamName}.Teya-Roadmap.${roadmapYear}.json`;
+                            document.getElementById('currentFilename').value = newFilename;
                         });
                     }
                 }
@@ -3026,9 +3025,10 @@ export function init(_root) {
         /**
          * Update the filename display
          */
-        function updateFilenameDisplay(filename) {
+        function updateFilenameDisplay(filename, { followsTeamName = false } = {}) {
             const displayDiv = document.getElementById('currentFilenameDisplay');
             const filenameInput = document.getElementById('currentFilename');
+            filenameFollowsTeamName = followsTeamName;
 
             if (filename) {
                 filenameInput.value = filename;
@@ -3081,6 +3081,7 @@ export function init(_root) {
             // without prompting. If the user cancels, they can still pick
             // later via the top-nav Load roadmaps button.
             const suggestedName = `MyTeam.Teya-Roadmap.${selectedYear}.json`;
+            let pickedSaveLocation = false;
             try {
                 const result = await directoryStore.selectSaveLocation(suggestedName);
                 if (result) {
@@ -3090,6 +3091,7 @@ export function init(_root) {
                     // a read-only editor with the Save button disabled.
                     if (result.fileHandle) save.setFileHandle(result.fileHandle);
                     updateFilenameDisplay(result.name);
+                    pickedSaveLocation = true;
                 }
             } catch (error) {
                 console.warn(error);
@@ -3108,9 +3110,9 @@ export function init(_root) {
             document.getElementById('pm').value = '';
             document.getElementById('teamDescription').value = '';
 
-            // Set default filename for new roadmap
-            const defaultFilename = `MyTeam.Teya-Roadmap.${selectedYear}.json`;
-            updateFilenameDisplay(defaultFilename);
+            if (!pickedSaveLocation) {
+                updateFilenameDisplay(suggestedName, { followsTeamName: true });
+            }
 
             // Remove all epics
             const epics = document.querySelectorAll('.epic-section');
